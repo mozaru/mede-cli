@@ -20,6 +20,25 @@ O MEDE-CLI organiza a evolução documental como um **processo causal estruturad
 
 ---
 
+## ✦ Publicações Relacionadas
+
+Os fundamentos conceituais do MEDE-CLI, da metodologia MEDE e da linha de pesquisa relacionada podem ser encontrados nos seguintes trabalhos:
+
+- MEDE — Metodologia de Engenharia Documental Evolutiva  
+  https://doi.org/10.5281/zenodo.19007113
+
+- Engenharia de Software 4.0 e Complexidade Essencial  
+  https://doi.org/10.5281/zenodo.19101645
+
+- Janus e MEDE — Governança do Conhecimento da Solução e Projeção Tecnológica  
+  https://doi.org/10.5281/zenodo.19110314
+
+Lista completa de publicações:
+
+https://11tech.com.br/publications.html
+
+---
+
 ## ✦ Conceito Central
 
 Toda alteração documental no MEDE-CLI é tratada como um **change-set pendente**.
@@ -712,7 +731,7 @@ O MEDE-CLI é o primeiro passo para um novo paradigma de engenharia de software,
 
 Este projeto está licenciado sob a **Apache License 2.0**.
 
-Consulte o arquivo `LICENSE` para mais detalhes.
+Consulte o arquivo [LICENSE](./LICENSE) para mais detalhes.
 
 ---
 
