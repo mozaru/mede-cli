@@ -1,0 +1,71 @@
+[method:providers]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+
+  config <- jsonConvert.strToJson(configEntity.content)
+
+  anthropicModel <- config.llm.model if config.llm.provider == "anthropic-compatible" else "None" 
+  azureModel <- config.llm.model if config.llm.provider == "azure-compatible" else "None"
+  geminiModel <- config.llm.model if config.llm.provider == "gemini-compatible" else "None"
+  ollamaModel <- config.llm.model if config.llm.provider == "ollama-compatible" else "None"
+  openaiModel <-  config.llm.model if config.llm.provider == "openai-compatible" else "None"
+  success("\n  LLM - Providers Status\n  anthropic       - {anthropicModel}\n  azure(openai)   - {azureModel}\n  gemini          - {geminiModel}\n  ollama          - {ollamaModel}\n  openai          - {openaiModel}\n")
+
+/*
+mede-cli llm test -p "..."
+    permite realizar test com a llm, sem alterar o contexto atual, eh totalmente por fora de qualquer conexto
+    -p: opcional, usado para testar a llm configurada atualmente, onde passa-se o texto do prompt e mostra a resposta  
+*/
+[method:test/{prompt}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+
+  config <- jsonConvert.strToJson(configEntity.content)
+  llm <- repository.llmFactory.create(config)
+   
+  resp <- llm.generateText(prompt)
+
+  success(resp)
+
+
+
+/*
+Este arquivo implementa comandos auxiliares relacionados à configuração e teste dos providers de LLM do projeto.
+
+Premissas importantes:
+
+- todos os comandos dependem da existência de um projeto atual;
+- todos os comandos dependem da existência de uma configuração persistida do projeto;
+- a configuração da LLM é obtida a partir de projectConfig.content;
+- projectConfig.content deve ser convertido de string JSON para objeto antes de acessar llm.provider e llm.model;
+
+Regras do comando llm providers:
+
+- llm providers lista os providers compatíveis suportados pela aplicação;
+- o comando também mostra qual provider está ativo na configuração atual do projeto;
+- somente o provider ativo exibe o modelo configurado;
+- os providers não ativos exibem "None";
+- os providers atualmente suportados são:
+  - anthropic-compatible
+  - azure-compatible
+  - gemini-compatible
+  - ollama-compatible
+  - openai-compatible
+
+Regras do comando llm test:
+
+- llm test executa um prompt livre usando a configuração atual da LLM do projeto;
+- llm test não depende de ciclo ativo;
+- llm test não altera fase, ciclo, documentos ou estado operacional;
+- llm test serve apenas para validar provider, endpoint, credenciais, modelo e resposta da LLM configurada;
+- llm test continua dependente do contexto do projeto atual e da configuração atual persistida;
+- o prompt informado deve ser enviado diretamente para llm.generateText(prompt).
+*/
+
+/*mede-cli llm providers
+    lista os providers compatíveis com a llm, que podem ser usados no config
+*/

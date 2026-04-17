@@ -1,0 +1,217 @@
+[
+    {
+        "transpiler": "database:sqlite3.0:2.0",
+        "path": "tabase\\persistence.sdl",
+        "lastModify": 1776083672877.5474
+    },
+    {
+        "transpiler": "database:sqlserver:2.0",
+        "path": "tabase\\persistence.sdl",
+        "lastModify": 1776083672877.5474
+    },
+    {
+        "transpiler": "frontend:ts:entities:2.0",
+        "path": "tabase\\persistence.sdl",
+        "lastModify": 1776083672877.5474
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:irepositories:2.0",
+        "path": "tabase\\persistence.sdl",
+        "lastModify": 1776083672877.5474
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:repositories:2.0",
+        "path": "tabase\\persistence.sdl",
+        "lastModify": 1776083672877.5474
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:const-repositories:2.0",
+        "path": "tabase\\persistence.sdl",
+        "lastModify": 1776083672877.5474
+    },
+    {
+        "transpiler": "frontend:ts:models-db:2.0",
+        "path": "tabase\\persistence.sdl",
+        "lastModify": 1776083672877.5474
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\changes.sdl",
+        "lastModify": 1776089206887.6475
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\config.sdl",
+        "lastModify": 1776090954675.6743
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\cycle.sdl",
+        "lastModify": 1776090390394.4744
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\files.sdl",
+        "lastModify": 1776089206884.4917
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\init.sdl",
+        "lastModify": 1776090808258.757
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\legacy.sdl",
+        "lastModify": 1775588016717.6482
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\llm.sdl",
+        "lastModify": 1776089206884.4917
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\phaseConversation.sdl",
+        "lastModify": 1776090387258.1382
+    },
+    {
+        "transpiler": "frontend:ts:model:2.0",
+        "path": "ckend\\status.sdl",
+        "lastModify": 1776090576061.1418
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\changes.sdl",
+        "lastModify": 1776089206887.6475
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\config.sdl",
+        "lastModify": 1776090954675.6743
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\cycle.sdl",
+        "lastModify": 1776090390394.4744
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\files.sdl",
+        "lastModify": 1776089206884.4917
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\init.sdl",
+        "lastModify": 1776090808258.757
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\legacy.sdl",
+        "lastModify": 1775588016717.6482
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\llm.sdl",
+        "lastModify": 1776089206884.4917
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\phaseConversation.sdl",
+        "lastModify": 1776090387258.1382
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:iservices:2.0",
+        "path": "ckend\\status.sdl",
+        "lastModify": 1776090576061.1418
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\changes.sdl",
+        "lastModify": 1776089206887.6475
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\config.sdl",
+        "lastModify": 1776090954675.6743
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\cycle.sdl",
+        "lastModify": 1776090390394.4744
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\files.sdl",
+        "lastModify": 1776089206884.4917
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\init.sdl",
+        "lastModify": 1776090808258.757
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\legacy.sdl",
+        "lastModify": 1775588016717.6482
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\llm.sdl",
+        "lastModify": 1776089206884.4917
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\phaseConversation.sdl",
+        "lastModify": 1776090387258.1382
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:services:2.0",
+        "path": "ckend\\status.sdl",
+        "lastModify": 1776090576061.1418
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\changes.sdl",
+        "lastModify": 1776089206887.6475
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\config.sdl",
+        "lastModify": 1776090954675.6743
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\cycle.sdl",
+        "lastModify": 1776090390394.4744
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\files.sdl",
+        "lastModify": 1776089206884.4917
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\init.sdl",
+        "lastModify": 1776090808258.757
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\legacy.sdl",
+        "lastModify": 1775588016717.6482
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\llm.sdl",
+        "lastModify": 1776089206884.4917
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\phaseConversation.sdl",
+        "lastModify": 1776090387258.1382
+    },
+    {
+        "transpiler": "backend:ts6.0-node22.22:commands:2.0",
+        "path": "ckend\\status.sdl",
+        "lastModify": 1776090576061.1418
+    }
+]

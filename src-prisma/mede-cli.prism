@@ -1,0 +1,12 @@
+{
+    "project": "mede-cli",
+    "version": "1.0",
+    "author": "mozar.silva@gmail.com",
+    "outputRootPath": "../",
+    "inputGit": "",
+    "outputGit": "",
+    "profile": "command-line:ts6.0-node22.22-sqlite3.0:2.0",
+    "constants": {
+        "DATA_BASE_TECHONOLOGY": "SQLite"
+    }
+}

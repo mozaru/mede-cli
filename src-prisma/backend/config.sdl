@@ -1,0 +1,350 @@
+
+[msg:config]
+   assert(repository.fileSystem.exists("mede.config.json"), "mede.config.json not found")
+   success(repository.fileSystem.readFile("mede.config.json"))
+
+
+/*mede-cli config init
+     caso não exista cria  mede.config.json, caso contrario avisa que já existe
+*/
+[msg:config/init]
+   assertFalse(repository.fileSystem.exists("mede.config.json"), "mede.config.json already exist")
+   config <- json(
+    "configVersion": 1,
+    "language": "pt-BR",
+    "docsRoot": "docs",
+    "directories": json(
+      "meetingMinutes": "atas-de-reuniao",
+      "architecturalDecisions": "decisoes-arquiteturais",
+      "systemMaintenanceSpecifications": "especificacao-manutencao-sistema",
+      "deliveryLog": "log-entregas"),
+    "fileNames": json(
+      "initialUnderstanding": "entendimento-inicial.md",
+      "readme": "readme.md",
+      "currentState": "situacao-atual.md",
+      "scopeAndVision": "visao-e-escopo.md",
+      "functionalRequirements": "requisitos-funcionais.md",
+      "nonFunctionalRequirements": "requisitos-nao-funcionais.md",
+      "dataModel": "modelo-de-dados.md",
+      "timeline": "cronograma.md"),
+    "prefixes": json(
+      "meetingMinutes": "ata",
+      "architecturalDecisions": "adr",
+      "systemMaintenanceSpecifications": "esm",
+      "deliveryLog": "leg"),
+    "llm": json(
+      "provider": "openai-compatible",
+      "model": "gpt-4.1-mini",
+      "endpoint": "https://api.openai.com/v1",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "temperature": 0.1,
+      "maxTokens": 4000,
+      "timeoutMs": 60000),
+    "systemPrompts": json(
+      "readme": repository.LlmPrompts.SYSTEM_PROMPT_README,
+      "initialUnderstanding": repository.LlmPrompts.SYSTEM_PROMPT_INITIAL_UNDERSTANDING,
+      "meeting": repository.LlmPrompts.SYSTEM_PROMPT_MEETING,
+      "architecturalDecisions": repository.LlmPrompts.SYSTEM_PROMPT_ADR,
+      "systemMaintenanceSpecifications": repository.LlmPrompts.SYSTEM_PROMPT_ESM,
+      "deliveryLog": repository.LlmPrompts.SYSTEM_PROMPT_DELIVERY_LOG,
+      "functionalRequirements": repository.LlmPrompts.SYSTEM_PROMPT_FUNCTIONAL_REQUIREMENTS,
+      "nonFunctionalRequirements": repository.LlmPrompts.SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS,
+      "dataModel": repository.LlmPrompts.SYSTEM_PROMPT_DATA_MODEL,
+      "timeline": repository.LlmPrompts.SYSTEM_PROMPT_TIMELINE,
+      "scopeAndVision": repository.LlmPrompts.SYSTEM_PROMPT_SCOPE_AND_VISION,
+      "currentState": repository.LlmPrompts.SYSTEM_PROMPT_CURRENT_STATE),
+    "prompts": json(
+      "readme": repository.LlmPrompts.USER_PROMPT_README,
+      "initialUnderstanding": repository.LlmPrompts.USER_PROMPT_INITIAL_UNDERSTANDING,
+      "meeting": repository.LlmPrompts.USER_PROMPT_MEETING,
+      "architecturalDecisions": repository.LlmPrompts.USER_PROMPT_ADR,
+      "systemMaintenanceSpecifications": repository.LlmPrompts.USER_PROMPT_ESM,
+      "deliveryLog": repository.LlmPrompts.USER_PROMPT_DELIVERY_LOG,
+      "functionalRequirements": repository.LlmPrompts.USER_PROMPT_FUNCTIONAL_REQUIREMENTS,
+      "nonFunctionalRequirements": repository.LlmPrompts.USER_PROMPT_NON_FUNCTIONAL_REQUIREMENTS,
+      "dataModel": repository.LlmPrompts.USER_PROMPT_DATA_MODEL,
+      "timeline": repository.LlmPrompts.USER_PROMPT_TIMELINE,
+      "scopeAndVision": repository.LlmPrompts.USER_PROMPT_SCOPE_AND_VISION,
+      "currentState": repository.LlmPrompts.USER_PROMPT_CURRENT_STATE))
+  repository.fileSystem.writeJsonFile("mede.config.json", config)
+
+/*mede-cli config apply
+     caso o arquivo tenha sido alterado na pelo usuario, deve usar para aplicar a alteração do config e ajustar os arquivos físicos.
+*/
+[msg:config/apply]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  configOld <- jsonConvert.strToJson(configEntity.content)   
+  assert(repository.fileSystem.exists("mede.config.json"), "mede.config.json not found")
+  config <- repository.fileSystem.readJsonFile("mede.config.json")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNull(cycle, "Cannot apply config while a cycle is active")
+
+  repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.fileNames.initialUnderstanding}", "{configOld.docsRoot}/{config.fileNames.initialUnderstanding}")
+  repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.fileNames.readme}", "{configOld.docsRoot}/{config.fileNames.readme}")
+  repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.fileNames.currentState}", "{configOld.docsRoot}/{config.fileNames.currentState}")
+  repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.fileNames.scopeAndVision}", "{configOld.docsRoot}/{config.fileNames.scopeAndVision}")
+  repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.fileNames.functionalRequirements}", "{configOld.docsRoot}/{config.fileNames.functionalRequirements}")
+  repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.fileNames.nonFunctionalRequirements}", "{configOld.docsRoot}/{config.fileNames.nonFunctionalRequirements}")
+  repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.fileNames.dataModel}", "{configOld.docsRoot}/{config.fileNames.dataModel}")
+  repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.fileNames.timeline}", "{configOld.docsRoot}/{config.fileNames.timeline}")
+
+  foreach fileName in repository.fileSystem.listFiles("{configOld.docsRoot}/{configOld.directories.meetingMinutes}", { resursive: false, extensions:[".md"]}) do
+     if startWith(fileName, configOld.prefixes.meetingMinutes) then
+        pos <- length(configOld.prefixes.meetingMinutes)
+        suffix <- substring(fileName, pos+1, length(fileName)-pos)
+        newFileName <- "{config.prefixes.meetingMinutes}{suffix}"
+        repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.directories.meetingMinutes}/{fileName}", "{configOld.docsRoot}/{configOld.directories.meetingMinutes}/{newFileName}")
+     endIf
+  endForeach
+  repository.fileSystem.renameDirectory("{configOld.docsRoot}/{configOld.directories.meetingMinutes}", "{config.docsRoot}/{config.directories.meetingMinutes}")
+
+  foreach fileName in repository.fileSystem.listFiles("{configOld.docsRoot}/{configOld.directories.architecturalDecisions}", { resursive: false, extensions:[".md"]}) do
+     if startWith(fileName, configOld.prefixes.architecturalDecisions) then
+        pos <- length(configOld.prefixes.architecturalDecisions)
+        suffix <- substring(fileName, pos+1, length(fileName)-pos)
+        newFileName <- "{config.prefixes.architecturalDecisions}{suffix}"
+        repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.directories.architecturalDecisions}/{fileName}", "{configOld.docsRoot}/{configOld.directories.architecturalDecisions}/{newFileName}")
+     endIf
+  endForeach
+  repository.fileSystem.renameDirectory("{configOld.docsRoot}/{configOld.directories.architecturalDecisions}", "{config.docsRoot}/{config.directories.architecturalDecisions}")
+
+  foreach fileName in repository.fileSystem.listFiles("{configOld.docsRoot}/{configOld.directories.systemMaintenanceSpecifications}", { resursive: false, extensions:[".md"]}) do
+     if startWith(fileName, configOld.prefixes.systemMaintenanceSpecifications) then
+        pos <- length(configOld.prefixes.systemMaintenanceSpecifications)
+        suffix <- substring(fileName, pos+1, length(fileName)-pos)
+        newFileName <- "{config.prefixes.systemMaintenanceSpecifications}{suffix}"
+        repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.directories.systemMaintenanceSpecifications}/{fileName}", "{configOld.docsRoot}/{configOld.directories.systemMaintenanceSpecifications}/{newFileName}")
+     endIf
+  endForeach    
+  repository.fileSystem.renameDirectory("{configOld.docsRoot}/{configOld.directories.systemMaintenanceSpecifications}", "{config.docsRoot}/{config.directories.systemMaintenanceSpecifications}")
+
+  foreach fileName in repository.fileSystem.listFiles("{configOld.docsRoot}/{configOld.directories.deliveryLog}", { resursive: false, extensions:[".md"]}) do
+     if startWith(fileName, configOld.prefixes.deliveryLog) then
+        pos <- length(configOld.prefixes.deliveryLog)
+        suffix <- substring(fileName, pos+1, length(fileName)-pos)
+        newFileName <- "{config.prefixes.deliveryLog}{suffix}"
+        repository.fileSystem.renameFile("{configOld.docsRoot}/{configOld.directories.deliveryLog}/{fileName}", "{configOld.docsRoot}/{configOld.directories.deliveryLog}/{newFileName}")
+     endIf
+  endForeach
+  repository.fileSystem.renameDirectory("{configOld.docsRoot}/{configOld.directories.deliveryLog}", "{config.docsRoot}/{config.directories.deliveryLog}")
+
+  repository.fileSystem.renameDirectory(configOld.docsRoot, config.docsRoot)
+  content <- service.jsonConvert.jsonToStr(config)
+  hashContent <- service.crypto.calculateHashFromContent(content)
+  repository.projectConfig.updateContent(configEntity.id, content, hashContent)
+
+
+
+/*
+Este arquivo implementa a leitura, criação inicial e aplicação da configuração física e lógica do projeto.
+
+Premissas importantes:
+
+- o arquivo de configuração do projeto é mede.config.json;
+- este arquivo é a fonte editável pelo usuário para nomes físicos, diretórios, prefixos, idioma, prompts e parâmetros de LLM;
+- o comando config apenas exibe o conteúdo atual de mede.config.json;
+- o comando config init cria mede.config.json com a configuração padrão inicial do projeto;
+- config init só pode ser executado quando mede.config.json ainda não existir;
+- config apply aplica ao projeto físico as alterações feitas manualmente em mede.config.json;
+
+Regras operacionais:
+
+- config apply só pode ser executado quando não houver ciclo ativo;
+- config apply assume que a estrutura física base do projeto já foi criada anteriormente pelo init;
+- por esse motivo, os arquivos vivos base e os diretórios documentais esperados são considerados existentes;
+- fileNames controlam os nomes físicos dos documentos vivos;
+- directories controlam os nomes físicos dos diretórios de documentos históricos;
+- prefixes controlam os prefixos físicos dos documentos históricos;
+- docsRoot controla o diretório raiz da documentação do projeto;
+
+Regras de aplicação:
+
+- config apply deve renomear os arquivos vivos conforme os novos fileNames;
+- config apply deve renomear os arquivos históricos existentes conforme os novos prefixes;
+- config apply deve renomear os diretórios históricos conforme os novos directories;
+- config apply deve atualizar o docsRoot conforme a nova configuração;
+- após aplicar as mudanças físicas, config apply deve persistir o novo conteúdo da configuração no repositório do projeto;
+
+Limitações assumidas nesta versão:
+
+- config apply não executa alterações de forma transacional;
+- se ocorrer falha durante a aplicação, o projeto pode ficar em estado físico intermediário;
+- nessa situação, a correção pode exigir intervenção manual;
+- esta versão prioriza aderência funcional à proposta do MEDE-CLI, não rollback transacional da reconfiguração.
+*/
+
+/*mede-cli config 
+     mostra o conteúdo do arquivo de configuração
+*/
+
+/*
+src\\application\\
+  use-cases\\
+    cycle\\
+      start-cycle.use-case.ts
+      refine-phase.use-case.ts
+      reset-phase.use-case.ts
+      approve-phase.use-case.ts
+      reject-phase.use-case.ts
+      commit-cycle.use-case.ts
+      rollback-cycle.use-case.ts
+      get-cycle-status.use-case.ts
+    changes\\
+      list-pending-chunks.use-case.ts
+      apply-pending-chunk.use-case.ts
+      discard-pending-chunk.use-case.ts
+    files\\
+      list-cycle-files.use-case.ts
+      show-file-diff.use-case.ts
+      show-file-content.use-case.ts
+    config\\
+      show-config.use-case.ts
+      init-config.use-case.ts
+      apply-config.use-case.ts
+    llm\\
+      list-providers.use-case.ts
+      test-llm.use-case.ts
+    init\\
+      init-project.use-case.ts
+
+  services\\
+    cycle-orchestrator.ts
+    phase-execution-service.ts
+    commit-rollback-service.ts
+    context-assembly-service.ts
+    prompt-assembly-service.ts
+    status-projection-service.ts
+
+
+
+src\\cli\\
+  commands\\
+    init-command.ts
+    cycle-command.ts
+    refine-command.ts
+    approve-command.ts
+    reject-command.ts
+    pending-command.ts
+    apply-command.ts
+    discard-command.ts
+    status-command.ts
+    commit-command.ts
+    rollback-command.ts
+    files-command.ts
+    diff-command.ts
+    cat-command.ts
+    llm-command.ts
+    config-command.ts
+
+  presenters\\
+    status-presenter.ts
+    pending-presenter.ts
+    files-presenter.ts
+    diff-presenter.ts
+
+  parsers\\
+    argv-parser.ts
+
+
+
+src\\domain\\
+  entities\\
+    project.ts
+    cycle.ts
+    cycle-phase-execution.ts
+    artifact.ts
+    phase-conversation.ts
+    phase-refinement.ts
+    change-set.ts
+    change-chunk.ts
+    snapshot.ts
+    operational-event.ts
+
+  value-objects\\
+    artifact-path.ts
+    phase-context.ts
+    document-dependency.ts
+    snapshot-entry.ts
+
+  enums\\
+    cycle-status.ts
+    phase-code.ts
+    phase-state.ts
+    proposal-state.ts
+    auto-mode.ts
+    artifact-kind.ts
+    artifact-nature.ts
+    chunk-status.ts
+    review-action.ts
+
+  policies\\
+    cycle-transition-policy.ts
+    phase-dependency-policy.ts
+    snapshot-policy.ts
+    artifact-naming-policy.ts
+    rollback-policy.ts
+
+  services\\
+    cycle-domain-service.ts
+    change-set-domain-service.ts
+
+  repositories\\
+    cycle.repository.ts
+    project.repository.ts
+    phase-execution.repository.ts
+    change-set.repository.ts
+    snapshot.repository.ts
+
+
+src\\infrastructure\\
+  persistence\\
+    sqlite\\
+      database\\
+        database.ts
+      repositories\\
+        sqlite-cycle-repository.ts
+        sqlite-project-repository.ts
+        sqlite-phase-execution-repository.ts
+        sqlite-change-set-repository.ts
+        sqlite-snapshot-repository.ts
+        sqlite-operational-event-repository.ts
+      mappers\\
+
+  filesystem\\
+    repositories\\
+      file-system-repository.ts
+    snapshot\\
+      blind-snapshot-service.ts
+      snapshot-restore-service.ts
+    diff\\
+      unified-diff-generator.ts
+      diff-apply-service.ts
+
+  llm\\
+    providers\\
+      openai-llm-provider.ts
+      ollama-llm-provider.ts
+      anthropic-llm-provider.ts
+      gemini-llm-provider.ts
+      azure-openai-llm-provider.ts
+    factory\\
+      llm-provider-factory.ts
+
+  config\\
+    json-config-repository.ts
+
+  parsers\\
+    markdown-parser.ts
+    llm-response-parser.ts
+
+
+src\\shared\\
+  errors\\
+  types\\
+  utils\\
+  constants\\
+
+*/

@@ -1,0 +1,99 @@
+
+[msg:files/{backup}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  config <- repository.projectConfig.get(project.id)
+  assertNotNull(config, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+
+  response <- ""
+  foreach artifact in repository.cycleArtifact.list(cycle.id) do
+       if backup then
+          if notEmpty(artifact.backupContent) then
+             response <- "{response}{artifact.artifactPath}\n"
+          endIf 
+        elseif artifact.backupContent!=artifact.currentContent then
+          response <- "{response}{artifact.artifactPath}\n"
+       endIf 
+  endForeach
+  success(response)
+
+/*mede-cli diff file 
+   mostra o diff do arquivo "file", no ciclo atual
+*/
+[msg:diff/{file}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  config <- repository.projectConfig.get(project.id)
+  assertNotNull(config, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+
+  response <- ""
+  found <- false
+  foreach artifact in repository.cycleArtifact.list(cycle.id) do
+        if artifact.artifactPath == file then
+            found <- true
+            if artifact.backupContent==artifact.currentContent then
+                response <- "No diffs found"
+            else 
+                response <- service.diff.generateDiff(artifact.backupContent, artifact.currentContent)
+            endIf
+       endIf 
+  endForeach
+  assert(found, "file not found")
+  success(response)
+
+/*mede-cli cat file -b 
+   mostra o conteúdo completo do arquivo "file", no ciclo atual
+   -b: opcional, mostra o conteúdo completo do arquivo de backup "file" no ciclo atual
+*/
+[msg:cat/{file}{backup}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  config <- repository.projectConfig.get(project.id)
+  assertNotNull(config, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+
+  response <- ""
+  found <- false
+  foreach artifact in repository.cycleArtifact.list(cycle.id) do
+        if artifact.artifactPath == file then
+            found <- true
+            if backup && isEmpty(artifact.backupContent) then
+               response <- "File did not exist in initial snapshot"
+            else
+               response <- artifact.backupContent if backup else artifact.currentContent
+            endIf     
+       endIf 
+  endForeach
+  assert(found, "file not found")
+  success(response)
+
+
+/*
+Este arquivo implementa apenas comandos de inspeção do ciclo ativo atual.
+
+Premissas importantes:
+
+- todos os comandos dependem da existência de um ciclo aberto;
+- caso não exista ciclo ativo, o comando deve falhar com "No active cycle for current project";
+- files lista apenas os arquivos efetivamente modificados ou criados no ciclo atual;
+- um arquivo é considerado modificado quando artifact.backupContent != artifact.currentContent;
+- files -b lista os arquivos presentes no snapshot inicial do ciclo, independentemente de terem sido modificados posteriormente;
+- diff file sempre compara o estado atual do arquivo com o estado salvo no snapshot inicial do ciclo;
+- para arquivos criados durante o ciclo, o conteúdo anterior é considerado vazio;
+- cat file mostra o conteúdo atual do arquivo no ciclo;
+- cat file -b mostra o conteúdo salvo no snapshot inicial;
+- para arquivos criados durante o ciclo, cat file -b deve retornar vazio ou informar que o arquivo não existia no snapshot inicial;
+- documentos históricos criados durante o ciclo também devem aparecer em files quando possuírem conteúdo atual;
+- o comando trabalha sobre CycleArtifact e não depende de nomes físicos hardcoded de arquivos;
+- a resolução do arquivo deve ocorrer a partir de artifactPath, canonicalName ou configuração documental do projeto.
+*/
+
+/*mede-cli files -b
+   lista os arquivos alterados ou criados ate o momento no ciclo atual
+   -b: opcional, lista os arquivos de backup do ciclo atual
+*/

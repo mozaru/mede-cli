@@ -1,0 +1,53 @@
+
+[msg:init/{prompt}{files}]
+  project <- repository.docs.reconstructProject()
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  config <- jsonConvert.strToJson(configEntity.content)
+
+  r <- service.cycle.beginInitialization(project.id) 
+  cycle <- r.cycle
+  phase <- r.phase
+  
+  repository.fileSystem.ensureDirectory("{config.content.docsRoot}/{config.content.directories.meetingMinutes}")
+  repository.fileSystem.ensureDirectory("{config.content.docsRoot}/{config.content.directories.architecturalDecisions}")
+  repository.fileSystem.ensureDirectory("{config.content.docsRoot}/{config.content.directories.systemMaintenanceSpecifications}")
+  repository.fileSystem.ensureDirectory("{config.content.docsRoot}/{config.content.directories.deliveryLog}")
+
+  repository.fileSystem.ensureFile("{config.content.docsRoot}/{config.content.fileNames.initialUnderstanding}")
+  repository.fileSystem.ensureFile("{config.content.docsRoot}/{config.content.fileNames.readme}")
+  repository.fileSystem.ensureFile("{config.content.docsRoot}/{config.content.fileNames.currentState}")
+  repository.fileSystem.ensureFile("{config.content.docsRoot}/{config.content.fileNames.scopeAndVision}")
+  repository.fileSystem.ensureFile("{config.content.docsRoot}/{config.content.fileNames.functionalRequirements}")
+  repository.fileSystem.ensureFile("{config.content.docsRoot}/{config.content.fileNames.nonFunctionalRequirements}")
+  repository.fileSystem.ensureFile("{config.content.docsRoot}/{config.content.fileNames.dataModel}")
+  
+  changeSet <- service.phaseConversation.sendMessage(config, phase, prompt, files)
+  if isnull(changeSet) then
+   repository.phase.empty(phase.id)   
+  else
+   repository.phase.nonEmpty(phase.id)
+  endif
+
+  refreshedPhase <- repository.phase.getById(phase.id)
+
+  success(service.status.generate(project,cycle,refreshedPhase,changeSet))
+
+
+/*
+init prepara a baseline mínima e a configuração inicial;
+o init deve criar todos os diretorios e todos os arquivos base, entretando estes devem estar com o conteudo vazio,
+nessa baseline mínima, o único documento documental criado\\atualizado pela LLM é readme.md, os demais documentos são criados mas ficam vazios
+entendimento-inicial.md continua sendo um artefato válido da metodologia, mas ele fica vazio no init, pois seu conteudo deve ser gerado depois que tivermos todos os documentos com conteudo util pela primeira vez, assim ele representa-ra de fato, o entendimento inicial;
+quando necessário, ele pode surgir depois por derivação controlada a partir de um estado fundador já consolidado, possivelmente reaproveitando a primeira versão de visao-e-escopo.md, desde que isso seja uma decisão explícita do projeto e não uma cópia cega
+o entendimento inicial pode ser derivado do primeiro estado consolidado de visão e escopo, complementado quando necessário com premissas, backlog inicial e planejamento inicial.
+*/
+
+/*
+mede-cli init -p ".." -f "file1;dir;file2;"
+  criar baseline operacional\\configuração inicial do projeto.
+  parâmetros:
+     -p: opcional, prompt que sera usado pela llm, junto com o contexto do diretório corrente e com os arquivos em -f
+     -f: opcional, lista de arquivos ou diretórios que devem ter seus conteúdos inseridos no contexto para a llm.
+*/

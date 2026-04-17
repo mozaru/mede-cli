@@ -1,0 +1,43 @@
+{
+  "configVersion": 1,
+  "language": "pt-BR",
+  "docsRoot": "docs",
+  "directories": {
+    "meetingMinutes": "atas",
+    "architecturalDecisions": "adr",
+    "systemMaintenanceSpecifications": "esm",
+    "deliveryLog": "log-entregas"
+  },
+  "fileNames": {
+    "initialUnderstanding": "entendimento-inicial.md",
+    "readme": "readme.md",
+    "currentState": "situacao-atual.md",
+    "scopeAndVision": "visao-e-escopo.md",
+    "functionalRequirements": "requisitos-funcionais.md",
+    "nonFunctionalRequirements": "requisitos-nao-funcionais.md",
+    "dataModel": "modelo-de-dados.md",
+    "timeline": "cronograma.md"
+  },
+  "prefixes": {
+    "meetingMinutes": "min",
+    "architecturalDecisions": "adr",
+    "systemMaintenanceSpecifications": "esm",
+    "deliveryLog": "leg"
+  },
+  "llm": {
+    "provider": "openai-compatible",
+    "model": "gpt-4.1-mini",
+    "endpoint": "https://api.openai.com/v1",
+    "apiKeyEnv": "OPENAI_API_KEY",
+    "temperature": 0.1,
+    "maxTokens": 4000,
+    "timeoutMs": 60000
+  },
+  "systemPrompts": {
+    "baselineGeneration": "",
+    "meetingRecord": "",
+    "historicalDerivations": "",
+    "livingDocsSync": "",
+    "finalSync": ""
+  }
+}

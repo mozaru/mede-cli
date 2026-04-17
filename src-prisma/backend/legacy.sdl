@@ -1,0 +1,15 @@
+[legacy:diff]
+    operationAsync(generateDiff, args(contentOld:string, contentNew:string), result(Array(chunkModel)))
+    operationAsync(applyDiff, args(content: string, diff:chunkModel), result(string))
+    
+[legacy:crypto]
+    operationAsync(calculateHashFromContent, args(content:string), result(string))
+    operationAsync(calculateHashFromJson, args(content: json), result(string))
+
+[legacy:jsonConvert]
+    operationAsync(strToJson, args(content:string), result(json))
+    operationAsync(jsonToStr, args(content: json), result(string))
+
+
+[legacy:doc]
+    operationAsync(reconstructProject, args())

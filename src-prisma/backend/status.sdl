@@ -1,0 +1,215 @@
+
+[method:phaseStateText/{phase}]
+  state <- ""
+  if phase.status=="REFINING" then
+     state <- "aguardando refine"
+  elseif phase.status=="AWAITING_APPROVAL" then
+     state <- "aguardando approve/reject"
+  elseif phase.status=="APPROVED" then
+     state <- "aprovada"
+  elseif phase.status=="REJECTED" then
+     state <- "rejeitada"
+  elseif phase.status=="SKIPPED" then
+     state <- "ignorada"
+  else
+     state <- phase.status
+  endIf
+  success(state)
+
+[method:proposalStateText/{phase}]
+  proposal <- ""
+  if phase.proposalState=="EMPTY" then
+     proposal <- "vazia"
+  elseif phase.proposalState=="NON_EMPTY" then
+     proposal <- "não vazia"
+  else
+     proposal <- "não gerada"
+  endIf
+  success(proposal)
+
+[method:autoModeText/{cycle}]
+  mode <- "none"
+  if cycle.autoMode=="APPROVE_ALL" then
+     mode <- "approve-all"
+  elseif cycle.autoMode=="REJECT_ALL" then
+     mode <- "reject-all"
+  endIf
+  success(mode)
+
+[method:countRefinements/{phase}]
+  total <- 0
+  foreach cs in repository.changeSet.list(phase.id) do
+     total <- total + 1
+  endForeach
+  success(total)
+
+[method:countChangedFiles/{cycle}]
+  total <- 0
+  foreach artifact in repository.cycleArtifact.list(cycle.id) do
+     if notIsEmpty(artifact.backupContent) && artifact.backupContent != artifact.currentContent then
+        total <- total + 1
+     endIf
+  endForeach
+  success(total)
+
+[method:countCreatedFiles/{cycle}]
+  total <- 0
+  foreach artifact in repository.cycleArtifact.list(cycle.id) do
+     if isEmpty(artifact.backupContent) && notIsEmpty(artifact.currentContent) then
+        total <- total + 1
+     endIf
+  endForeach
+  success(total)
+
+[method:availableActions/{cycle}{phase}]
+  actions <- ""
+  if cycle.status=="OPEN" then
+     if phase.status=="REFINING" then
+        actions <- actions + "- refine\n"
+        actions <- actions + "- rollback\n"
+     elseif phase.status=="AWAITING_APPROVAL" then
+        actions <- actions + "- approve\n"
+        actions <- actions + "- reject\n"
+        actions <- actions + "- rollback\n"
+     endIf
+  elseif cycle.status=="AWAITING_COMMIT" then
+     actions <- actions + "- commit\n"
+     actions <- actions + "- rollback\n"
+  endIf
+  success(actions)
+
+
+[method:generate/{project}{cycle}{phase}{changeSet}]
+  phaseState <- phaseStateText(phase)
+  proposalState <- proposalStateText(phase)
+  autoMode <- autoModeText(cycle)
+  refinements <- countRefinements(phase)
+  changedFiles <- countChangedFiles(cycle)
+  createdFiles <- countCreatedFiles(cycle)
+  actions <- availableActions(cycle, phase)
+
+  artifactName <- "-"
+  changeSetInfo <- "-"
+  if notIsNull(changeSet) then
+     artifactName <- changeSet.fileName
+     changeSetInfo <- "{changeSet.currentChangeChunkIndex}/{changeSet.changeChunkCount}"
+  endIf
+
+  success("\n    Cycle        : {cycle.status}\n    Phase        : {phase.name}\n    Artifact     : {artifactName}\n    State        : {phaseState}\n    Proposal     : {proposalState}\n    Refinements  : {refinements}\n    Changed files: {changedFiles}\n    Created files: {createdFiles}\n    Auto-mode    : {autoMode}\n\n    Project : {project.name}\n      RootPath     : {project.rootProjectPath}\n      DocsPath     : {project.docsRootPath}\n      Language     : {project.documentationLanguage, 60}\n      Cycle        : {cycle.status}\n      Step         : {cycle.currentPhaseIndex}/{cycle.phaseCount}\n      ChangeSet    : {changeSetInfo}\n\n    Available actions:\n    {actions}\n")
+
+[method:successCommit/{project}{cycle}]
+  success("Cycle {cycle.status}\n  Project : {project.name}\n     RootPath     : {project.rootProjectPath}\n     DocsPath     : {project.docsRootPath}\n     Language     : {project.documentationLanguage, 60}\n     Cycle        : {cycle.status}\n  Commit successful.\n")
+
+[method:successRollback/{project}{cycle}]
+  success("Cycle {cycle.status}\n  Project : {project.name}\n     RootPath     : {project.rootProjectPath}\n     DocsPath     : {project.docsRootPath}\n     Language     : {project.documentationLanguage, 60}\n     Cycle        : {cycle.status}\n  Rollback successful.\n")
+
+/*
+mede-cli status 
+   mostrar o status atual, se tem ou não algum ciclo aberto, e em que fase, etc...
+.ciclo aberto ou fechado;
+.fase atual;
+.artefato atual;
+.estado da fase:
+    .aguardando refine;
+    .aguardando approve;
+    .aguardando reject;
+    .aguardando commit;
+.se a proposta atual está vazia ou não;
+.quantos refinamentos já ocorreram;
+.quantos arquivos foram alterados\\criados;
+.se existe modo --all ativo;
+.possibilidade atual:
+    .pode refinar;
+    .pode aprovar;
+    .pode rejeitar;
+    .pode commitar;
+    .pode rollbackar.
+ex:
+Cycle: aberto
+Phase: ATA
+Artifact: ata-2026-04-04.md
+State: aguardando approve\\reject
+Proposal: não vazia
+Refinements: 3
+Changed files: 1
+Created files: 1
+Auto-mode: none
+Available actions:
+- refine
+- approve
+- reject
+- rollback
+*/
+
+[msg:status]
+  project <- repository.project.getCurrent()
+  result <- "Project not initialized"
+  if isNotNull(project) then
+    config <- repository.projectConfig.get(project.id)
+    assertNotNull(config, "Config not found")
+    cycle <- repository.cycle.getCurrent(project.id)
+    if isNull(cycle) then
+        result <- "   No cycle in progress\n   Project : {project.name}\n   RootPath     : {project.rootProjectPath}\n   DocsPath     : {project.docsRootPath}\n   Language     : {project.documentationLanguage, 60}\n   Cycle        : None\n"
+    else
+        phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+        assertNotNull(phase, "Phase not found")
+        changeSet <- repository.changeSet.getCurrent(phase.id)
+        result <- generate(project,cycle,phase,changeSet)
+    endIf
+  endIf
+  success(result)
+
+
+
+/*
+Este arquivo implementa a projeção textual do estado operacional atual do projeto e do ciclo em andamento.
+
+Premissas importantes:
+
+- o comando status depende da existência de um projeto atual;
+- se não houver projeto atual, o comando deve retornar "Project not initialized";
+- o comando status depende da configuração persistida do projeto;
+- o comando deve funcionar tanto com ciclo ativo quanto sem ciclo ativo;
+- quando não houver ciclo ativo, o status deve informar "No cycle in progress";
+- quando houver ciclo ativo, o status deve projetar o estado corrente do ciclo, da fase e do ChangeSet atual;
+
+Regras de projeção do estado:
+
+- phaseStateText traduz o estado técnico da fase para uma forma textual amigável;
+- proposalStateText traduz o estado da proposta atual da fase;
+- autoModeText traduz o modo automático corrente do ciclo;
+- countRefinements conta quantos ChangeSets já foram gerados para a fase atual;
+- countChangedFiles conta quantos arquivos do ciclo possuem backupContent diferente de currentContent;
+- countCreatedFiles conta quantos arquivos do ciclo não existiam no snapshot inicial e passaram a possuir conteúdo atual;
+- availableActions deriva as ações disponíveis a partir do estado atual do ciclo e da fase;
+
+Regras do status rico:
+
+- generate deve montar uma visão consolidada contendo:
+  - status do ciclo;
+  - fase atual;
+  - artefato atual;
+  - estado textual da fase;
+  - estado textual da proposta;
+  - quantidade de refinamentos;
+  - quantidade de arquivos alterados;
+  - quantidade de arquivos criados;
+  - modo automático atual;
+  - informações do projeto;
+  - posição da etapa atual no ciclo;
+  - posição atual no ChangeSet, quando houver;
+  - ações disponíveis no momento;
+- se não existir ChangeSet atual para a fase, Artifact e ChangeSet devem ser exibidos como "-";
+
+Regras de ações disponíveis:
+
+- quando o ciclo estiver OPEN e a fase estiver REFINING, as ações disponíveis são refine e rollback;
+- quando o ciclo estiver OPEN e a fase estiver AWAITING_APPROVAL, as ações disponíveis são approve, reject e rollback;
+- quando o ciclo estiver AWAITING_COMMIT, as ações disponíveis são commit e rollback;
+
+Regras auxiliares:
+
+- successCommit projeta a mensagem de sucesso após commit do ciclo;
+- successRollback projeta a mensagem de sucesso após rollback do ciclo;
+- este arquivo não altera estado de domínio; ele apenas projeta informações operacionais já persistidas.
+*/

@@ -1,0 +1,253 @@
+
+[method:getSystemPrompt/{config}{promptName}]
+   prompt <- ""
+   case promptName of
+     'meeting': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_MEETING if isEmpty(config.systemPrompts.meeting) else config.systemPrompts.meeting  
+     'architecturalDecisions': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_ADR if isEmpty(config.systemPrompts.architecturalDecisions) else config.systemPrompts.architecturalDecisions  
+     'systemMaintenanceSpecifications': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_ESM if isEmpty(config.systemPrompts.systemMaintenanceSpecifications) else config.systemPrompts.systemMaintenanceSpecifications  
+     'deliveryLog': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_DELIVERY_LOG if isEmpty(config.systemPrompts.deliveryLog) else config.systemPrompts.deliveryLog  
+
+     'functionalRequirements': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_FUNCTIONAL_REQUIREMENTS if isEmpty(config.systemPrompts.functionalRequirements) else config.systemPrompts.functionalRequirements  
+     'nonFunctionalRequirements': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS if isEmpty(config.systemPrompts.nonFunctionalRequirements) else config.systemPrompts.nonFunctionalRequirements  
+     'dataModel': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_DATA_MODEL if isEmpty(config.systemPrompts.dataModel) else config.systemPrompts.dataModel  
+     'timeline': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_TIMELINE if isEmpty(config.systemPrompts.timeline) else config.systemPrompts.timeline  
+
+     'scopeAndVision': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_SCOPE_AND_VISION if isEmpty(config.systemPrompts.scopeAndVision) else config.systemPrompts.scopeAndVision  
+     'readme': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_README if isEmpty(config.systemPrompts.readme) else config.systemPrompts.readme  
+     'currentState': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_CURRENT_STATE if isEmpty(config.systemPrompts.currentState) else config.systemPrompts.currentState  
+     'initialUnderstanding': prompt <- repository.LlmPrompts.SYSTEM_PROMPT_INITIAL_UNDERSTANDING if isEmpty(config.systemPrompts.initialUnderstanding) else config.systemPrompts.initialUnderstanding  
+   endCase
+   success(prompt)
+
+
+[method:getPrompt/{config}{promptName}]
+   prompt <- ""
+   case promptName of
+     'meeting': prompt <- repository.LlmPrompts.USER_PROMPT_MEETING if isEmpty(config.prompts.meeting) else config.prompts.meeting  
+     'architecturalDecisions': prompt <- repository.LlmPrompts.USER_PROMPT_ADR if isEmpty(config.prompts.architecturalDecisions) else config.prompts.architecturalDecisions  
+     'systemMaintenanceSpecifications': prompt <- repository.LlmPrompts.USER_PROMPT_ESM if isEmpty(config.prompts.systemMaintenanceSpecifications) else config.prompts.systemMaintenanceSpecifications  
+     'deliveryLog': prompt <- repository.LlmPrompts.USER_PROMPT_DELIVERY_LOG if isEmpty(config.prompts.deliveryLog) else config.prompts.deliveryLog  
+
+     'functionalRequirements': prompt <- repository.LlmPrompts.USER_PROMPT_FUNCTIONAL_REQUIREMENTS if isEmpty(config.prompts.functionalRequirements) else config.prompts.functionalRequirements  
+     'nonFunctionalRequirements': prompt <- repository.LlmPrompts.USER_PROMPT_NON_FUNCTIONAL_REQUIREMENTS if isEmpty(config.prompts.nonFunctionalRequirements) else config.prompts.nonFunctionalRequirements  
+     'dataModel': prompt <- repository.LlmPrompts.USER_PROMPT_DATA_MODEL if isEmpty(config.prompts.dataModel) else config.prompts.dataModel  
+     'timeline': prompt <- repository.LlmPrompts.USER_PROMPT_TIMELINE if isEmpty(config.prompts.timeline) else config.prompts.timeline  
+
+     'scopeAndVision': prompt <- repository.LlmPrompts.USER_PROMPT_SCOPE_AND_VISION if isEmpty(config.prompts.scopeAndVision) else config.prompts.scopeAndVision  
+     'readme': prompt <- repository.LlmPrompts.USER_PROMPT_README if isEmpty(config.prompts.readme) else config.prompts.readme  
+     'currentState': prompt <- repository.LlmPrompts.USER_PROMPT_CURRENT_STATE if isEmpty(config.prompts.currentState) else config.prompts.currentState  
+     'initialUnderstanding': prompt <- repository.LlmPrompts.USER_PROMPT_INITIAL_UNDERSTANDING if isEmpty(config.prompts.initialUnderstanding) else config.prompts.initialUnderstanding  
+   endCase
+   success(prompt)
+
+[method:sendMessage/{config}{phase}{customPrompt}{attachments}]
+   systemPrompt <- getSystemPrompt(config, phase.promptName)
+   prompt <- getPrompt(config, phase.promptName) if isEmpty(customPrompt) else customPrompt
+
+   foreach f in attachments do
+     content <- repository.fileSystem.readFile(f)
+     repository.phaseAttachment.insert(value(
+       phaseId: phase.id,
+       createdAt: getCurrentDateTime(),
+       actor: "user",
+       filePath: f, 
+       fileName: f,
+       content: content,
+       contentText: content
+     ))
+   endForeach
+
+
+   msg <- ""
+   foreach m in repository.phaseConversation.list(phase.id) do
+    msg <- msg + "Actor: {m.actor}  message: ````\n{m.content}\n```\n"    
+   endForeach
+
+   attachs <- ""
+   foreach f in repository.phaseAttachment.list(phase.id) do
+    attachs <- attachs + "Attachment: {f.fileName}  content: ````\n{f.contentText}\n````\n"    
+   endForeach
+
+   docs <- ""
+   foreach f in phase.inputFiles do
+    cycleArtifact <- repository.cycleArtifact.getFromPath(phase.cycleId,f)
+    docs <- docs + "documentId:{cycleArtifact.id}  documentName: {cycleArtifact.artifactPath}  content: ````\n{cycleArtifact.currentContent}\n````\n"    
+   endForeach    
+    
+   llm <- repository.llmFactory.create(config)
+   
+   resp <- llm.generateJson("{systemPrompt}\n\n{docs}\n\n{attachs}\n\n{msg}\n\n{prompt}\n")
+
+   repository.phaseConversation.insert(value(
+       phaseId: phase.id,
+       createdAt: getCurrentDateTime(),
+       actor: "user",
+       content: prompt
+   ))
+
+   repository.phaseConversation.insert(value(
+       phaseId: phase.id,
+       createdAt: getCurrentDateTime(),
+       actor: "assistant",
+       content: resp.rawText
+   ))
+
+  cycleArtifact <- repository.cycleArtifact.getFromPath(phase.cycleId, phase.outputFile) 
+  if isNull(cycleArtifact) then
+    backupContent <- repository.fileSystem.readFile(phase.outputFile) if repository.fileSystem.exists(phase.outputFile) else "" 
+    cycleArtifact = repository.cycleArtifact.insert( values( 
+      cycleId: phase.cycleId, 
+      backupContent: backupContent,
+      currentContent: "",
+      canonicalName: "",
+      canonicalType: phase.docTypeOutput, 
+      artifactPath: phase.outputFile,
+      startedAt: getCurrentDateTime(),
+      updatedAt: getCurrentDateTime()
+    ) )
+  endIf  
+
+   changeSet <- repository.changeSet.insert(values(
+    phaseId: phase.id,
+    cycleArtifactId: cycleArtifact.id,
+    fileName: cycleArtifact.artifactPath,
+    completed: false,
+    currentChangeChunkIndex: 1,
+    changeChunkCount: resp.chunkCount,
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()
+   ))
+
+   foreach chunk in resp.chunks do
+      repository.changeChunk.insert(values(
+        phaseId: phase.id,
+        changeSetId: changeSet.id,
+        index: chunk.index,
+        status: AWAITING_APPROVAL,
+        blockLocation: chunk.location,
+        changeContent: chunk.content,
+        startedAt: getCurrentDateTime(),
+        updatedAt: getCurrentDateTime()
+      ))
+   endForeach
+
+   success(changeSet)
+
+[method:sendMessage/{config}{phase}]
+   changeSet <- sendMessage(config, phase, "", [])
+   success(changeSet)
+
+[method:applyAll/{phase}{changeSet}]
+   doc <- repository.cycleArtifact.get(changeSet.cycleArtifactId)
+   newContent <- doc.currentContent
+   foreach chunk in repository.changeChunk.list(changeSet.id) do 
+     if chunk.status=="AWAITING_APPROVAL" && chunk.index>=changeSet.currentChangeChunkIndex  then
+       newContent <- service.diff.applyDiff(newContent, chunkModel(index:chunk.index, location:chunk.blockLocation, content:chunk.changeContent))
+       repository.changeChunk.approve(chunk.id)
+     endIf 
+   endForeach
+   repository.cycleArtifact.updateContent(doc.id, newContent)
+   repository.fileSystem.writeFile(changeSet.fileName, newContent)
+   repository.changeSet.updateChunkIndex(changeSet.id, changeSet.changeChunkCount)
+   repository.changeSet.updateComplete(changeSet.id)
+   repository.phase.awaitingApproval(phase.id)
+   success(changeSet)
+
+[method:apply/{phase}{changeSet}]
+   chunk <- repository.changeChunk.getByIndex(changeSet.id, changeSet.currentChangeChunkIndex)
+   assert(chunk.status=="AWAITING_APPROVAL", "diff not in awaiting approval")
+   doc <- repository.cycleArtifact.get(changeSet.cycleArtifactId)
+   newContent <- service.diff.applyDiff(doc.currentContent, chunkModel(index:chunk.index, location:chunk.blockLocation, content:chunk.changeContent))
+   repository.cycleArtifact.updateContent(doc.id, newContent)
+   repository.changeChunk.approve(chunk.id)
+   if changeSet.currentChangeChunkIndex>=changeSet.changeChunkCount then
+     repository.changeSet.updateChunkIndex(changeSet.id, changeSet.changeChunkCount)
+     repository.changeSet.updateComplete(changeSet.id)
+     repository.phase.awaitingApproval(phase.id)
+   else
+     repository.changeSet.updateChunkIndex(changeSet.id, changeSet.currentChangeChunkIndex+1)
+   endIf
+   repository.fileSystem.writeFile(changeSet.fileName, newContent)
+   success(repository.changeSet.getCurrent())
+
+[method:discardAll/{phase}{changeSet}]
+   foreach chunk in repository.changeChunk.list(changeSet.id) do
+     if chunk.status=="AWAITING_APPROVAL" && chunk.index>=changeSet.currentChangeChunkIndex  then
+       repository.changeChunk.discard(chunk.id)
+     endIf 
+   endForeach
+   repository.changeSet.updateChunkIndex(changeSet.id, changeSet.changeChunkCount)
+   repository.changeSet.updateComplete(changeSet.id)
+   success(changeSet)
+
+[method:discard/{phase}{changeSet}]
+   chunk <- repository.changeChunk.getByIndex(changeSet.id, changeSet.currentChangeChunkIndex)
+   assert(chunk.status=="AWAITING_APPROVAL", "diff not in awaiting approval")
+   repository.changeChunk.discard(chunk.id)
+   if changeSet.currentChangeChunkIndex>=changeSet.changeChunkCount then
+     repository.changeSet.updateChunkIndex(changeSet.id, changeSet.changeChunkCount)
+     repository.changeSet.updateComplete(changeSet.id)
+   else
+     repository.changeSet.updateChunkIndex(changeSet.id, changeSet.currentChangeChunkIndex+1)
+   endIf
+   success(repository.changeSet.getCurrent())
+
+
+
+/*
+Este arquivo implementa a montagem de contexto para a LLM, o envio de mensagens de refinamento e a geração/aplicação de ChangeSets e ChangeChunks.
+
+Premissas importantes:
+
+- toda interação ocorre dentro de uma fase específica de um ciclo;
+- cada fase possui histórico próprio de conversa, anexos e refinamentos;
+- os prompts utilizados dependem do promptName definido na configuração da fase;
+- getSystemPrompt resolve o system prompt configurado para o tipo de refinamento atual;
+- getPrompt resolve o prompt de usuário configurado para o tipo de refinamento atual;
+- quando não houver customPrompt, deve ser utilizado o prompt padrão da configuração;
+- quando houver customPrompt, ele substitui completamente o prompt padrão;
+
+Regras de montagem de contexto:
+
+- o contexto enviado para a LLM é composto por:
+  - system prompt;
+  - documentos de entrada da fase;
+  - anexos acumulados da fase;
+  - histórico de conversa da fase;
+  - prompt corrente;
+- os documentos de entrada da fase são resolvidos a partir de cycleArtifact.currentContent;
+- os anexos recebidos no envio são persistidos como PhaseAttachment da fase;
+- os anexos persistidos continuam sendo reutilizados nas próximas interações da mesma fase;
+- o histórico de conversa é persistido em PhaseConversation;
+- cada nova interação adiciona uma entrada do usuário e uma entrada da LLM ao histórico da fase;
+
+Regras de geração de ChangeSet:
+
+- toda resposta estruturada da LLM deve gerar exatamente um ChangeSet;
+- o ChangeSet deve apontar para o documento-alvo a ser refinado;
+- a resposta da LLM deve informar:
+  - documentId;
+  - documentName;
+  - chunkCount;
+  - chunks;
+  - rawText;
+- cada chunk da resposta deve gerar um ChangeChunk com status AWAITING_APPROVAL;
+- currentChangeChunkIndex sempre inicia em 1;
+- changeChunkCount representa a quantidade total de chunks retornados pela LLM;
+
+Regras de aplicação:
+
+- apply aplica apenas o chunk corrente do ChangeSet;
+- applyAll aplica todos os chunks pendentes a partir do índice corrente;
+- discard rejeita apenas o chunk corrente do ChangeSet;
+- discardAll rejeita todos os chunks pendentes a partir do índice corrente;
+- somente chunks em estado AWAITING_APPROVAL podem ser aplicados ou descartados;
+- applyDiff opera sobre cycleArtifact.currentContent;
+- após aplicar um chunk, o conteúdo atual do documento deve ser atualizado imediatamente;
+- após aplicar ou descartar um chunk, o índice corrente deve avançar;
+- quando o último chunk for resolvido, o ChangeSet deve ser marcado como completo;
+- applyAll e discardAll devem mover o índice corrente para o final do ChangeSet;
+- applyAll e discardAll devem marcar o ChangeSet como completo;
+- discard não altera o conteúdo atual do documento;
+- discardAll não altera o conteúdo atual do documento.
+*/

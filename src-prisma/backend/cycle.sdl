@@ -1,0 +1,499 @@
+[method:createBackupDocs/{projectId}{cycleId}]
+  project <- repository.project.get(projectId)
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  assertFalse(repository.cycleArtifact.existAnyByCycle(cycleId), "Backup already exist!")
+
+  config <- jsonConvert.strToJson(configEntity.content)
+
+  content <- repository.fileSystem.readFile("{config.docsRoot}/{config.fileNames.initialUnderstanding}")
+  repository.cycleArtifact.insert( values( 
+    cycleId:cycleId, 
+    backupContent:content,
+    currentContent:content,
+    canonicalName:"initialUnderstanding", 
+    canonicalType:"FROZEN", 
+    artifactPath: "{config.docsRoot}/{config.fileNames.initialUnderstanding}",
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()) )
+  
+  content <- repository.fileSystem.readFile("{config.docsRoot}/{config.fileNames.readme}")
+  repository.cycleArtifact.insert( values( 
+    cycleId:cycleId, 
+    backupContent:content,
+    currentContent:content,
+    canonicalName:"readme", 
+    canonicalType:"LIVE", 
+    artifactPath: "{config.docsRoot}/{config.fileNames.readme}",
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()) )
+
+  content <- repository.fileSystem.readFile("{config.docsRoot}/{config.fileNames.currentState}")
+  repository.cycleArtifact.insert( values( 
+    cycleId:cycleId, 
+    backupContent:content,
+    currentContent:content,
+    canonicalName:"currentState", 
+    canonicalType:"LIVE", 
+    artifactPath: "{config.docsRoot}/{config.fileNames.currentState}",
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()) )
+
+  content <- repository.fileSystem.readFile("{config.docsRoot}/{config.fileNames.scopeAndVision}")
+  repository.cycleArtifact.insert( values( 
+    cycleId:cycleId, 
+    backupContent:content,
+    currentContent:content,
+    canonicalName:"scopeAndVision", 
+    canonicalType:"LIVE", 
+    artifactPath: "{config.docsRoot}/{config.fileNames.scopeAndVision}",
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()) )
+
+  content <- repository.fileSystem.readFile("{config.docsRoot}/{config.fileNames.functionalRequirements}")
+  repository.cycleArtifact.insert( values( 
+    cycleId:cycleId, 
+    backupContent:content,
+    currentContent:content,
+    canonicalName:"functionalRequirements", 
+    canonicalType:"LIVE", 
+    artifactPath: "{config.docsRoot}/{config.fileNames.functionalRequirements}",
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()) )
+
+  content <- repository.fileSystem.readFile("{config.docsRoot}/{config.fileNames.nonFunctionalRequirements}")
+  repository.cycleArtifact.insert( values( 
+    cycleId:cycleId, 
+    backupContent:content,
+    currentContent:content,
+    canonicalName:"nonFunctionalRequirements", 
+    canonicalType:"LIVE", 
+    artifactPath: "{config.docsRoot}/{config.fileNames.nonFunctionalRequirements}",
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()) )
+
+  content <- repository.fileSystem.readFile("{config.docsRoot}/{config.fileNames.dataModel}")
+  repository.cycleArtifact.insert( values( 
+    cycleId:cycleId, 
+    backupContent:content,
+    currentContent:content,
+    canonicalName:"dataModel", 
+    canonicalType:"LIVE", 
+    artifactPath: "{config.docsRoot}/{config.fileNames.dataModel}",
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()) )
+
+  content <- repository.fileSystem.readFile("{config.docsRoot}/{config.fileNames.timeline}")
+  repository.cycleArtifact.insert( values( 
+    cycleId:cycleId, 
+    backupContent:content,
+    currentContent:content,
+    canonicalName:"timeline", 
+    canonicalType:"LIVE", 
+    artifactPath: "{config.docsRoot}/{config.fileNames.timeline}",
+    startedAt: getCurrentDateTime(),
+    updatedAt: getCurrentDateTime()) )      
+
+[method:restoreBackup/{cycle}]
+  foreach artifact in repository.cycleArtifact.list(cycle.id) do
+        if artifact.canonicalType == "HISTORICAL" then
+          repository.fileSystem.deleteFile(artifact.artifactPath)
+        elif artifact.canonicalType == "LIVE" then
+          repository.fileSystem.writeFile(artifact.artifactPath, artifact.backupContent)
+        endIf
+  endForeach
+
+[method:clearCycle/{cycle}]
+  foreach phase in repository.phase.list(cycle.id) do
+    repository.changeChunk.deleteFromPhase(phase.id)
+    repository.changeSet.deleteFromPhase(phase.id)        
+    repository.phaseAttachment.deleteFromPhase(phase.id)
+    repository.phaseConversation.deleteFromPhase(phase.id)
+  endForeach
+
+  repository.phase.deleteFromCycle(cycle.id)
+  repository.cycleArtifact.deleteFromCycle(cycle.id)
+  repository.cycle.delete(cycle.id)
+  
+[method:beginInitialization/{projectId}]
+  project <- repository.project.get(projectId)
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  config <- jsonConvert.strToJson(configEntity.content)
+
+  cycle <- repository.cycle.getCurrent(projectId)
+  assertNull(cycle, "There is already a cycle in operation.")
+
+  cycle <- repository.cycle.insert(values(
+      projectId:project.id, 
+      status: "OPEN", 
+      currentPhaseIndex:1, 
+      phaseCount:1, 
+      autoMode:"NONE",
+      startedAt:getCurrentDateTime()))
+
+  rmFileName <- "{config.docsRoot}/{config.fileNames.readme}"
+
+  phase <- repository.phase.insert(values(
+    cycleId: cycle.id,
+    name: "GENERATE_README",
+    index: 1,
+    status: "REFINING",
+    proposalState: "NOT_GENERATED",
+    inputFiles: list(),
+    outputFile: rmFileName,
+    docTypeOutput: "LIVE", 
+    promptName: "readme",
+    startedAt: getCurrentDateTime()))
+
+  createBackupDocs(project.id, cycle.id)
+
+  success(json( 
+    cycle:cycle, 
+    phase: phase))
+
+[method:begin/{projectId}]
+  project <- repository.project.get(projectId)
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  config <- jsonConvert.strToJson(configEntity.content)
+
+  cycle <- repository.cycle.getCurrent(project.id)
+  assertNull(cycle, "There is already a cycle in operation.")
+
+  dt <- getCurrentDateTime()
+  dtStr <- formatDate(dt,"yyyy-mm-dd")
+  ataFileName <- "{config.docsRoot}/{config.directories.meetingMinutes}/{config.prefixes.meetingMinutes}-{dtStr}.md" 
+  adrFileName <- "{config.docsRoot}/{config.directories.architecturalDecisions}/{config.prefixes.architecturalDecisions}-{dtStr}.md"
+  smeFileName <- "{config.docsRoot}/{config.directories.systemMaintenanceSpecifications}/{config.prefixes.systemMaintenanceSpecifications}-{dtStr}.md" 
+  legFileName <- "{config.docsRoot}/{config.directories.deliveryLog}/{config.prefixes.deliveryLog}-{dtStr}.md"
+
+  rmFileName <- "{config.docsRoot}/{config.fileNames.readme}"
+  rfFileName <- "{config.docsRoot}/{config.fileNames.functionalRequirements}"
+  nfFileName <- "{config.docsRoot}/{config.fileNames.nonFunctionalRequirements}"
+  dmFileName <- "{config.docsRoot}/{config.fileNames.dataModel}"
+  tlFileName <- "{config.docsRoot}/{config.fileNames.timeline}"
+  svFileName <- "{config.docsRoot}/{config.fileNames.scopeAndVision}"
+  csFileName <- "{config.docsRoot}/{config.fileNames.currentState}"
+
+  cycle <- repository.cycle.insert(values(
+      projectId:project.id, 
+      status: "OPEN", 
+      currentPhaseIndex:1, 
+      phaseCount:11, 
+      autoMode:"NONE",
+      startedAt:getCurrentDateTime()))
+  createBackupDocs(project.id, cycle.id)
+
+  phase <- repository.phase.insert(values(cycleId: cycle.id, name: "GENERATE_MEETING", index: 1, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(), outputFile: ataFileName, docTypeOutput: "HISTORICAL", promptName: "meeting", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "GENERATE_ADR", index: 2, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName), outputFile: adrFileName, docTypeOutput: "HISTORICAL", promptName: "architecturalDecisions", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "GENERATE_ESM", index: 3, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName), outputFile: smeFileName, docTypeOutput: "HISTORICAL", promptName: "systemMaintenanceSpecifications", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "GENERATE_DELIVERY_LOG", index: 4, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName, smeFileName), outputFile: legFileName, docTypeOutput: "HISTORICAL", promptName: "deliveryLog", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "UPDATE_FUNCTIONAL_REQUIREMENTS", index: 5, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName, adrFileName), outputFile: rfFileName, docTypeOutput: "LIVE", promptName: "functionalRequirements", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "UPDATE_NON_FUNCTIONAL_REQUIREMENTS", index: 6, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName, adrFileName), outputFile: nfFileName, docTypeOutput: "LIVE", promptName: "nonFunctionalRequirements", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "UPDATE_DATA_MODEL", index: 7, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName, adrFileName, rfFileName, nfFileName), outputFile: dmFileName, docTypeOutput: "LIVE", promptName: "dataModel", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "UPDATE_TIMELINE", index: 8, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName, adrFileName, smeFileName, rfFileName, nfFileName, dmFileName), outputFile: tlFileName, docTypeOutput: "LIVE", promptName: "timeline", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "UPDATE_SCOPE_AND_VISION", index: 9, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName, adrFileName, rfFileName, nfFileName, dmFileName), outputFile: svFileName, docTypeOutput: "LIVE", promptName: "scopeAndVision", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "UPDATE_PROJECT_README", index: 10, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName, adrFileName, svFileName), outputFile: rmFileName, docTypeOutput: "LIVE", promptName: "readme", startedAt: getCurrentDateTime()))  
+  repository.phase.insert(values(cycleId: cycle.id, name: "UPDATE_CURRENT_STATE", index: 11, status: "REFINING", proposalState: "NOT_GENERATED", inputFiles: list(ataFileName, adrFileName, rfFileName, nfFileName, dmFileName, svFileName), outputFile: csFileName, docTypeOutput: "LIVE", promptName: "currentState", startedAt: getCurrentDateTime()))  
+
+  success(json(
+    cycle:cycle, 
+    phase: phase))
+
+[method:next/{cycle}]   
+   if cycle.currentPhaseIndex < cycle.phaseCount then
+      cycle.currentPhaseIndex <- cycle.currentPhaseIndex + 1
+      repository.cycle.updatePhaseIndex(cycle.id, cycle.currentPhaseIndex)
+   else
+      repository.cycle.awaiting(cycle.id)
+   endIf
+   phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+   success(json(
+    cycle:cycle, 
+    phase: phase))
+
+/*
+mede-cli cycle -p ".." -f "file1;dir;file2;"
+  inicia um novo ciclo, começando pela geração da ata
+  parâmetros:
+     -p: opcional, prompt que sera usado pela llm, junto com o contexto do diretório corrente e com os arquivos em -f
+     -f: opcional, lista de arquivos ou diretórios que devem ter seus conteúdos inseridos no contexto para a llm.
+*/     
+[msg:cycle/{prompt}{files}]
+  service.docs.reconstructProject()
+  project <- repository.project.getCurrent() 
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  r <- service.cycle.begin(project.id) 
+  cycle <- r.cycle
+  phase <- r.phase
+    
+  config <- jsonConvert.strToJson(configEntity.content)
+
+  changeSet <- service.phaseConversation.sendMessage(config, phase, prompt, files)   
+  if isNull(changeSet) then
+   repository.phase.empty(phase.id)   
+  else
+   repository.phase.nonEmpty(phase.id)
+  endIf
+  success(service.status.generate(project,cycle,phase,changeSet))
+
+/*
+mede-cli approve -a
+    com um ciclo aberto e que não esteja no final, aprova a etapa corrente do ciclo e passa para a proxima
+    -a: opcional, confirma todas as etapas automaticamente, ou seja, como se o usuário fosse dando aprove em cada etapa automaticamente.
+*/
+[msg:approve/{all}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+  assertNotNull(phase, "Phase not found")  
+  config <- jsonConvert.strToJson(configEntity.content)
+  assert(phase.status=="REFINING" || phase.status=="AWAITING_APPROVAL", "Phase status invalid")
+  if all then
+    repository.cycle.approveAll(cycle.id)
+    changeSet <- repository.changeSet.getCurrent(phase.id)
+    for i from cycle.currentPhaseIndex to cycle.phaseCount do
+      service.phaseConversation.applyAll(phase, changeSet)
+      repository.phase.approve(phase.id)
+      r <- next(cycle)
+      cycle <- r.cycle
+      phase <- r.phase
+      if r.cycle.status=="OPEN" then       
+        changeSet <- service.phaseConversation.sendMessage(config, phase)
+      endIf   
+    endFor
+    success(service.status.generate(project,cycle,phase,changeSet))        
+  else
+    assert(phase.status == "AWAITING_APPROVAL", "Phase not in await approval!")
+    repository.phase.approve(phase.id)
+    r <- next(cycle)
+    cycle <- r.cycle
+    phase <- r.phase 
+    if r.cycle.status=="OPEN" then       
+      changeSet <- service.phaseConversation.sendMessage(config, phase)
+    endIf
+    success(service.status.generate(project,cycle,phase,changeSet))
+  endIf
+
+  
+/*
+mede-cli reject -a
+    com um ciclo aberto e que não esteja no final, reprova a etapa corrente do ciclo e passa para a próxima, ou cancela caso seja a primeira etapa (geração de ata)
+    -a: opcional, reprova todas as etapas automaticamente, ou seja, como se o usuário fosse dando reject em cada etapa automaticamente.
+*/
+[msg:reject/{all}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+  assertNotNull(phase, "Phase not found")
+  config <- jsonConvert.strToJson(configEntity.content)  
+  assert(phase.status=="REFINING" || phase.status=="AWAITING_APPROVAL", "Phase status invalid")
+  if all then
+    repository.cycle.rejectAll(cycle.id)
+    changeSet <- repository.changeSet.getCurrent(phase.id)
+    for i from cycle.currentPhaseIndex to cycle.phaseCount do
+      service.phaseConversation.discardAll(phase,changeSet)
+      repository.phase.reject(phase.id)
+      r <- next(cycle)
+      cycle <- r.cycle
+      phase <- r.phase
+      if r.cycle.status=="OPEN" then       
+        changeSet <- service.phaseConversation.sendMessage(config, phase)
+      endIf  
+    endFor
+    success(service.status.generate(project,cycle,phase,changeSet))        
+  else
+    assert(phase.status == "AWAITING_APPROVAL", "Phase not in await approval!")
+    repository.phase.reject(phase.id)
+    r <- next(cycle)
+    cycle <- r.cycle
+    phase <- r.phase 
+    if r.cycle.status=="OPEN" then       
+      changeSet <- service.phaseConversation.sendMessage(config, phase)
+    endIf 
+    success(service.status.generate(project,cycle,phase,changeSet))
+  endIf
+
+
+/*
+mede-cli reset
+  limpa o histórico e os arquivos anexados e o artefato atualmente manipulado deve voltar para o valor original do backpup ou ser removido.
+  - limpa histórico da conversa da etapa
+  - limpa anexos adicionados
+  - remove change-sets\\diffs pendentes daquela conversa
+  - restaura o arquivo da etapa a partir do backup original do ciclo
+  - se o arquivo foi criado pela etapa, remove o arquivo*/
+[msg:reset]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  assertTrue(cycle.status=="OPEN", "Current cycle not open" )
+  phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+  assertNotNull(phase, "Phase not found")
+  config <- jsonConvert.strToJson(configEntity.content)
+
+  repository.changeChunk.deleteFromPhase(phase.id)
+  repository.changeSet.deleteFromPhase(phase.id)        
+  repository.phaseAttachment.deleteFromPhase(phase.id)
+  repository.phaseConversation.deleteFromPhase(phase.id)
+
+  phase <- repository.phase.reset(phase.id)      
+    
+  foreach artifact in repository.cycleArtifact.list(cycle.id) do
+        if artifact.artifactPath == phase.outputFile then
+          if artifact.canonicalType=="LIVE" then
+            repository.fileSystem.writeFile(artifact.artifactPath, artifact.backupContent)
+          elif artifact.canonicalType=="HISTORICAL" then
+            if isEmpty(artifact.backupContent) then
+              repository.fileSystem.deleteFile(artifact.artifactPath)
+            else
+              repository.fileSystem.writeFile(artifact.artifactPath, artifact.backupContent)
+          endIf
+          repository.cycleArtifact.updateContent(artifact.id, artifact.backupContent)
+        endIf
+  endForeach
+
+  repository.cycle.updatePhaseIndex(cycle.id, cycle.currentPhaseIndex)
+  changeSet <- service.phaseConversation.sendMessage(config, phase)  
+  success(service.status.generate(project,cycle,phase,changeSet))
+
+
+/*
+mede-cli refine -p "..." -f "file1;dir;file2
+    com um ciclo aberto e que não esteja no final, faz o refinamento da etapa corrente, cada etapa tem um histórico de mensagens trocadas e arquivos anexados, além do system prompt próprio e do contexto próprio, arquivos de documentação que vao automaticamente a cada chamada.
+     -p: opcional, prompt que sera usado pela llm, junto com o contexto do diretório corrente e com os arquivos em -f
+     -f: opcional, lista de arquivos ou diretórios que devem ter seus conteúdos inseridos no contexto para a llm. 
+*/
+[msg:refine/{prompt}{files}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  configEntity <- repository.projectConfig.get(project.id)
+  assertNotNull(configEntity, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  assertTrue(cycle.status=="OPEN", "Current cycle not open" )
+  phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+  assertNotNull(phase, "Phase not found")
+  assert(phase.status=="AWAITING_APPROVAL", "Phase not in awaiting approval")
+  config <- jsonConvert.strToJson(configEntity.content)
+  changeSet <- service.phaseConversation.sendMessage(config, phase, prompt, files)  
+  success(service.status.generate(project,cycle,phase,changeSet))
+
+
+/*
+mede-cli commit
+   so pode ser chamado quando estiver no final do ciclo, encerra o ciclo e apaga todos os rastros.
+*/
+[msg:commit]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  assertTrue(cycle.status=="AWAITING_COMMIT", "Cycle not waiting commit")
+  
+  clearCycle(cycle)
+
+  success(service.status.successCommit(project, cycle))
+
+
+/*
+mede-cli rollback
+   so pode ser chamado quando estiver no ciclo, restaura os arquivos originais apaga os arquivos criados no ciclo, encerra o ciclo e apaga todos os rastros.
+*/
+[msg:rollback]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  
+  restoreBackup(cycle)
+  clearCycle(cycle)
+
+  success(service.status.successRollback(project, cycle))
+
+
+
+/*
+Este arquivo implementa o ciclo completo de geração e refinamento documental do projeto.
+
+Premissas importantes:
+
+- um projeto pode possuir no máximo um ciclo aberto por vez;
+- um ciclo representa uma sequência ordenada de fases;
+- cada fase gera ou atualiza exatamente um artefato documental;
+- os artefatos manipulados durante o ciclo são registrados em CycleArtifact;
+- artefatos LIVE representam documentos permanentes do projeto;
+- artefatos HISTORICAL representam documentos gerados apenas dentro do ciclo;
+- artefatos FROZEN representam documentos somente leitura que servem como contexto;
+- todo ciclo possui snapshot inicial dos documentos antes de qualquer modificação;
+- rollback do ciclo deve restaurar o estado original anterior ao início do ciclo;
+- reset de fase deve restaurar apenas o estado anterior da fase corrente;
+- commit encerra definitivamente o ciclo e remove todos os rastros internos;
+- rollback encerra o ciclo descartando todas as alterações realizadas;
+- ciclos podem operar em modo manual ou auto approve/reject;
+- toda transição de fase depende do estado da fase corrente;
+- fases podem estar em refinamento, aguardando aprovação, aprovadas, rejeitadas ou descartadas;
+- uma fase somente pode avançar quando seus ChangeSets forem resolvidos;
+- cada fase mantém histórico próprio de conversas, anexos, refinamentos e alterações;
+- o ciclo atual sempre aponta para uma fase corrente através de currentPhaseIndex;
+- currentPhaseIndex inicia em 1;
+- quando currentPhaseIndex ultrapassa phaseCount, o ciclo entra em estado AWAITING_COMMIT;
+
+Regras de backup:
+
+- createBackupDocs cria snapshots dos documentos permanentes antes do início do ciclo;
+- documentos LIVE devem armazenar backupContent e currentContent;
+- documentos HISTORICAL normalmente não existem antes do ciclo;
+- documentos FROZEN servem apenas como referência e não devem ser alterados;
+- rollback do ciclo remove documentos HISTORICAL criados durante o ciclo;
+- rollback do ciclo restaura documentos LIVE a partir de backupContent;
+- reset da fase restaura apenas o artefato associado à fase corrente;
+- reset da fase pode remover ou restaurar o artefato dependendo do tipo e do backup disponível;
+- currentContent deve permanecer sincronizado com o conteúdo físico do arquivo;
+
+Regras de transição:
+
+- beginInitialization cria um ciclo simplificado apenas para geração inicial do README;
+- begin cria o ciclo completo de documentação do projeto;
+- next avança para a próxima fase disponível;
+- quando não houver mais fases, o ciclo entra em AWAITING_COMMIT;
+- approve aprova a fase atual e avança;
+- approve --all aprova todas as fases restantes automaticamente;
+- reject rejeita a fase atual e avança;
+- reject --all rejeita todas as fases restantes automaticamente;
+- refine envia novo refinamento para a fase corrente;
+- reset limpa completamente a fase corrente e reinicia sua geração;
+- commit remove rastros internos do ciclo mantendo os arquivos finais;
+- rollback restaura o projeto ao estado anterior ao início do ciclo e remove rastros internos;
+
+Fases padrão do ciclo completo:
+
+- geração de ata;
+- geração de ADR;
+- geração de ESM;
+- geração de log de entrega;
+- atualização de requisitos funcionais;
+- atualização de requisitos não funcionais;
+- atualização de modelo de dados;
+- atualização de timeline;
+- atualização de escopo e visão;
+- atualização de README;
+- atualização de estado atual do projeto.
+*/

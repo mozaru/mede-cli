@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.env
+coverage/
+.vscode/
+.idea/
+.mede/
+database/
+src-old/
+*.zip
+

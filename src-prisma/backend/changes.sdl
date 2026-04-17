@@ -1,0 +1,132 @@
+[msg:pending/{all}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  config <- repository.projectConfig.get(project.id)
+  assertNotNull(config, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+  assertNotNull(phase, "Phase not found")
+  assert(phase.status=="REFINING", "Phase not in refining state")
+
+  changeSet <- repository.changeSet.getCurrent(phase.id)
+  assertNotNull(changeSet, "Change Set not found")
+
+  response <- ""
+
+  if all then    
+    foreach chunk in repository.changeChunk.list(changeSet.id) do
+      if chunk.status=="AWAITING_APPROVAL" then
+        response <- response + "\n        [{chunk.index}] {changeSet.fileName}\n        {chunk.blockLocation}\n        {chunk.changeContent}\n\n"
+      endIf
+    endForeach
+  else
+    chunk <-  repository.changeChunk.getByIndex(changeSet.id, changeSet.currentChangeChunkIndex)
+    assertNotNull(chunk, "Chunk not found")
+    assert(chunk.status=="AWAITING_APPROVAL", "Current chunk not pending")
+    response <- response + "\n    [{chunk.index}] {changeSet.fileName}\n    {chunk.blockLocation}\n    {chunk.changeContent}\n\n"
+  endIf
+
+  success("Cycle {cycle.status}\n  Project : {project.name}\n     RootPath     : {project.rootProjectPath}\n     DocsPath     : {project.docsRootPath}\n     Language     : {project.documentationLanguage, 60}\n     Cycle        : {cycle.status}\n     FileName     : {changeSet.fileName}\n     Step         : {cycle.currentPhaseIndex}/{cycle.phaseCount}\n     ChangeSet    : {changeSet.currentChangeChunkIndex}/{changeSet.changeChunkCount}\n\n  {response}\n")
+
+/*
+mede-cli apply -a
+      aplica o trecho-diff corrente;
+      -a: opcional, aplica todos os trecho-diff pendentes do change-set corrente.
+*/
+[msg:apply/{all}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  config <- repository.projectConfig.get(project.id)
+  assertNotNull(config, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+  assertNotNull(phase, "Phase not found")
+  assert(phase.status=="REFINING", "Phase not in refining state")
+
+  changeSet <- repository.changeSet.getCurrent(phase.id)
+  assertNotNull(changeSet, "Change Set not found")
+
+  if all then    
+    service.phaseConversation.applyAll(phase, changeSet)
+  else
+    service.phaseConversation.apply(phase, changeSet)
+  endIf
+
+  phase <-  repository.phase.getById(phase.id)
+  changeSet <-  repository.changeSet.getById(changeSet.id)
+
+  success(service.status.generate(project,cycle,phase,changeSet))
+
+/*
+mede-cli discard -a
+      rejeita o trecho-diff corrente;
+      -a: opcional, rejeita todos os trecho-diff pendentes do change-set corrente.
+*/
+[msg:discard/{all}]
+  project <- repository.project.getCurrent()
+  assertNotNull(project, "Project not found")
+  config <- repository.projectConfig.get(project.id)
+  assertNotNull(config, "Config not found")
+  cycle <- repository.cycle.getCurrent(project.id) 
+  assertNotNull(cycle, "No active cycle for current project")
+  phase <-  repository.phase.getByIndex(cycle.id, cycle.currentPhaseIndex)
+  assertNotNull(phase, "Phase not found")
+  assert(phase.status=="REFINING", "Phase not in refining state")
+
+  changeSet <- repository.changeSet.getCurrent(phase.id)
+  assertNotNull(changeSet, "Change Set not found")
+
+  if all then    
+    service.phaseConversation.discardAll(phase, changeSet)
+  else
+    service.phaseConversation.discard(phase, changeSet)
+  endIf
+
+  phase <-  repository.phase.getById(phase.id)
+  changeSet <-  repository.changeSet.getById(changeSet.id)
+
+  success(service.status.generate(project,cycle,phase,changeSet))
+
+
+/*
+Este arquivo implementa a resolução incremental dos ChangeChunks do ChangeSet corrente da fase atual.
+
+Premissas importantes:
+
+- todos os comandos dependem da existência de um ciclo ativo;
+- todos os comandos dependem da existência de uma fase corrente;
+- todos os comandos dependem da existência de um ChangeSet corrente;
+- os comandos só podem ser executados quando a fase estiver em estado REFINING;
+- a navegação dos ChangeChunks é linear por índice;
+- currentChangeChunkIndex sempre representa o chunk corrente do fluxo;
+- o próximo chunk é sempre currentChangeChunkIndex + 1;
+- quando currentChangeChunkIndex atingir changeChunkCount, o ChangeSet é considerado concluído;
+- pending sem -a mostra apenas o chunk corrente;
+- pending -a mostra todos os chunks pendentes a partir do ChangeSet corrente;
+- apply aplica apenas o chunk corrente;
+- apply -a aplica todos os chunks pendentes a partir do índice corrente;
+- discard rejeita apenas o chunk corrente;
+- discard -a rejeita todos os chunks pendentes a partir do índice corrente;
+- apply e apply -a atualizam imediatamente o artifact.currentContent e o arquivo físico correspondente;
+- discard e discard -a não alteram o conteúdo atual do documento;
+- applyAll e discardAll devem resolver todos os chunks restantes antes de marcar o ChangeSet como concluído;
+- um ChangeChunk só pode ser aplicado ou descartado se estiver em estado AWAITING_APPROVAL;
+- após apply ou discard, o índice corrente deve avançar para o próximo chunk;
+- após applyAll ou discardAll, o índice corrente deve ser movido para o final do ChangeSet;
+- o ChangeSet só deve ser marcado como completo quando não existirem mais chunks pendentes.
+*/
+/*
+mede-cli pending -a
+      mostra o trecho-diff pendente do change-set corrente
+      -a: optional, mostra todos os pendentes do change-set corrente
+ex:
+   [1] requisitos-funcionais.md
+    replace lines 10-18
+    status: pending
+
+   [2] requisitos-funcionais.md
+    insert after line 44
+    status: pending
+*/

@@ -1,0 +1,2 @@
+0423: error      77 erro de sintaxe na variavel ou subrotina! 'operationAsync(generateText, args(messages:vector(LlmMessage), options?: LlmGenerationOptions), result(LlmTextGenerationResult))'
+0424: error      83 erro de sintaxe na variavel ou subrotina! 'operationAsync(generateJsonObject, args(messages:vector(LlmMessage), options?: LlmGenerationOptions), result(llmResponseModel))'
