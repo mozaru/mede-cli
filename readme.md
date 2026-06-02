@@ -94,6 +94,8 @@ O ciclo trabalha com etapas sequenciais e dependentes entre si.
 10. atualização do README;
 11. atualização da situação atual do projeto.
 
+obs: a quantidade de atas existentes indica quantos ciclos ja existiram, entao o numero do ciclo corrente é a quantiadade de atas + 1. O documento entendimento-indical, quando necessário, usa-se o ciclo 0.  
+
 ### Dependências entre etapas
 
 Cada etapa utiliza apenas os documentos relevantes para aquele tipo de geração ou atualização.
@@ -533,18 +535,18 @@ O identificador definitivo e imutável surge apenas quando o item passa a existi
 ### Padrão de identificação formal
 
 ```text
-<DOC>-<AAAAMMDD>-<NAT>-<TIP>-<NNNN>
+<DOC>-<AAAAMMDD>-<CICLO>-<NAT>-<TIP>-<NNNN>
 ```
 
 Exemplos:
 
 ```text
-DEI-20260201-RF-BLI-0001
-ESM-20260301-RF-COR-0001
-ESM-20260301-UX-AJU-0003
-ESM-20260301-AR-EVO-0002
-LEG-20260310-OP-COR-0002
-SAT-20260315-AR-EVO-0001
+DEI-20260201-001-RF-BLI-0001
+ESM-20260301-001-RF-COR-0001
+ESM-20260301-001-UX-AJU-0003
+ESM-20260301-001-AR-EVO-0002
+LEG-20260310-003-OP-COR-0002
+SAT-20260315-005-AR-EVO-0001
 ```
 
 ### Convenções
@@ -591,11 +593,11 @@ O documento `situacao-atual.md` representa a visão consolidada e vigente do bac
 ### Exemplo de tabela em `situacao-atual.md`
 
 ```text
-ID                       | Descrição                                         | Tags        | Ata          | Origem               | Entrega      | Status
-DEI-20260201-RF-BLI-0001 | Autenticação online por CPF e senha               |             | ata-20260101 | entendimento-inicial | leg-20260206 | Concluído
-ESM-20260301-UX-AJU-0003 | Regra de habilitação do campo Tipo de Edificação  |             | ata-20260301 | esm-20260301         |              | Pendente
-ESM-20260301-AR-EVO-0002 | Paginação da listagem de endereços                | MIG, PERF   | ata-20260301 | esm-20260301         |              | Pendente
-ESM-20260220-OP-COR-0004 | Remoção de setor de agente em ambiente offline    | HOT         | ata-20260220 | esm-20260220         | leg-20260228 | Concluído
+ID                           | Descrição                                         | Tags        | Ata              | Origem               | Entrega      | Status
+DEI-20260201-000-RF-BLI-0001 | Autenticação online por CPF e senha               |             | ata-20260101-001 | entendimento-inicial | leg-20260206 | Concluído
+ESM-20260301-001-UX-AJU-0003 | Regra de habilitação do campo Tipo de Edificação  |             | ata-20260301-001 | esm-20260301-001     |              | Pendente
+ESM-20260301-001-AR-EVO-0002 | Paginação da listagem de endereços                | MIG, PERF   | ata-20260301-001 | esm-20260301-001     |              | Pendente
+ESM-20260220-004-OP-COR-0004 | Remoção de setor de agente em ambiente offline    | HOT         | ata-20260220-004 | esm-20260220-004     | leg-20260228 | Concluído
 ```
 
 ---

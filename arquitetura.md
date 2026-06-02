@@ -200,12 +200,12 @@ Define:
 
 Define nomes como:
 
-* `ata-YYYY-MM-DD.md`
-* `adr-YYYY-MM-DD.md`
-* `esm-YYYY-MM-DD.md`
-* `leg-YYYY-MM-DD.md`
+* `ata-YYYYMMDD-<ciclo>.md`
+* `adr-YYYYMMDD-<ciclo>.md`
+* `esm-YYYYMMDD-<ciclo>.md`
+* `leg-YYYYMMDD-<ciclo>.md`
 
----
+obs: <ciclo> - corresponde ao numero do ciclo corrente, com temos uma ata por ciclo, o numero do ciclo corrente é quantidade de atas existentes + 1, antes de comercar o ciclo. este deve entrar no nome dos arquivos de historico/rastreamento, com tres digitos.
 
 ## 2.2 Application
 
