@@ -34,33 +34,24 @@ export class AnthropicLlmProvider implements ILlmProvider {
   private readonly config: MedeConfigModelEntity;
   private readonly messages: LlmMessage[] = [];
   private options: LlmGenerationOptions = {};
+  private systemPrompt: string = "";
+  private userPrompt: string = "";
+  private extraInfo: string = "";
 
   constructor(config: MedeConfigModelEntity) {
     this.config = config;
   }
 
   public setSystemPrompt(prompt: string): void {
-    const normalized = prompt?.trim();
-    this.removeMessagesByRole("system");
-
-    if (normalized) {
-      this.messages.unshift({
-        role: "system",
-        content: normalized,
-      });
-    }
+    this.systemPrompt = prompt?.trim() ?? "";
   }
 
   public setUserPrompt(prompt: string): void {
-    const normalized = prompt?.trim();
-    this.removeMessagesByRole("user");
+    this.userPrompt = prompt?.trim() ?? "";
+  }
 
-    if (normalized) {
-      this.messages.push({
-        role: "user",
-        content: normalized,
-      });
-    }
+  public setExtraInfo(info: string): void {
+    this.extraInfo = info?.trim() ?? "";
   }
 
   public setOptions(options: LlmGenerationOptions): void {
@@ -135,19 +126,15 @@ export class AnthropicLlmProvider implements ILlmProvider {
     currentContent: string,
   ): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
-    const safeContent = currentContent?.trim();
-
-    if (!safeContent) {
-      return;
-    }
+    const safeContent = currentContent?.trim() ?? "";
 
     this.messages.push({
       role: "user",
       content: [
-        `Documento de saida o diff eh em cima desse conteudo #${id}`,
+        `Documento de saida #${id}`,
         `Origem: ${safePath}`,
         "",
-        "Conteúdo atual do documento:",
+        "O diff a ser gerado deve ser em cima desse conteúdo atual do documento:",
         "```text",
         safeContent,
         "```",
@@ -161,7 +148,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
     const timeoutMs =
       this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
-    const { system, anthropicMessages } = this.normalizeMessages(this.messages);
+    const { system, anthropicMessages } = this.buildRequestMessages();
 
     if (anthropicMessages.length === 0) {
       throw new Error(
@@ -261,16 +248,11 @@ export class AnthropicLlmProvider implements ILlmProvider {
     return apiKey;
   }
 
-  private normalizeMessages(messages: LlmMessage[]): {
+  private buildRequestMessages(): {
     system?: string;
     anthropicMessages: AnthropicRequestMessage[];
   } {
-    const systemMessages = messages
-      .filter((message) => message.role === "system")
-      .map((message) => message.content?.trim() ?? "")
-      .filter(Boolean);
-
-    const anthropicMessages: AnthropicRequestMessage[] = messages
+    const anthropicMessages: AnthropicRequestMessage[] = this.messages
       .filter((message) => message.role !== "system")
       .map((message) => ({
         role: (message.role === "assistant" ? "assistant" : "user") as "user" | "assistant",
@@ -278,18 +260,18 @@ export class AnthropicLlmProvider implements ILlmProvider {
       }))
       .filter((message) => Boolean(message.content));
 
+    if (this.extraInfo) {
+      anthropicMessages.push({ role: "user", content: this.extraInfo });
+    }
+
+    if (this.userPrompt) {
+      anthropicMessages.push({ role: "user", content: this.userPrompt });
+    }
+
     return {
-      system: systemMessages.length > 0 ? systemMessages.join("\n\n") : undefined,
+      system: this.systemPrompt || undefined,
       anthropicMessages,
     };
-  }
-
-  private removeMessagesByRole(role: LlmRole): void {
-    for (let i = this.messages.length - 1; i >= 0; i -= 1) {
-      if (this.messages[i]?.role === role) {
-        this.messages.splice(i, 1);
-      }
-    }
   }
 
   private isAbortError(error: unknown): boolean {

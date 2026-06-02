@@ -355,7 +355,7 @@ export class PhaseConversationService implements IPhaseConversationService
 
             cycleArtifact = this.cycleArtifactRepository.insert(artifact);
         }
-        const chunks : Array<Diff.ChunkModel> = this.parseTextToDiff(response.rawText);        
+        const chunks = Diff.parseDiff(response.rawText);        
         const changeSet = new ChangeSetEntity();
         changeSet.id = 0;
         changeSet.phaseId = phase.id;
@@ -557,37 +557,6 @@ export class PhaseConversationService implements IPhaseConversationService
         }
 
         return this.changeSetRepository.getCurrent(phase.id);
-    }
-
-    private parseTextToDiff(value: string): Array<Diff.ChunkModel>
-    {
-        const resp: Array<Diff.ChunkModel> = [];
-            
-        // Divide o texto onde encontrar o marcador de início de chunk "@@"
-        // O lookahead (?=@@) mantém o marcador na string resultante
-        const parts = value.split(/(?=@@.*@@\n)/);
-
-        let currentIndex = 0;
-
-        for (const part of parts) {
-            const trimmedPart = part.trim();
-            if (!trimmedPart.startsWith('@@')) continue;
-
-            // A primeira linha é a location (@@ -x,y +a,b @@)
-            // O restante é o conteúdo
-            const lines = trimmedPart.split(/\r?\n/);
-            const location = lines[0];
-            const content = lines.slice(1).join('\n');
-
-            resp.push({
-                index: ++currentIndex,
-                offset: 0,
-                location: location,
-                content: content
-            });
-        }
-
-        return resp;
     }
 
     private getConfigOrDefault(value: string | undefined, fallback: string): string

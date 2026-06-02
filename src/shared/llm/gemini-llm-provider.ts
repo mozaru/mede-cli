@@ -46,33 +46,24 @@ export class GeminiLlmProvider implements ILlmProvider {
   private readonly config: MedeConfigModelEntity;
   private readonly messages: LlmMessage[] = [];
   private options: LlmGenerationOptions = {};
+  private systemPrompt: string = "";
+  private userPrompt: string = "";
+  private extraInfo: string = "";
 
   constructor(config: MedeConfigModelEntity) {
     this.config = config;
   }
 
   public setSystemPrompt(prompt: string): void {
-    const normalized = prompt?.trim();
-    this.removeMessagesByRole("system");
-
-    if (normalized) {
-      this.messages.unshift({
-        role: "system",
-        content: normalized,
-      });
-    }
+    this.systemPrompt = prompt?.trim() ?? "";
   }
 
   public setUserPrompt(prompt: string): void {
-    const normalized = prompt?.trim();
-    this.removeMessagesByRole("user");
+    this.userPrompt = prompt?.trim() ?? "";
+  }
 
-    if (normalized) {
-      this.messages.push({
-        role: "user",
-        content: normalized,
-      });
-    }
+  public setExtraInfo(info: string): void {
+    this.extraInfo = info?.trim() ?? "";
   }
 
   public setOptions(options: LlmGenerationOptions): void {
@@ -147,19 +138,15 @@ export class GeminiLlmProvider implements ILlmProvider {
     currentContent: string,
   ): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
-    const safeContent = currentContent?.trim();
-
-    if (!safeContent) {
-      return;
-    }
+    const safeContent = currentContent?.trim() ?? "";
 
     this.messages.push({
       role: "user",
       content: [
-        `Documento de saida o diff eh em cima desse conteudo #${id}`,
+        `Documento de saida #${id}`,
         `Origem: ${safePath}`,
         "",
-        "Conteúdo atual do documento:",
+        "O diff a ser gerado deve ser em cima desse conteúdo atual do documento:",
         "```text",
         safeContent,
         "```",
@@ -173,7 +160,7 @@ export class GeminiLlmProvider implements ILlmProvider {
     const timeoutMs =
       this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
-    const { systemInstruction, contents } = this.normalizeMessages(this.messages);
+    const { systemInstruction, contents } = this.buildRequestMessages();
 
     if (contents.length === 0) {
       throw new Error(
@@ -277,16 +264,11 @@ export class GeminiLlmProvider implements ILlmProvider {
     };
   }
 
-  private normalizeMessages(messages: LlmMessage[]): {
+  private buildRequestMessages(): {
     systemInstruction?: GeminiSystemInstruction;
     contents: GeminiRequestContent[];
   } {
-    const systemMessages = messages
-      .filter((message) => message.role === "system")
-      .map((message) => message.content?.trim() ?? "")
-      .filter(Boolean);
-
-    const contents: GeminiRequestContent[] = messages
+    const contents: GeminiRequestContent[] = this.messages
       .filter((message) => message.role !== "system")
       .map((message) => ({
         role: (message.role === "assistant" ? "model" : "user") as "user" | "model",
@@ -294,21 +276,20 @@ export class GeminiLlmProvider implements ILlmProvider {
       }))
       .filter((message) => message.parts[0].text.length > 0);
 
+    if (this.extraInfo) {
+      contents.push({ role: "user", parts: [{ text: this.extraInfo }] });
+    }
+
+    if (this.userPrompt) {
+      contents.push({ role: "user", parts: [{ text: this.userPrompt }] });
+    }
+
     return {
-      systemInstruction:
-        systemMessages.length > 0
-          ? { parts: [{ text: systemMessages.join("\n\n") }] }
-          : undefined,
+      systemInstruction: this.systemPrompt
+        ? { parts: [{ text: this.systemPrompt }] }
+        : undefined,
       contents,
     };
-  }
-
-  private removeMessagesByRole(role: LlmRole): void {
-    for (let i = this.messages.length - 1; i >= 0; i -= 1) {
-      if (this.messages[i]?.role === role) {
-        this.messages.splice(i, 1);
-      }
-    }
   }
 
   private isAbortError(error: unknown): boolean {

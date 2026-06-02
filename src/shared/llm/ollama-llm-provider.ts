@@ -29,33 +29,24 @@ export class OllamaLlmProvider implements ILlmProvider {
   private readonly config: MedeConfigModelEntity;
   private readonly messages: LlmMessage[] = [];
   private options: LlmGenerationOptions = {};
+  private systemPrompt: string = "";
+  private userPrompt: string = "";
+  private extraInfo: string = "";
 
   constructor(config: MedeConfigModelEntity) {
     this.config = config;
   }
 
   public setSystemPrompt(prompt: string): void {
-    const normalized = prompt?.trim();
-    this.removeMessagesByRole("system");
-
-    if (normalized) {
-      this.messages.unshift({
-        role: "system",
-        content: normalized,
-      });
-    }
+    this.systemPrompt = prompt?.trim() ?? "";
   }
 
   public setUserPrompt(prompt: string): void {
-    const normalized = prompt?.trim();
-    this.removeMessagesByRole("user");
+    this.userPrompt = prompt?.trim() ?? "";
+  }
 
-    if (normalized) {
-      this.messages.push({
-        role: "user",
-        content: normalized,
-      });
-    }
+  public setExtraInfo(info: string): void {
+    this.extraInfo = info?.trim() ?? "";
   }
 
   public setOptions(options: LlmGenerationOptions): void {
@@ -130,19 +121,15 @@ export class OllamaLlmProvider implements ILlmProvider {
     currentContent: string,
   ): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
-    const safeContent = currentContent?.trim();
-
-    if (!safeContent) {
-      return;
-    }
+    const safeContent = currentContent?.trim() ?? "";
 
     this.messages.push({
       role: "user",
       content: [
-        `Documento de saida o diff eh em cima desse conteudo #${id}`,
+        `Documento de saida #${id}`,
         `Origem: ${safePath}`,
         "",
-        "Conteúdo atual do documento:",
+        "O diff a ser gerado deve ser em cima desse conteúdo atual do documento:",
         "```text",
         safeContent,
         "```",
@@ -224,6 +211,10 @@ export class OllamaLlmProvider implements ILlmProvider {
   private buildRequestMessages(): OllamaChatMessage[] {
     const requestMessages: OllamaChatMessage[] = [];
 
+    if (this.systemPrompt) {
+      requestMessages.push({ role: "system", content: this.systemPrompt });
+    }
+
     for (const message of this.messages) {
       const content = message.content?.trim();
       if (!content) {
@@ -231,20 +222,20 @@ export class OllamaLlmProvider implements ILlmProvider {
       }
 
       requestMessages.push({
-        role: message.role,
+        role: message.role as "system" | "user" | "assistant",
         content,
       });
     }
 
-    return requestMessages;
-  }
-
-  private removeMessagesByRole(role: LlmRole): void {
-    for (let i = this.messages.length - 1; i >= 0; i -= 1) {
-      if (this.messages[i]?.role === role) {
-        this.messages.splice(i, 1);
-      }
+    if (this.extraInfo) {
+      requestMessages.push({ role: "user", content: this.extraInfo });
     }
+
+    if (this.userPrompt) {
+      requestMessages.push({ role: "user", content: this.userPrompt });
+    }
+
+    return requestMessages;
   }
 
   private resolveEndpoint(): string {

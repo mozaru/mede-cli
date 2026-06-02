@@ -165,8 +165,6 @@ export class OpenAiLlmProvider implements ILlmProvider {
       );
     }
 
-    console.log(requestMessages);
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -228,12 +226,12 @@ export class OpenAiLlmProvider implements ILlmProvider {
     const requestMessages: OpenAiChatCompletionMessage[] = [];
 
 
-    if (this.systemPrompt)
-      requestMessages.push
-        requestMessages.push({
-          role: useDeveloperRole ? "developer" : "system",
-          content: this.systemPrompt,
-        });
+    if (this.systemPrompt) {
+      requestMessages.push({
+        role: useDeveloperRole ? "developer" : "system",
+        content: this.systemPrompt,
+      });
+    }
 
     for (const message of this.messages) {
       const content = message.content?.trim();

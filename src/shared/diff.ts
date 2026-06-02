@@ -19,6 +19,31 @@ interface ChunkApplyModel {
 type DiffFunction = (contentOld: string, contentNew: string) => Array<ChunkModel>;
 type ApplyFunction = (content: string, chunk:ChunkModel) => ChunkApplyModel;
 
+function parseDiff(value: string): Array<ChunkModel>
+{
+    const resp: Array<ChunkModel> = [];
+    const parts = value.split(/(?=@@.*@@\n)/);
+    let currentIndex = 0;
+
+    for (const part of parts) {
+        const trimmedPart = part.trim();
+        if (!trimmedPart.startsWith('@@')) continue;
+
+        const lines = trimmedPart.split(/\r?\n/);
+        const location = lines[0];
+        const content = lines.slice(1).join('\n');
+
+        resp.push({
+            index: ++currentIndex,
+            offset: 0,
+            location,
+            content,
+        });
+    }
+
+    return resp;
+}
+
 function generateDiff(contentOld:string, contentNew:string):Array<ChunkModel>
 {
     const patchString = Diff.createPatch('memoria', contentOld, contentNew);
@@ -66,7 +91,6 @@ function applyDiff(content: string, chunk:ChunkModel) : ChunkApplyModel
 
     const header = `Index: file.txt\n===\n--- file.txt\n+++ file.txt\n`;
     const patchToApply = header + correctedLocation + '\n' + chunk.content + '\n';
-    console.log(patchToApply);
     const result = Diff.applyPatch(content, patchToApply);
     
     return {
@@ -82,5 +106,6 @@ export {
     DiffFunction,
     ChunkModel,
     generateDiff,
-    applyDiff
+    applyDiff,
+    parseDiff,
 }
