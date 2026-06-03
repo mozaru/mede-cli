@@ -1,4 +1,6 @@
 import { MedeConfigModelEntity } from "../../entities/mede-config-model-entity.js";
+import { FileSecretVault, ISecretVault } from "../secret-vault.js";
+import { OAuthAuthStrategy } from "./oauth-auth-strategy.js";
 
 // Authentication strategy for LLM providers (Q2). Decouples *where the credential
 // comes from* (env var, OAuth token, Google ADC) from *how a provider injects it
@@ -59,13 +61,23 @@ export class ApiKeyAuthStrategy implements ILlmAuthStrategy {
   }
 }
 
+// Optional collaborators, overridable in tests. In production the defaults wire a
+// file-backed vault and the global fetch/clock.
+export interface LlmAuthDeps {
+  vault?: ISecretVault;
+  fetch?: typeof fetch;
+  now?: () => number;
+}
+
 // Picks the auth strategy for a provider based on `config.llm.auth` (default
-// "apiKey"). oauth/adc are accepted by the config schema but not wired yet, so
-// they fail with a clear, actionable message instead of silently doing nothing.
+// "apiKey"). "oauth" reads tokens stored by `mede-cli llm login`; "adc" is
+// accepted by the config schema but not wired yet, so it fails with a clear,
+// actionable message instead of silently doing nothing.
 export function createLlmAuthStrategy(
   config: MedeConfigModelEntity,
   providerLabel: string,
   buildApiKeyHeader: ApiKeyHeaderBuilder,
+  deps?: LlmAuthDeps,
 ): ILlmAuthStrategy {
   const mode = (config.llm.auth ?? "apiKey").trim().toLowerCase();
 
@@ -74,10 +86,15 @@ export function createLlmAuthStrategy(
       return new ApiKeyAuthStrategy(config, providerLabel, buildApiKeyHeader);
 
     case "oauth":
+      return new OAuthAuthStrategy(config, providerLabel, deps?.vault ?? new FileSecretVault(), {
+        fetch: deps?.fetch ?? fetch,
+        now: deps?.now ?? Date.now,
+      });
+
     case "adc":
       throw new Error(
         `O modo de autenticação "${config.llm.auth}" ainda não está disponível para o provider ` +
-          `${providerLabel} (será habilitado nas próximas fases da Q2). Use auth "apiKey" por enquanto.`,
+          `${providerLabel} (será habilitado na próxima fase da Q2). Use auth "apiKey" ou "oauth".`,
       );
 
     default:

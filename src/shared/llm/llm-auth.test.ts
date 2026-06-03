@@ -81,12 +81,33 @@ describe("createLlmAuthStrategy", () => {
     expect(strategy).toBeInstanceOf(ApiKeyAuthStrategy);
   });
 
-  it("rejects oauth/adc with an actionable not-yet-available message", () => {
-    for (const auth of ["oauth", "adc"]) {
-      expect(() =>
-        createLlmAuthStrategy(makeConfig({ auth }), "Azure OpenAI", (key) => ({ "api-key": key })),
-      ).toThrow(/ainda não está disponível/);
-    }
+  it("builds an OAuth strategy for auth=oauth (no throw at construction)", () => {
+    const strategy = createLlmAuthStrategy(
+      makeConfig({ auth: "oauth" }),
+      "Azure OpenAI",
+      (key) => ({ "api-key": key }),
+      {
+        vault: {
+          get: () => undefined,
+          set: () => {
+            /* unused */
+          },
+          delete: () => {
+            /* unused */
+          },
+        },
+      },
+    );
+
+    expect(strategy.constructor.name).toBe("OAuthAuthStrategy");
+  });
+
+  it("rejects adc with an actionable not-yet-available message", () => {
+    expect(() =>
+      createLlmAuthStrategy(makeConfig({ auth: "adc" }), "Gemini", (key) => ({
+        "x-goog-api-key": key,
+      })),
+    ).toThrow(/ainda não está disponível/);
   });
 
   it("rejects an unknown auth mode", () => {

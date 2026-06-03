@@ -248,6 +248,22 @@ export function buildProgram(): Command {
       await handler.executeTest(options.prompt ?? "");
     });
 
+  llm //mede-cli llm login
+    .command("login")
+    .description("Autentica na LLM via OAuth (device-code) e guarda o token no cofre local")
+    .action(async () => {
+      const handler = new LlmHandler();
+      await handler.executeLogin();
+    });
+
+  llm //mede-cli llm logout
+    .command("logout")
+    .description("Remove as credenciais OAuth guardadas para o provider atual")
+    .action(() => {
+      const handler = new LlmHandler();
+      handler.executeLogout();
+    });
+
   return program;
 }
 

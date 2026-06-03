@@ -1,3 +1,10 @@
+export interface MedeLlmOAuthConfig {
+  deviceAuthUrl: string;
+  tokenUrl: string;
+  clientId: string;
+  scope?: string;
+}
+
 export class MedeLlmConfigEntity {
   public provider: string;
   public model: string;
@@ -7,6 +14,9 @@ export class MedeLlmConfigEntity {
   // for backward compatibility — configs written before Q2 omit it and fall back
   // to "apiKey". See src/shared/llm/llm-auth.ts.
   public auth?: string;
+  // OAuth device-code endpoints, used when auth === "oauth". Optional; populated by
+  // the user (or, later, by per-provider presets). See oauth-auth-strategy.ts.
+  public oauth?: MedeLlmOAuthConfig;
   public temperature: number;
   public maxTokens: number;
   public timeoutMs: number;
