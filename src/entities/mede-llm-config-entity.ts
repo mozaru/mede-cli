@@ -1,8 +1,12 @@
 export interface MedeLlmOAuthConfig {
-  deviceAuthUrl: string;
-  tokenUrl: string;
+  // Optional when a provider preset supplies them (e.g. Azure). Required for a
+  // generic provider with no preset.
+  deviceAuthUrl?: string;
+  tokenUrl?: string;
   clientId: string;
   scope?: string;
+  // Azure AD tenant (defaults to "common"); ignored by providers without a preset.
+  tenant?: string;
 }
 
 export class MedeLlmConfigEntity {

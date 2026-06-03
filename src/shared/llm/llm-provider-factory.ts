@@ -14,6 +14,7 @@ export class LlmProviderFactory {
       case "openai":
       case "openai-compatible":
       case "chatgpt":
+      case "openrouter":
         return new OpenAiLlmProvider(config);
 
       case "ollama":

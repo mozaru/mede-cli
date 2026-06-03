@@ -11,6 +11,7 @@ const SUPPORTED_PROVIDERS = [
   "openai",
   "openai-compatible",
   "chatgpt",
+  "openrouter",
   "ollama",
   "anthropic",
   "claude",
@@ -57,13 +58,15 @@ const llmSchema = z.object({
   // default to "apiKey". adc is accepted here but only wired in a later Q2 slice
   // (the auth strategy fails fast with a clear message until then).
   auth: z.enum(["apiKey", "oauth", "adc"]).optional(),
-  // OAuth device-code endpoints, required only when auth === "oauth".
+  // OAuth settings, used when auth === "oauth". URLs are optional because a
+  // provider preset (e.g. Azure) can fill them; clientId is always required.
   oauth: z
     .object({
-      deviceAuthUrl: z.string().min(1, "oauth.deviceAuthUrl é obrigatório"),
-      tokenUrl: z.string().min(1, "oauth.tokenUrl é obrigatório"),
+      deviceAuthUrl: z.string().optional(),
+      tokenUrl: z.string().optional(),
       clientId: z.string().min(1, "oauth.clientId é obrigatório"),
       scope: z.string().optional(),
+      tenant: z.string().optional(),
     })
     .optional(),
   temperature: z.number().min(0, "temperature não pode ser negativa"),

@@ -102,12 +102,15 @@ describe("createLlmAuthStrategy", () => {
     expect(strategy.constructor.name).toBe("OAuthAuthStrategy");
   });
 
-  it("rejects adc with an actionable not-yet-available message", () => {
-    expect(() =>
-      createLlmAuthStrategy(makeConfig({ auth: "adc" }), "Gemini", (key) => ({
-        "x-goog-api-key": key,
-      })),
-    ).toThrow(/ainda não está disponível/);
+  it("builds an ADC strategy for auth=adc", () => {
+    const strategy = createLlmAuthStrategy(
+      makeConfig({ auth: "adc" }),
+      "Gemini",
+      (key) => ({ "x-goog-api-key": key }),
+      { adcTokenFetcher: async () => "adc-token", now: () => 0 },
+    );
+
+    expect(strategy.constructor.name).toBe("AdcAuthStrategy");
   });
 
   it("rejects an unknown auth mode", () => {
