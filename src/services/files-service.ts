@@ -29,14 +29,14 @@ export class FilesService {
 
   public files(backup: boolean): string {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const config = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(config, "Config not found");
+    this.assertNotNull(config, "Configuração não encontrada");
     void config;
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     let response = "";
 
@@ -55,14 +55,14 @@ export class FilesService {
 
   public diff(file: string): string {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const config = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(config, "Config not found");
+    this.assertNotNull(config, "Configuração não encontrada");
     void config;
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     let response = "";
     let found = false;
@@ -85,20 +85,20 @@ export class FilesService {
       }
     }
 
-    this.assert(found, "file not found");
+    this.assert(found, "arquivo não encontrado");
     return response;
   }
 
   public cat(file: string, backup: boolean): string {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const config = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(config, "Config not found");
+    this.assertNotNull(config, "Configuração não encontrada");
     void config;
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     let response = "";
     let found = false;
@@ -108,14 +108,14 @@ export class FilesService {
         found = true;
 
         if (backup && this.isEmpty(artifact.backupContent)) {
-          response = "File did not exist in initial snapshot";
+          response = "O arquivo não existia no snapshot inicial";
         } else {
           response = backup ? artifact.backupContent : artifact.currentContent;
         }
       }
     }
 
-    this.assert(found, "file not found");
+    this.assert(found, "arquivo não encontrado");
     return response;
   }
 

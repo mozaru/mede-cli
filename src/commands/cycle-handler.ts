@@ -1,4 +1,5 @@
 import { createContainer } from "../cli/container.js";
+import { emitResult } from "../cli/output.js";
 import { ICycleService } from "../services/interfaces/cycle-service-interface.js";
 
 export class CycleHandler {
@@ -10,40 +11,40 @@ export class CycleHandler {
 
   public async executeCycle(prompt: string, files: Array<string>): Promise<void> {
     const resp = await this.cycleService.cycle(prompt, files);
-    console.log(resp);
+    emitResult(resp);
   }
 
   public async executeApprove(all: boolean): Promise<void> {
     const resp = await this.cycleService.approve(all);
-    console.log(resp);
+    emitResult(resp);
   }
 
   public async executeReject(all: boolean): Promise<void> {
     const resp = await this.cycleService.reject(all);
-    console.log(resp);
+    emitResult(resp);
   }
 
   public async executeReset(): Promise<void> {
     const resp = await this.cycleService.reset();
-    console.log(resp);
+    emitResult(resp);
   }
 
   public async executeRetry(): Promise<void> {
     const resp = await this.cycleService.retry();
-    console.log(resp);
+    emitResult(resp);
   }
 
   public async executeRefine(prompt: string, files: Array<string>): Promise<void> {
     const resp = await this.cycleService.refine(prompt, files);
-    console.log(resp);
+    emitResult(resp);
   }
 
   public executeCommit(): void {
     const resp = this.cycleService.commit();
-    console.log(resp);
+    emitResult(resp);
   }
   public executeRollback(): void {
     const resp = this.cycleService.rollback();
-    console.log(resp);
+    emitResult(resp);
   }
 }

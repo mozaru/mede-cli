@@ -1,4 +1,5 @@
 import { createContainer } from "../cli/container.js";
+import { emitResult } from "../cli/output.js";
 import type { IFilesService } from "../services/interfaces/files-service-interface.js";
 
 export class FilesHandler {
@@ -10,14 +11,14 @@ export class FilesHandler {
 
   public executeCat(file: string, backup: boolean): void {
     const resp = this.filesService.cat(file, backup);
-    console.log(resp);
+    emitResult(resp);
   }
   public executeList(backup: boolean): void {
     const resp = this.filesService.files(backup);
-    console.log(resp);
+    emitResult(resp);
   }
   public executeDiff(file: string): void {
     const resp = this.filesService.diff(file);
-    console.log(resp);
+    emitResult(resp);
   }
 }

@@ -94,10 +94,10 @@ export class CycleService implements ICycleService {
 
   public createBackupDocs(projectId: number, cycleId: number): void {
     const project = this.getProjectById(projectId);
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     this.assertFalse(
       this.cycleArtifactRepository.existAnyByCycle(cycleId),
@@ -212,15 +212,15 @@ export class CycleService implements ICycleService {
 
   public beginInitialization(projectId: number): CycleResponseModel {
     const project = this.getProjectById(projectId);
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     const config = this.parseConfig(configEntity.content);
 
     const currentCycle = this.cycleRepository.getCurrent(projectId);
-    this.assertNull(currentCycle, "There is already a cycle in operation.");
+    this.assertNull(currentCycle, "Já existe um ciclo em andamento.");
 
     const cycle = new CycleEntity();
     cycle.id = 0;
@@ -275,15 +275,15 @@ export class CycleService implements ICycleService {
 
   public begin(projectId: number): CycleResponseModel {
     const project = this.getProjectById(projectId);
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     const config = this.parseConfig(configEntity.content);
 
     const currentCycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNull(currentCycle, "There is already a cycle in operation.");
+    this.assertNull(currentCycle, "Já existe um ciclo em andamento.");
 
     const dt = new Date();
     const dtStr = this.formatDate(dt);
@@ -484,7 +484,7 @@ export class CycleService implements ICycleService {
     }
 
     const updatedCycle = this.cycleRepository.getById(cycle.id);
-    this.assertNotNull(updatedCycle, "Cycle not found after transition");
+    this.assertNotNull(updatedCycle, "Ciclo não encontrado após a transição");
 
     const phase = this.phaseRepository.getByIndex(updatedCycle.id, updatedCycle.currentPhaseIndex);
 
@@ -498,10 +498,10 @@ export class CycleService implements ICycleService {
     this.docsService.reconstruct();
 
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     const result = this.begin(project.id);
     const cycle = result.cycle;
@@ -543,16 +543,16 @@ export class CycleService implements ICycleService {
 
   public async approve(all: boolean): Promise<string> {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     let cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     let phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-    this.assertNotNull(phase, "Phase not found");
+    this.assertNotNull(phase, "Fase não encontrada");
 
     const config = this.parseConfig(configEntity.content);
 
@@ -561,7 +561,7 @@ export class CycleService implements ICycleService {
     if (all) {
       this.assert(
         phase.status === "REFINING" || phase.status === "AWAITING_APPROVAL",
-        "Phase status invalid",
+        "Status da fase inválido",
       );
       this.cycleRepository.approveAll(cycle.id);
 
@@ -595,7 +595,7 @@ export class CycleService implements ICycleService {
       return this.statusService.generate(project, cycle, finalPhase, changeSet);
     }
 
-    this.assert(phase.status === "AWAITING_APPROVAL", "Phase not in await approval!");
+    this.assert(phase.status === "AWAITING_APPROVAL", "A fase não está aguardando aprovação");
 
     this.phaseRepository.approve(phase.id);
 
@@ -617,16 +617,16 @@ export class CycleService implements ICycleService {
 
   public async reject(all: boolean): Promise<string> {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     let cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     let phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-    this.assertNotNull(phase, "Phase not found");
+    this.assertNotNull(phase, "Fase não encontrada");
 
     const config = this.parseConfig(configEntity.content);
 
@@ -635,7 +635,7 @@ export class CycleService implements ICycleService {
     if (all) {
       this.assert(
         phase.status === "REFINING" || phase.status === "AWAITING_APPROVAL",
-        "Phase status invalid",
+        "Status da fase inválido",
       );
       this.cycleRepository.rejectAll(cycle.id);
 
@@ -669,7 +669,7 @@ export class CycleService implements ICycleService {
       return this.statusService.generate(project, cycle, finalPhase, changeSet);
     }
 
-    this.assert(phase.status === "AWAITING_APPROVAL", "Phase not in await approval!");
+    this.assert(phase.status === "AWAITING_APPROVAL", "A fase não está aguardando aprovação");
 
     this.phaseRepository.reject(phase.id);
 
@@ -691,17 +691,17 @@ export class CycleService implements ICycleService {
 
   public async reset(): Promise<string> {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
-    this.assertTrue(cycle.status === "OPEN", "Current cycle not open");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
+    this.assertTrue(cycle.status === "OPEN", "O ciclo atual não está aberto");
 
     let phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-    this.assertNotNull(phase, "Phase not found");
+    this.assertNotNull(phase, "Fase não encontrada");
 
     const config = this.parseConfig(configEntity.content);
 
@@ -713,7 +713,7 @@ export class CycleService implements ICycleService {
     this.phaseRepository.reset(phase.id);
 
     phase = this.phaseRepository.getById(phase.id);
-    this.assertNotNull(phase, "Phase not found after reset");
+    this.assertNotNull(phase, "Fase não encontrada após o reset");
 
     for (const artifact of this.cycleArtifactRepository.list(cycle.id)) {
       if (artifact.artifactPath === phase.outputFile) {
@@ -747,18 +747,18 @@ export class CycleService implements ICycleService {
 
   public async refine(prompt: string = "", files: Array<string> = []): Promise<string> {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
-    this.assertTrue(cycle.status === "OPEN", "Current cycle not open");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
+    this.assertTrue(cycle.status === "OPEN", "O ciclo atual não está aberto");
 
     const phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-    this.assertNotNull(phase, "Phase not found");
-    this.assert(phase.status === "AWAITING_APPROVAL", "Phase not in awaiting approval");
+    this.assertNotNull(phase, "Fase não encontrada");
+    this.assert(phase.status === "AWAITING_APPROVAL", "A fase não está aguardando aprovação");
 
     const config = this.parseConfig(configEntity.content);
     const changeSet = await this.phaseConversationService.sendMessage(
@@ -781,17 +781,17 @@ export class CycleService implements ICycleService {
 
   public async retry(): Promise<string> {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const configEntity = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(configEntity, "Config not found");
+    this.assertNotNull(configEntity, "Configuração não encontrada");
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
-    this.assertTrue(cycle.status === "OPEN", "Current cycle not open");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
+    this.assertTrue(cycle.status === "OPEN", "O ciclo atual não está aberto");
 
     const phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-    this.assertNotNull(phase, "Phase not found");
+    this.assertNotNull(phase, "Fase não encontrada");
 
     const config = this.parseConfig(configEntity.content);
     const changeSet = await this.phaseConversationService.sendMessage(
@@ -814,11 +814,11 @@ export class CycleService implements ICycleService {
 
   public commit(): string {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
-    this.assertTrue(cycle.status === "AWAITING_COMMIT", "Cycle not waiting commit");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
+    this.assertTrue(cycle.status === "AWAITING_COMMIT", "O ciclo não está aguardando commit");
 
     this.clearCycle(cycle);
     cycle.status = "COMMITTED";
@@ -828,10 +828,10 @@ export class CycleService implements ICycleService {
 
   public rollback(): string {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     this.restoreBackup(cycle);
     this.clearCycle(cycle);

@@ -1,4 +1,5 @@
 import { createContainer } from "../cli/container.js";
+import { emitResult } from "../cli/output.js";
 import type { ILlmService } from "../services/interfaces/llm-service-interface.js";
 
 export class LlmHandler {
@@ -10,10 +11,10 @@ export class LlmHandler {
 
   public execute(): void {
     const resp = this.llmService.providers();
-    console.log(resp);
+    emitResult(resp);
   }
   public async executeTest(prompt: string): Promise<void> {
     const resp = await this.llmService.test(prompt);
-    console.log(resp);
+    emitResult(resp);
   }
 }

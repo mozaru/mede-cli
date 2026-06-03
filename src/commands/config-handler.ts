@@ -1,4 +1,5 @@
 import { createContainer } from "../cli/container.js";
+import { emitResult } from "../cli/output.js";
 import type { IConfigService } from "../services/interfaces/config-service-interface.js";
 
 export class ConfigHandler {
@@ -10,14 +11,14 @@ export class ConfigHandler {
 
   public execute(): void {
     const resp = this.configService.getConfig();
-    console.log(resp);
+    emitResult(resp);
   }
   public executeInit(): void {
     this.configService.init();
-    console.log("Successfully initialized config");
+    emitResult("Configuração criada com sucesso.");
   }
   public executeApply(): void {
     this.configService.apply();
-    console.log("Successfully updated config");
+    emitResult("Configuração atualizada com sucesso.");
   }
 }

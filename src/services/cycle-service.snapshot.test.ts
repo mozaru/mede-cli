@@ -147,7 +147,7 @@ describe("CycleService.begin", () => {
 
   it("refuses to open a second cycle while one is in operation", () => {
     service.begin(project.id);
-    expect(() => service.begin(project.id)).toThrow(/already a cycle/i);
+    expect(() => service.begin(project.id)).toThrow(/já existe um ciclo/i);
   });
 });
 
@@ -186,7 +186,7 @@ describe("CycleService.rollback", () => {
 describe("CycleService.commit", () => {
   it("requires the cycle to be awaiting commit", () => {
     service.begin(project.id);
-    expect(() => service.commit()).toThrow(/not waiting commit/i);
+    expect(() => service.commit()).toThrow(/não está aguardando commit/i);
   });
 
   it("closes the cycle while keeping the working documents", () => {

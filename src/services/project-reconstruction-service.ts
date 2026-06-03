@@ -218,7 +218,7 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
       this.configRepository.updateContent(existing.id, rawConfig, configHash);
       const updated = this.configRepository.getById(existing.id);
       if (updated === null) {
-        throw new Error("Config not found after update");
+        throw new Error("Configuração não encontrada após a atualização");
       }
       return updated;
     }

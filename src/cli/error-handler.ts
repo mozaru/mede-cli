@@ -1,6 +1,9 @@
 // Centralized CLI error presentation. Keeps stack traces away from end users
 // (unless MEDE_DEBUG is set) and guarantees a non-zero exit code on failure so
-// scripts and CI can detect that a command did not succeed.
+// scripts and CI can detect that a command did not succeed. Honors the global
+// `--json` output format so failures are machine-readable too.
+
+import { getOutputFormat } from "./output.js";
 
 export function formatCliError(error: unknown): string {
   if (error instanceof Error) {
@@ -19,7 +22,13 @@ export function formatCliError(error: unknown): string {
 }
 
 export function reportCliError(error: unknown): void {
-  console.error(`Erro: ${formatCliError(error)}`);
+  const message = formatCliError(error);
+
+  if (getOutputFormat() === "json") {
+    console.error(JSON.stringify({ ok: false, error: message }));
+  } else {
+    console.error(`Erro: ${message}`);
+  }
 
   if (process.env.MEDE_DEBUG && error instanceof Error && error.stack) {
     console.error(error.stack);

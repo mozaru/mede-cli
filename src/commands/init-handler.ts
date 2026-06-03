@@ -1,4 +1,5 @@
 import { createContainer } from "../cli/container.js";
+import { emitResult } from "../cli/output.js";
 import type { IInitService } from "../services/interfaces/init-service-interface.js";
 
 export class InitHandler {
@@ -10,6 +11,6 @@ export class InitHandler {
 
   public async execute(prompt: string, file: Array<string>): Promise<void> {
     const status = await this.initService.init(prompt, file);
-    console.log(status);
+    emitResult(status);
   }
 }
