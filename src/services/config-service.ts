@@ -101,6 +101,7 @@ export class ConfigService {
         model: "gpt-4.1-mini",
         endpoint: "https://api.openai.com/v1",
         apiKeyEnv: "OPENAI_API_KEY",
+        auth: "apiKey",
         temperature: 0.1,
         maxTokens: 4000,
         timeoutMs: 60000,

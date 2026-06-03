@@ -53,6 +53,10 @@ const llmSchema = z.object({
   model: z.string().min(1, "model é obrigatório"),
   endpoint: z.string(),
   apiKeyEnv: z.string().min(1, "apiKeyEnv é obrigatório"),
+  // Optional for backward compatibility: configs written before Q2 omit it and
+  // default to "apiKey". oauth/adc are accepted here but only wired in later Q2
+  // slices (the auth strategy fails fast with a clear message until then).
+  auth: z.enum(["apiKey", "oauth", "adc"]).optional(),
   temperature: z.number().min(0, "temperature não pode ser negativa"),
   maxTokens: z.number().int().positive("maxTokens deve ser um inteiro positivo"),
   timeoutMs: z.number().int().positive("timeoutMs deve ser um inteiro positivo"),

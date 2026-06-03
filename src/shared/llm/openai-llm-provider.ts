@@ -6,6 +6,7 @@ import {
   LlmRole,
   LlmTextGenerationResult,
 } from "./llm-provider.interface.js";
+import { ILlmAuthStrategy, createLlmAuthStrategy } from "./llm-auth.js";
 
 type OpenAiRequestRole = "developer" | "system" | "user" | "assistant";
 
@@ -45,9 +46,13 @@ export class OpenAiLlmProvider implements ILlmProvider {
   private systemPrompt: string = "";
   private userPrompt: string = "";
   private extraInfo: string = "";
+  private readonly authStrategy: ILlmAuthStrategy;
 
   constructor(config: MedeConfigModelEntity) {
     this.config = config;
+    this.authStrategy = createLlmAuthStrategy(config, "OpenAI", (apiKey) => ({
+      Authorization: `Bearer ${apiKey}`,
+    }));
   }
 
   public setSystemPrompt(prompt: string): void {
@@ -144,7 +149,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
 
   public async generateText(): Promise<LlmTextGenerationResult> {
     const endpoint = this.resolveEndpoint();
-    const apiKey = this.resolveApiKey();
+    const authHeaders = await this.authStrategy.resolveAuthHeaders();
     const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const requestMessages = this.buildRequestMessages();
@@ -161,7 +166,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          ...authHeaders,
         },
         body: JSON.stringify({
           model: this.config.llm.model,
@@ -268,22 +273,6 @@ export class OpenAiLlmProvider implements ILlmProvider {
     const baseEndpoint = this.config.llm.endpoint?.trim() || "https://api.openai.com/v1";
 
     return `${baseEndpoint.replace(/\/$/, "")}/chat/completions`;
-  }
-
-  private resolveApiKey(): string {
-    const apiKeyEnv = this.config.llm.apiKeyEnv?.trim();
-
-    if (!apiKeyEnv) {
-      throw new Error("LLM apiKeyEnv is not configured for OpenAI provider.");
-    }
-
-    const apiKey = process.env[apiKeyEnv];
-
-    if (!apiKey?.trim()) {
-      throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
-    }
-
-    return apiKey;
   }
 
   private isAbortError(error: unknown): boolean {
