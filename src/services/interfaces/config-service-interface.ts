@@ -1,7 +1,5 @@
-
-export interface IConfigService
-{
-    getConfig(): string;
-    init(): void;
-    apply(): void;
+export interface IConfigService {
+  getConfig(): string;
+  init(): void;
+  apply(): void;
 }

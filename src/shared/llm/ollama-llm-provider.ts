@@ -89,11 +89,7 @@ export class OllamaLlmProvider implements ILlmProvider {
     });
   }
 
-  public addInputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addInputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim();
 
@@ -115,11 +111,7 @@ export class OllamaLlmProvider implements ILlmProvider {
     });
   }
 
-  public addOutputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addOutputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim() ?? "";
 
@@ -137,18 +129,14 @@ export class OllamaLlmProvider implements ILlmProvider {
     });
   }
 
-
   public async generateText(): Promise<LlmTextGenerationResult> {
     const endpoint = this.resolveEndpoint();
-    const timeoutMs =
-      this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
+    const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const requestMessages = this.buildRequestMessages();
 
     if (requestMessages.length === 0) {
-      throw new Error(
-        "No messages were provided to OllamaLlmProvider before generateText().",
-      );
+      throw new Error("No messages were provided to OllamaLlmProvider before generateText().");
     }
 
     const controller = new AbortController();
@@ -165,10 +153,8 @@ export class OllamaLlmProvider implements ILlmProvider {
           messages: requestMessages,
           stream: false,
           options: {
-            temperature:
-              this.options.temperature ?? this.config.llm.temperature,
-            num_predict:
-              this.options.maxTokens ?? this.config.llm.maxTokens,
+            temperature: this.options.temperature ?? this.config.llm.temperature,
+            num_predict: this.options.maxTokens ?? this.config.llm.maxTokens,
           },
         }),
         signal: controller.signal,
@@ -176,9 +162,7 @@ export class OllamaLlmProvider implements ILlmProvider {
 
       if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(
-          `Ollama request failed with status ${response.status}: ${errorBody}`,
-        );
+        throw new Error(`Ollama request failed with status ${response.status}: ${errorBody}`);
       }
 
       const data = (await response.json()) as OllamaChatResponse;
@@ -197,9 +181,7 @@ export class OllamaLlmProvider implements ILlmProvider {
       };
     } catch (error) {
       if (this.isAbortError(error)) {
-        throw new Error(
-          `Ollama request aborted due to timeout after ${timeoutMs}ms.`,
-        );
+        throw new Error(`Ollama request aborted due to timeout after ${timeoutMs}ms.`);
       }
 
       throw error;
@@ -239,8 +221,7 @@ export class OllamaLlmProvider implements ILlmProvider {
   }
 
   private resolveEndpoint(): string {
-    const baseEndpoint =
-      this.config.llm.endpoint?.trim() || "http://localhost:11434";
+    const baseEndpoint = this.config.llm.endpoint?.trim() || "http://localhost:11434";
 
     return `${baseEndpoint.replace(/\/$/, "")}/api/chat`;
   }
@@ -248,8 +229,7 @@ export class OllamaLlmProvider implements ILlmProvider {
   private isAbortError(error: unknown): boolean {
     return (
       error instanceof Error &&
-      (error.name === "AbortError" ||
-        error.message.toLowerCase().includes("abort"))
+      (error.name === "AbortError" || error.message.toLowerCase().includes("abort"))
     );
   }
 }

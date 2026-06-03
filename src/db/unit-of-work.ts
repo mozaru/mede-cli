@@ -1,6 +1,6 @@
-import type Database from 'better-sqlite3';
-import type { IDbConnectionFactory } from './db-connection-factory-interface.js';
-import type { IUnitOfWork } from './unit-of-work-interface.js';
+import type Database from "better-sqlite3";
+import type { IDbConnectionFactory } from "./db-connection-factory-interface.js";
+import type { IUnitOfWork } from "./unit-of-work-interface.js";
 
 export class UnitOfWork implements IUnitOfWork {
   private readonly factory: IDbConnectionFactory;
@@ -49,13 +49,13 @@ export class UnitOfWork implements IUnitOfWork {
       return;
     }
 
-    this.connection.exec('BEGIN');
+    this.connection.exec("BEGIN");
     this._hasActiveTransaction = true;
   }
 
   public commit(): void {
     if (this._hasActiveTransaction) {
-      this.connection.exec('COMMIT');
+      this.connection.exec("COMMIT");
     }
 
     this._hasActiveTransaction = false;
@@ -65,8 +65,10 @@ export class UnitOfWork implements IUnitOfWork {
   public rollback(): void {
     if (this._hasActiveTransaction) {
       try {
-        this.connection.exec('ROLLBACK');
-      } catch {}
+        this.connection.exec("ROLLBACK");
+      } catch {
+        // Best-effort rollback: ignore failures (e.g. no active transaction).
+      }
     }
 
     this._hasActiveTransaction = false;
@@ -76,13 +78,17 @@ export class UnitOfWork implements IUnitOfWork {
   public [Symbol.dispose](): void {
     try {
       if (this._hasActiveTransaction) {
-        this.connection.exec('ROLLBACK');
+        this.connection.exec("ROLLBACK");
       }
-    } catch {}
+    } catch {
+      // Best-effort rollback on dispose: ignore failures.
+    }
 
     try {
       this._connection?.close();
-    } catch {}
+    } catch {
+      // Best-effort close on dispose: ignore failures.
+    }
 
     this._connection = null;
     this._hasActiveTransaction = false;

@@ -1,8 +1,6 @@
-import path from "node:path";
 import { BacklogEntity } from "../entities/backlog-entity.js";
 import type { IFileSystemRepository } from "../repositories/interfaces/file-system-repository-interface.js";
 import { FileSystemRepository } from "../repositories/file-system-repository.js";
-
 
 export interface CurrentStateParserResult {
   backlogItems: BacklogEntity[];
@@ -15,7 +13,7 @@ export interface CurrentStateParserResult {
     classificationCounters: Array<{
       key: string;
       lastSequenceNumber: number;
-    }>;    
+    }>;
   };
 }
 
@@ -28,16 +26,13 @@ export class CurrentStateParser {
   private readonly fileSystemRepository: IFileSystemRepository;
 
   constructor(fileSystemRepository?: IFileSystemRepository) {
-    this.fileSystemRepository =
-      fileSystemRepository ?? new FileSystemRepository();
+    this.fileSystemRepository = fileSystemRepository ?? new FileSystemRepository();
   }
 
-  public parse(
-    filePath: string
-  ): CurrentStateParserResult {
+  public parse(filePath: string): CurrentStateParserResult {
     const content = this.fileSystemRepository.readFile(filePath);
 
-    const backlogItems = this.extractIndexedBacklogItemsFromContent(content, filePath);
+    const backlogItems = this.extractIndexedBacklogItemsFromContent(content);
     const classificationCounters = this.buildClassificationCounters(backlogItems);
 
     return {
@@ -45,27 +40,22 @@ export class CurrentStateParser {
       metadata: {
         systemName: this.extractSystemName(content),
         referenceDate: this.extractLabeledValue(content, "Data de referência"),
-        sourceDescription: this.extractLabeledValue(
-          content,
-          "Origem da consolidação"
-        ),
+        sourceDescription: this.extractLabeledValue(content, "Origem da consolidação"),
         totalParsedItems: backlogItems.length,
-        totalFormalBacklogItems: backlogItems.filter((item) =>
-          this.parseFormalBacklogId(item.immutableId)!== null,
+        totalFormalBacklogItems: backlogItems.filter(
+          (item) => this.parseFormalBacklogId(item.immutableId) !== null,
         ).length,
-        classificationCounters,        
-      }
+        classificationCounters,
+      },
     };
   }
 
-  public extractIndexedBacklogItems(
-    filePath: string
-  ): BacklogEntity[] {
+  public extractIndexedBacklogItems(filePath: string): BacklogEntity[] {
     const content = this.fileSystemRepository.readFile(filePath);
-    return this.extractIndexedBacklogItemsFromContent(content, filePath);
+    return this.extractIndexedBacklogItemsFromContent(content);
   }
 
-  private extractIndexedBacklogItemsFromContent( content: string, filePath: string): BacklogEntity[] {
+  private extractIndexedBacklogItemsFromContent(content: string): BacklogEntity[] {
     const table = this.findBacklogTable(content);
 
     if (!table) {
@@ -75,10 +65,7 @@ export class CurrentStateParser {
     const headerMap = this.buildHeaderIndexMap(table.headers);
 
     const idIndex = this.findHeaderIndex(headerMap, ["id"]);
-    const descriptionIndex = this.findHeaderIndex(headerMap, [
-      "descricao",
-      "descrição",
-    ]);
+    const descriptionIndex = this.findHeaderIndex(headerMap, ["descricao", "descrição"]);
     const tagsIndex = this.findHeaderIndex(headerMap, ["tags"]);
     const meetingIndex = this.findHeaderIndex(headerMap, ["ata"]);
     const originIndex = this.findHeaderIndex(headerMap, ["origem"]);
@@ -97,9 +84,8 @@ export class CurrentStateParser {
       return [];
     }
 
-    const reconstructionSource = path.basename(filePath);
     const sourceDocumentType = "current_state";
-    const referenceDate = this.extractLabeledValue(content, "Data de referência") ?? "";    
+    const referenceDate = this.extractLabeledValue(content, "Data de referência") ?? "";
 
     return table.rows
       .map((row) => {
@@ -112,23 +98,19 @@ export class CurrentStateParser {
         const currentStatus = this.getCell(row, statusIndex);
         const classification = this.parseFormalBacklogId(itemCode);
 
-        if (
-          !itemCode ||
-          !description ||
-          !itemOrigin ||
-          !currentStatus
-        ) {
+        if (!itemCode || !description || !itemOrigin || !currentStatus) {
           return null;
         }
 
         return {
-          id:0,
-          projectId:0,
-          documentType:classification?.classificationDoc ?? sourceDocumentType,
-          referenceDate:classification?.classificationDate ?? referenceDate,
+          id: 0,
+          projectId: 0,
+          documentType: classification?.classificationDoc ?? sourceDocumentType,
+          referenceDate: classification?.classificationDate ?? referenceDate,
           nature: classification?.classificationNature ?? "FORMAL_BACKLOG",
           interventionType: classification?.classificationInterventionType ?? "",
-          sequence: classification?.classificationSequence ?? this.parseSequenceFromItemCode(itemCode),
+          sequence:
+            classification?.classificationSequence ?? this.parseSequenceFromItemCode(itemCode),
           immutableId: itemCode,
           description: description,
           tags: this.parseTags(tagsCsv),
@@ -137,7 +119,7 @@ export class CurrentStateParser {
           deliver: deliveryReference,
           status: currentStatus,
           createdAt: "",
-          updatedAt :""
+          updatedAt: "",
         } as BacklogEntity;
       })
       .filter((item): item is BacklogEntity => item !== null);
@@ -145,17 +127,13 @@ export class CurrentStateParser {
 
   private extractSystemName(content: string): string | null {
     return (
-      this.extractLabeledValue(content, "Sistema") ??
-      this.extractLabeledValue(content, "Projeto")
+      this.extractLabeledValue(content, "Sistema") ?? this.extractLabeledValue(content, "Projeto")
     );
   }
 
   private extractLabeledValue(content: string, label: string): string | null {
     const escapedLabel = this.escapeRegExp(label);
-    const regex = new RegExp(
-      `^\\*\\*${escapedLabel}:\\*\\*\\s*(.+)$`,
-      "im",
-    );
+    const regex = new RegExp(`^\\*\\*${escapedLabel}:\\*\\*\\s*(.+)$`, "im");
 
     const match = content.match(regex);
     if (!match) {
@@ -170,9 +148,7 @@ export class CurrentStateParser {
     const tables = this.extractMarkdownTables(content);
 
     for (const table of tables) {
-      const normalizedHeaders = table.headers.map((header) =>
-        this.normalizeHeader(header),
-      );
+      const normalizedHeaders = table.headers.map((header) => this.normalizeHeader(header));
 
       const hasId = normalizedHeaders.includes("id");
       const hasDescription = normalizedHeaders.includes("descricao");
@@ -182,7 +158,15 @@ export class CurrentStateParser {
       const hasDelivery = normalizedHeaders.includes("entrega");
       const hasStatus = normalizedHeaders.includes("status");
 
-     if ( hasId && hasDescription && hasTags && hasMeeting && hasOrigin && hasDelivery && hasStatus) {
+      if (
+        hasId &&
+        hasDescription &&
+        hasTags &&
+        hasMeeting &&
+        hasOrigin &&
+        hasDelivery &&
+        hasStatus
+      ) {
         return table;
       }
     }
@@ -200,10 +184,7 @@ export class CurrentStateParser {
       const headerLine = lines[index]?.trim();
       const separatorLine = lines[index + 1]?.trim();
 
-      if (
-        this.isTableLine(headerLine) &&
-        this.isSeparatorLine(separatorLine)
-      ) {
+      if (this.isTableLine(headerLine) && this.isSeparatorLine(separatorLine)) {
         const headers = this.parseTableLine(headerLine);
         const rows: string[][] = [];
         index += 2;
@@ -261,10 +242,7 @@ export class CurrentStateParser {
     return map;
   }
 
-  private findHeaderIndex(
-    map: Map<string, number>,
-    candidates: string[],
-  ): number | null {
+  private findHeaderIndex(map: Map<string, number>, candidates: string[]): number | null {
     for (const candidate of candidates) {
       const found = map.get(candidate);
       if (found !== undefined) {
@@ -319,7 +297,11 @@ export class CurrentStateParser {
   }
 
   private buildClassificationKey(item: BacklogEntity): string | null {
-    if (item.documentType.trim() === "" || item.nature.trim() === "" || item.interventionType.trim() === "") {
+    if (
+      item.documentType.trim() === "" ||
+      item.nature.trim() === "" ||
+      item.interventionType.trim() === ""
+    ) {
       return null;
     }
 
@@ -391,6 +373,5 @@ export class CurrentStateParser {
         key,
         lastSequenceNumber,
       }));
-  }  
-
+  }
 }

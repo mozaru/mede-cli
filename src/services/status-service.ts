@@ -10,208 +10,173 @@ import { ICycleRepository } from "../repositories/interfaces/cycle-repository-in
 import { IPhaseRepository } from "../repositories/interfaces/phase-repository-interface.js";
 import { isEmpty, notIsEmpty } from "../shared/utils.js";
 
-export class StatusService
-{
-    private readonly changeSetRepository: IChangeSetRepository;
-    private readonly cycleArtifactRepository: ICycleArtifactRepository;
-    private readonly projectRepository: IProjectRepository;
-    private readonly cycleRepository: ICycleRepository;
-    private readonly phaseRepository : IPhaseRepository;
-    constructor(
-        projectRepository: IProjectRepository,
-        cycleRepository: ICycleRepository,
-        changeSetRepository: IChangeSetRepository,
-        cycleArtifactRepository: ICycleArtifactRepository,
-        phaseRepository : IPhaseRepository
-    )
-    {
-        this.changeSetRepository = changeSetRepository;
-        this.cycleArtifactRepository = cycleArtifactRepository;
-        this.projectRepository = projectRepository;
-        this.cycleRepository = cycleRepository;
-        this.phaseRepository = phaseRepository;
+export class StatusService {
+  private readonly changeSetRepository: IChangeSetRepository;
+  private readonly cycleArtifactRepository: ICycleArtifactRepository;
+  private readonly projectRepository: IProjectRepository;
+  private readonly cycleRepository: ICycleRepository;
+  private readonly phaseRepository: IPhaseRepository;
+  constructor(
+    projectRepository: IProjectRepository,
+    cycleRepository: ICycleRepository,
+    changeSetRepository: IChangeSetRepository,
+    cycleArtifactRepository: ICycleArtifactRepository,
+    phaseRepository: IPhaseRepository,
+  ) {
+    this.changeSetRepository = changeSetRepository;
+    this.cycleArtifactRepository = cycleArtifactRepository;
+    this.projectRepository = projectRepository;
+    this.cycleRepository = cycleRepository;
+    this.phaseRepository = phaseRepository;
+  }
+
+  public phaseStateText(phase: PhaseEntity): string {
+    let state = "";
+
+    if (phase.status === "REFINING") {
+      state = "aguardando refine";
+    } else if (phase.status === "AWAITING_APPROVAL") {
+      state = "aguardando approve/reject";
+    } else if (phase.status === "APPROVED") {
+      state = "aprovada";
+    } else if (phase.status === "REJECTED") {
+      state = "rejeitada";
+    } else if (phase.status === "SKIPPED") {
+      state = "ignorada";
+    } else {
+      state = phase.status;
     }
 
-    public phaseStateText(phase: PhaseEntity): string
-    {
-        let state = "";
+    return state;
+  }
 
-        if (phase.status === "REFINING")
-        {
-            state = "aguardando refine";
-        }
-        else if (phase.status === "AWAITING_APPROVAL")
-        {
-            state = "aguardando approve/reject";
-        }
-        else if (phase.status === "APPROVED")
-        {
-            state = "aprovada";
-        }
-        else if (phase.status === "REJECTED")
-        {
-            state = "rejeitada";
-        }
-        else if (phase.status === "SKIPPED")
-        {
-            state = "ignorada";
-        }
-        else
-        {
-            state = phase.status;
-        }
+  public proposalStateText(phase: PhaseEntity): string {
+    let proposal = "";
 
-        return state;
+    if (phase.proposalState === "EMPTY") {
+      proposal = "vazia";
+    } else if (phase.proposalState === "NON_EMPTY") {
+      proposal = "não vazia";
+    } else {
+      proposal = "não gerada";
     }
 
-    public proposalStateText(phase: PhaseEntity): string
-    {
-        let proposal = "";
+    return proposal;
+  }
 
-        if (phase.proposalState === "EMPTY")
-        {
-            proposal = "vazia";
-        }
-        else if (phase.proposalState === "NON_EMPTY")
-        {
-            proposal = "não vazia";
-        }
-        else
-        {
-            proposal = "não gerada";
-        }
+  public autoModeText(cycle: CycleEntity): string {
+    let mode = "none";
 
-        return proposal;
+    if (cycle.autoMode === "APPROVE_ALL") {
+      mode = "approve-all";
+    } else if (cycle.autoMode === "REJECT_ALL") {
+      mode = "reject-all";
     }
 
-    public autoModeText(cycle: CycleEntity): string
-    {
-        let mode = "none";
+    return mode;
+  }
 
-        if (cycle.autoMode === "APPROVE_ALL")
-        {
-            mode = "approve-all";
-        }
-        else if (cycle.autoMode === "REJECT_ALL")
-        {
-            mode = "reject-all";
-        }
+  public countRefinements(phase: PhaseEntity): number {
+    let total = 0;
+    const changeSets = this.changeSetRepository.list(phase.id);
 
-        return mode;
+    for (const _changeSet of changeSets) {
+      total += 1;
     }
 
-    public countRefinements(phase: PhaseEntity): number
-    {
-        let total = 0;
-        const changeSets = this.changeSetRepository.list(phase.id);
+    return total;
+  }
 
-        for (const _changeSet of changeSets)
-        {
-            total += 1;
-        }
+  public countChangedFiles(cycle: CycleEntity): number {
+    let total = 0;
+    const artifacts = this.cycleArtifactRepository.list(cycle.id);
 
-        return total;
+    for (const artifact of artifacts) {
+      if (
+        notIsEmpty(artifact.backupContent) &&
+        artifact.backupContent !== artifact.currentContent
+      ) {
+        total += 1;
+      }
     }
 
-    public countChangedFiles(cycle: CycleEntity): number
-    {
-        let total = 0;
-        const artifacts = this.cycleArtifactRepository.list(cycle.id);
+    return total;
+  }
 
-        for (const artifact of artifacts)
-        {
-            if (notIsEmpty(artifact.backupContent) && artifact.backupContent !== artifact.currentContent)
-            {
-                total += 1;
-            }
-        }
+  public countCreatedFiles(cycle: CycleEntity): number {
+    let total = 0;
+    const artifacts = this.cycleArtifactRepository.list(cycle.id);
 
-        return total;
+    for (const artifact of artifacts) {
+      if (isEmpty(artifact.backupContent) && notIsEmpty(artifact.currentContent)) {
+        total += 1;
+      }
     }
 
-    public countCreatedFiles(cycle: CycleEntity): number
-    {
-        let total = 0;
-        const artifacts = this.cycleArtifactRepository.list(cycle.id);
+    return total;
+  }
 
-        for (const artifact of artifacts)
-        {
-            if (isEmpty(artifact.backupContent) && notIsEmpty(artifact.currentContent))
-            {
-                total += 1;
-            }
-        }
+  public availableActions(cycle: CycleEntity, phase: PhaseEntity): string {
+    let actions = "";
 
-        return total;
+    if (cycle.status === "OPEN") {
+      if (phase.status === "REFINING") {
+        actions += "    - apply <all>\n";
+        actions += "    - discard <all>\n";
+        actions += "    - pending\n";
+        actions += "    - rollback\n";
+      } else if (phase.status === "AWAITING_APPROVAL") {
+        actions += "    - refine\n";
+        actions += "    - approve <all>\n";
+        actions += "    - reject <all>\n";
+        actions += "    - rollback\n";
+      }
+    } else if (cycle.status === "AWAITING_COMMIT") {
+      actions += "    - commit\n";
+      actions += "    - rollback\n";
     }
 
-    public availableActions(cycle: CycleEntity, phase: PhaseEntity): string
-    {
-        let actions = "";
+    return actions;
+  }
 
-        if (cycle.status === "OPEN")
-        {
-            if (phase.status === "REFINING")
-            {
-                actions += "    - apply <all>\n";
-                actions += "    - discard <all>\n";
-                actions += "    - pending\n";
-                actions += "    - rollback\n";
-            }
-            else if (phase.status === "AWAITING_APPROVAL")
-            {
-                actions += "    - refine\n";
-                actions += "    - approve <all>\n";
-                actions += "    - reject <all>\n";
-                actions += "    - rollback\n";
-            }
-        }
-        else if (cycle.status === "AWAITING_COMMIT")
-        {
-            actions += "    - commit\n";
-            actions += "    - rollback\n";
-        }
+  public showStatus(): string {
+    const project: ProjectEntity | null = this.projectRepository.getCurrent();
+    if (project == null) return "Projeto não iniciado!";
+    const cycle: CycleEntity | null = this.cycleRepository.getCurrent(project!.id);
+    const phase: PhaseEntity | null =
+      cycle == null ? null : this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
+    const changeSet: ChangeSetEntity | null =
+      phase == null ? null : this.changeSetRepository.getCurrent(phase.id);
 
-        return actions;
+    return this.generate(project!, cycle, phase, changeSet);
+  }
+
+  public generate(
+    project: ProjectEntity,
+    cycle: CycleEntity | null,
+    phase: PhaseEntity | null,
+    changeSet: ChangeSetEntity | null,
+  ): string {
+    const phaseState = phase == null ? "--" : this.phaseStateText(phase);
+    const proposalState = phase == null ? "--" : this.proposalStateText(phase);
+    const autoMode = cycle == null ? "--" : this.autoModeText(cycle);
+    const refinements = phase == null ? "--" : this.countRefinements(phase);
+    const changedFiles = cycle == null ? "--" : this.countChangedFiles(cycle);
+    const createdFiles = cycle == null ? "--" : this.countCreatedFiles(cycle);
+    const actions = cycle == null || phase == null ? "" : this.availableActions(cycle, phase);
+
+    let artifactName = "-";
+    let changeSetInfo = "-";
+
+    if (changeSet !== null) {
+      artifactName = changeSet.fileName;
+      changeSetInfo = `${changeSet.currentChangeChunkIndex}/${changeSet.changeChunkCount}`;
     }
 
-    public showStatus() : string{
-
-        const project: ProjectEntity | null = this.projectRepository.getCurrent();
-        if (project == null)
-          return "Projeto não iniciado!";
-        const cycle: CycleEntity | null = this.cycleRepository.getCurrent(project!.id);
-        const phase: PhaseEntity | null = cycle==null? null : this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-        const changeSet : ChangeSetEntity | null = phase==null? null : this.changeSetRepository.getCurrent(phase.id); 
-        
-        return this.generate(project!, cycle, phase, changeSet);
-    }
-
-    public generate(
-        project: ProjectEntity,
-        cycle: CycleEntity|null,
-        phase: PhaseEntity|null,
-        changeSet: ChangeSetEntity | null
-    ): string
-    {
-        const phaseState = (phase==null) ? "--" : this.phaseStateText(phase);
-        const proposalState = phase==null? "--" : this.proposalStateText(phase);
-        const autoMode = cycle==null? "--" : this.autoModeText(cycle);
-        const refinements = phase==null? "--" : this.countRefinements(phase);
-        const changedFiles = cycle==null? "--" : this.countChangedFiles(cycle);
-        const createdFiles = cycle==null? "--" : this.countCreatedFiles(cycle);
-        const actions = cycle==null || phase==null ? "" : this.availableActions(cycle, phase);
-
-        let artifactName = "-";
-        let changeSetInfo = "-";
-
-        if (changeSet !== null)
-        {
-            artifactName = changeSet.fileName;
-            changeSetInfo = `${changeSet.currentChangeChunkIndex}/${changeSet.changeChunkCount}`;
-        }
-
-       const cycleStatus = cycle==null ? "" : `
+    const cycleStatus =
+      cycle == null
+        ? ""
+        : `
     Cycle        : ${cycle?.status}
     Phase        : ${phase?.name}
     Artifact     : ${artifactName}
@@ -222,9 +187,9 @@ export class StatusService
     Created files: ${createdFiles}
     Auto-mode    : ${autoMode}
 
-       ` 
+       `;
 
-        return `${cycleStatus}
+    return `${cycleStatus}
       Project : ${project.name}
       RootPath     : ${project.rootProjectPath}
       DocsPath     : ${project.docsRootPath}
@@ -236,11 +201,10 @@ export class StatusService
     Available actions:
 ${actions}
 `;
-    }
+  }
 
-    public successCommit(project: ProjectEntity, cycle: CycleEntity): string
-    {
-        return `Cycle ${cycle.status}
+  public successCommit(project: ProjectEntity, cycle: CycleEntity): string {
+    return `Cycle ${cycle.status}
   Project : ${project.name}
      RootPath     : ${project.rootProjectPath}
      DocsPath     : ${project.docsRootPath}
@@ -248,11 +212,10 @@ ${actions}
      Cycle        : ${cycle.status}
   Commit successful.
 `;
-    }
+  }
 
-    public successRollback(project: ProjectEntity, cycle: CycleEntity): string
-    {
-        return `Cycle ${cycle.status}
+  public successRollback(project: ProjectEntity, cycle: CycleEntity): string {
+    return `Cycle ${cycle.status}
   Project : ${project.name}
      RootPath     : ${project.rootProjectPath}
      DocsPath     : ${project.docsRootPath}
@@ -260,5 +223,5 @@ ${actions}
      Cycle        : ${cycle.status}
   Rollback successful.
 `;
-    }
+  }
 }

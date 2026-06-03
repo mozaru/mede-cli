@@ -94,11 +94,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
     });
   }
 
-  public addInputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addInputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim();
 
@@ -120,11 +116,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
     });
   }
 
-  public addOutputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addOutputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim() ?? "";
 
@@ -145,8 +137,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
   public async generateText(): Promise<LlmTextGenerationResult> {
     const endpoint = this.resolveEndpoint();
     const apiKey = this.resolveApiKey();
-    const timeoutMs =
-      this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
+    const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const { system, anthropicMessages } = this.buildRequestMessages();
 
@@ -169,10 +160,8 @@ export class AnthropicLlmProvider implements ILlmProvider {
         },
         body: JSON.stringify({
           model: this.config.llm.model,
-          max_tokens:
-            this.options.maxTokens ?? this.config.llm.maxTokens ?? 4096,
-          temperature:
-            this.options.temperature ?? this.config.llm.temperature ?? 0.1,
+          max_tokens: this.options.maxTokens ?? this.config.llm.maxTokens ?? 4096,
+          temperature: this.options.temperature ?? this.config.llm.temperature ?? 0.1,
           system,
           messages: anthropicMessages,
         }),
@@ -181,17 +170,13 @@ export class AnthropicLlmProvider implements ILlmProvider {
 
       if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(
-          `Anthropic request failed with status ${response.status}: ${errorBody}`,
-        );
+        throw new Error(`Anthropic request failed with status ${response.status}: ${errorBody}`);
       }
 
       const data = (await response.json()) as AnthropicMessageResponse;
 
       const rawText = (data.content ?? [])
-        .filter(
-          (block) => block.type === "text" && typeof block.text === "string",
-        )
+        .filter((block) => block.type === "text" && typeof block.text === "string")
         .map((block) => block.text?.trim() ?? "")
         .filter(Boolean)
         .join("\n")
@@ -210,9 +195,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
       };
     } catch (error) {
       if (this.isAbortError(error)) {
-        throw new Error(
-          `Anthropic request aborted due to timeout after ${timeoutMs}ms.`,
-        );
+        throw new Error(`Anthropic request aborted due to timeout after ${timeoutMs}ms.`);
       }
 
       throw error;
@@ -222,8 +205,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
   }
 
   private resolveEndpoint(): string {
-    const baseEndpoint =
-      this.config.llm.endpoint?.trim() || "https://api.anthropic.com";
+    const baseEndpoint = this.config.llm.endpoint?.trim() || "https://api.anthropic.com";
 
     return `${baseEndpoint.replace(/\/$/, "")}/v1/messages`;
   }
@@ -232,17 +214,13 @@ export class AnthropicLlmProvider implements ILlmProvider {
     const apiKeyEnv = this.config.llm.apiKeyEnv?.trim();
 
     if (!apiKeyEnv) {
-      throw new Error(
-        "LLM apiKeyEnv is not configured for Anthropic provider.",
-      );
+      throw new Error("LLM apiKeyEnv is not configured for Anthropic provider.");
     }
 
     const apiKey = process.env[apiKeyEnv];
 
     if (!apiKey?.trim()) {
-      throw new Error(
-        `Environment variable "${apiKeyEnv}" is not set or is empty.`,
-      );
+      throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
     }
 
     return apiKey;
@@ -277,8 +255,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
   private isAbortError(error: unknown): boolean {
     return (
       error instanceof Error &&
-      (error.name === "AbortError" ||
-        error.message.toLowerCase().includes("abort"))
+      (error.name === "AbortError" || error.message.toLowerCase().includes("abort"))
     );
   }
 }

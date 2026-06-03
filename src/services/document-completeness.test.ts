@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { parseDiff, applyDiff } from '../shared/diff.js'
+import { describe, it, expect } from "vitest";
+import { parseDiff, applyDiff } from "../shared/diff.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -8,28 +8,28 @@ import { parseDiff, applyDiff } from '../shared/diff.js'
 // Converts plain document content into a creation diff (new file from empty).
 // Mirrors what a well-behaved LLM should return for a new document.
 function makeDiff(content: string): string {
-  const lines = content.trim().split('\n')
-  const diffLines = lines.map(l => `+${l}`).join('\n')
-  return `@@ -0,0 +1,${lines.length} @@\n${diffLines}`
+  const lines = content.trim().split("\n");
+  const diffLines = lines.map((l) => `+${l}`).join("\n");
+  return `@@ -0,0 +1,${lines.length} @@\n${diffLines}`;
 }
 
 // Applies all chunks from a diff to a base string and returns the result.
 function applyAll(base: string, diffText: string): string {
-  const chunks = parseDiff(diffText)
-  let content = base
-  let offset = 0
+  const chunks = parseDiff(diffText);
+  let content = base;
+  let offset = 0;
   for (const chunk of chunks) {
-    const result = applyDiff(content, { ...chunk, offset })
-    content = result.newContent
-    offset += result.addedCount - result.removedCount
+    const result = applyDiff(content, { ...chunk, offset });
+    content = result.newContent;
+    offset += result.addedCount - result.removedCount;
   }
-  return content
+  return content;
 }
 
 // Asserts that all required sections are present in the document.
 function assertSections(doc: string, sections: string[], label: string): void {
   for (const section of sections) {
-    expect(doc, `[${label}] missing: "${section}"`).toContain(section)
+    expect(doc, `[${label}] missing: "${section}"`).toContain(section);
   }
 }
 
@@ -88,7 +88,7 @@ Foi discutida a adoção de JWT para sessões stateless.
 ## 6. Observação Final
 
 Esta ata registra as decisões tomadas. Alterações futuras devem ser formalizadas.
-`.trim()
+`.trim();
 
 const ADR_CONTENT = `
 # ADR-2026-06-02 — Estratégia de Autenticação
@@ -132,7 +132,7 @@ Adotar JWT para autenticação de usuários.
 ### 4.1 Sessões no servidor
 **Rejeitada porque:**
 - Requer armazenamento de estado, aumentando complexidade.
-`.trim()
+`.trim();
 
 const ESM_CONTENT = `
 # ESM-2026-06-02 — Especificação de Manutenção do Sistema
@@ -203,7 +203,7 @@ O sistema deve rejeitar cadastros com e-mail já existente.
 ## 6. Observações
 
 Nenhuma observação adicional.
-`.trim()
+`.trim();
 
 const DELIVERY_LOG_CONTENT = `
 # Registro de Entrega — Semana 01
@@ -258,7 +258,7 @@ Semana focada em configuração inicial do projeto e arquitetura base.
 Total itens entregues: **0**
 Total itens pendentes: **0**
 Percentual de entrega: **0,0%**
-`.trim()
+`.trim();
 
 const RF_CONTENT = `
 # Requisitos Funcionais (RF)
@@ -316,7 +316,7 @@ Ajustes posteriores devem ser tratados via ESM.
 ## Consideração Final
 
 Funcionalidades não descritas estão fora do escopo.
-`.trim()
+`.trim();
 
 const RNF_CONTENT = `
 # Requisitos Não Funcionais (RNF)
@@ -360,7 +360,7 @@ O sistema deve responder dentro de limites aceitáveis.
 ## Consideração Final
 
 Itens pendentes devem ser formalizados. Mudanças exigem atualização documental.
-`.trim()
+`.trim();
 
 const DATA_MODEL_CONTENT = `
 # Modelo de Dados
@@ -436,7 +436,7 @@ Campos \`criado_em\` e \`atualizado_em\` em todas as entidades.
 ## 8. Consideração Final
 
 O modelo representa o estado atual. Ajustes devem ser formalizados.
-`.trim()
+`.trim();
 
 const TIMELINE_CONTENT = `
 # Cronograma do Projeto
@@ -513,7 +513,7 @@ O aceite ocorre mediante homologação do cliente.
 ## 7. Observação Final
 
 Mudanças de cronograma exigem formalização.
-`.trim()
+`.trim();
 
 const SCOPE_CONTENT = `
 # Visão e Escopo
@@ -572,7 +572,7 @@ Responsável pela gestão de usuários e permissões.
 ## 7. Consideração Final
 
 Apenas o que está descrito faz parte do escopo. Mudanças exigem formalização.
-`.trim()
+`.trim();
 
 const CURRENT_STATE_CONTENT = `
 # Situação Atual
@@ -642,7 +642,7 @@ Nenhuma no momento.
 ## 7. Consideração Final
 
 Este documento representa o estado consolidado atual. Deve ser mantido atualizado.
-`.trim()
+`.trim();
 
 const README_CONTENT = `
 # Sistema Exemplo
@@ -687,7 +687,7 @@ npm install
 \`\`\`bash
 npm run dev
 \`\`\`
-`.trim()
+`.trim();
 
 const ENTENDIMENTO_INICIAL_CONTENT = `
 # Entendimento Inicial do Projeto
@@ -822,7 +822,7 @@ A partir da Entrega 1, semana 4.
 ## 12. Considerações Finais
 
 Este documento é a referência inicial congelada do projeto.
-`.trim()
+`.trim();
 
 // ---------------------------------------------------------------------------
 // Required sections per document type
@@ -830,101 +830,90 @@ Este documento é a referência inicial congelada do projeto.
 
 const REQUIRED: Record<string, string[]> = {
   ATA: [
-    '## 1. Objetivo',
-    '## 2. Contexto',
-    '## 3. Pontos Discutidos e Decisões',
-    '## 4. Impactos',
-    '## 5. Encaminhamentos',
-    '## 6. Observação Final',
+    "## 1. Objetivo",
+    "## 2. Contexto",
+    "## 3. Pontos Discutidos e Decisões",
+    "## 4. Impactos",
+    "## 5. Encaminhamentos",
+    "## 6. Observação Final",
   ],
   ADR: [
-    '## 1. Contexto',
-    '## 2. Decisão',
-    '## 3. Consequências',
-    '## 4. Alternativas Consideradas e Rejeitadas',
+    "## 1. Contexto",
+    "## 2. Decisão",
+    "## 3. Consequências",
+    "## 4. Alternativas Consideradas e Rejeitadas",
   ],
   ESM: [
-    '## 1. Objetivo',
-    '## 2. Contexto',
-    '## 3. Referências',
-    '## 4. Controle de Intervenções',
-    '## 5. Itens de Manutenção',
-    '## 6. Observações',
+    "## 1. Objetivo",
+    "## 2. Contexto",
+    "## 3. Referências",
+    "## 4. Controle de Intervenções",
+    "## 5. Itens de Manutenção",
+    "## 6. Observações",
   ],
-  'Delivery Log': [
-    '## Objetivo',
-    '## Entregas',
-    '## Resultado',
-    '## Novos',
-    '## Documentos',
-    '## Estatística',
+  "Delivery Log": [
+    "## Objetivo",
+    "## Entregas",
+    "## Resultado",
+    "## Novos",
+    "## Documentos",
+    "## Estatística",
   ],
-  RF: [
-    '## RF-01',
-    '## Considerações sobre Evoluções Pós-Entrega',
-    '## Consideração Final',
-  ],
-  RNF: [
-    '## RNF-01',
-    '## Consideração Final',
-  ],
-  'Modelo de Dados': [
-    '## 1. Visão Geral',
-    '## 2. Entidades Principais',
-    '## 3. Relacionamentos (Resumo)',
-    '## 4. Fluxos de Persistência e Importação',
-    '## 5. Restrições e Índices Recomendados',
-    '## 6. Auditoria e Segurança',
-    '## 7. Itens Pendentes e Ajustes Futuros',
-    '## 8. Consideração Final',
+  RF: ["## RF-01", "## Considerações sobre Evoluções Pós-Entrega", "## Consideração Final"],
+  RNF: ["## RNF-01", "## Consideração Final"],
+  "Modelo de Dados": [
+    "## 1. Visão Geral",
+    "## 2. Entidades Principais",
+    "## 3. Relacionamentos (Resumo)",
+    "## 4. Fluxos de Persistência e Importação",
+    "## 5. Restrições e Índices Recomendados",
+    "## 6. Auditoria e Segurança",
+    "## 7. Itens Pendentes e Ajustes Futuros",
+    "## 8. Consideração Final",
   ],
   Cronograma: [
-    '## 1. Backlog Inicial do Projeto',
-    '## 2. Duração Total do Projeto',
-    '## 3. Estrutura Geral de Entregas',
-    '## 4. Detalhamento das Entregas',
-    '## 5. Marcos Relevantes',
-    '## 6. Regras Gerais de Aceite',
-    '## 7. Observação Final',
+    "## 1. Backlog Inicial do Projeto",
+    "## 2. Duração Total do Projeto",
+    "## 3. Estrutura Geral de Entregas",
+    "## 4. Detalhamento das Entregas",
+    "## 5. Marcos Relevantes",
+    "## 6. Regras Gerais de Aceite",
+    "## 7. Observação Final",
   ],
-  'Visão e Escopo': [
-    '## 1. Objetivo do Sistema',
-    '## 2. Contexto do Projeto',
-    '## 3. Perfis de Usuário',
-    '## 4. Funcionalidades Incluídas no Escopo',
-    '## 5. Fora de Escopo',
-    '## 6. Premissas e Restrições',
-    '## 7. Consideração Final',
+  "Visão e Escopo": [
+    "## 1. Objetivo do Sistema",
+    "## 2. Contexto do Projeto",
+    "## 3. Perfis de Usuário",
+    "## 4. Funcionalidades Incluídas no Escopo",
+    "## 5. Fora de Escopo",
+    "## 6. Premissas e Restrições",
+    "## 7. Consideração Final",
   ],
-  'Situação Atual': [
-    '## 1. Resumo Analítico',
-    '## 2. Indicadores Consolidados',
-    '## 3. Tabela Consolidada de Todos os Itens do Projeto',
-    '## 4. Principais Pendências Atuais',
-    '## 5. Evoluções em Avaliação ou Aguardando Formalização',
-    '## 6. Riscos e Observações',
-    '## 7. Consideração Final',
+  "Situação Atual": [
+    "## 1. Resumo Analítico",
+    "## 2. Indicadores Consolidados",
+    "## 3. Tabela Consolidada de Todos os Itens do Projeto",
+    "## 4. Principais Pendências Atuais",
+    "## 5. Evoluções em Avaliação ou Aguardando Formalização",
+    "## 6. Riscos e Observações",
+    "## 7. Consideração Final",
   ],
-  README: [
-    '## Visão Geral',
-    '## Funcionalidades',
-    '## Tecnologias Utilizadas',
+  README: ["## Visão Geral", "## Funcionalidades", "## Tecnologias Utilizadas"],
+  "Entendimento Inicial": [
+    "## 1. Objetivo do Documento",
+    "## 2. Contexto Geral do Projeto",
+    "## 3. Visão Inicial e Delimitação de Escopo",
+    "## 4. Premissas Técnicas Fundamentais",
+    "## 5. Modelo Operacional Inicial",
+    "## 6. Modelo de Registro / Funcionamento Central",
+    "## 7. Segurança e Observabilidade",
+    "## 8. Convenção de Identificação e Contadores Iniciais",
+    "## 9. Planejamento Inicial e Backlog",
+    "## 10. Planejamento Inicial das Entregas",
+    "## 11. Início Previsto da Evolução Operacional",
+    "## 12. Considerações Finais",
   ],
-  'Entendimento Inicial': [
-    '## 1. Objetivo do Documento',
-    '## 2. Contexto Geral do Projeto',
-    '## 3. Visão Inicial e Delimitação de Escopo',
-    '## 4. Premissas Técnicas Fundamentais',
-    '## 5. Modelo Operacional Inicial',
-    '## 6. Modelo de Registro / Funcionamento Central',
-    '## 7. Segurança e Observabilidade',
-    '## 8. Convenção de Identificação e Contadores Iniciais',
-    '## 9. Planejamento Inicial e Backlog',
-    '## 10. Planejamento Inicial das Entregas',
-    '## 11. Início Previsto da Evolução Operacional',
-    '## 12. Considerações Finais',
-  ],
-}
+};
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -934,57 +923,57 @@ const FIXTURES: Record<string, string> = {
   ATA: ATA_CONTENT,
   ADR: ADR_CONTENT,
   ESM: ESM_CONTENT,
-  'Delivery Log': DELIVERY_LOG_CONTENT,
+  "Delivery Log": DELIVERY_LOG_CONTENT,
   RF: RF_CONTENT,
   RNF: RNF_CONTENT,
-  'Modelo de Dados': DATA_MODEL_CONTENT,
+  "Modelo de Dados": DATA_MODEL_CONTENT,
   Cronograma: TIMELINE_CONTENT,
-  'Visão e Escopo': SCOPE_CONTENT,
-  'Situação Atual': CURRENT_STATE_CONTENT,
+  "Visão e Escopo": SCOPE_CONTENT,
+  "Situação Atual": CURRENT_STATE_CONTENT,
   README: README_CONTENT,
-  'Entendimento Inicial': ENTENDIMENTO_INICIAL_CONTENT,
-}
+  "Entendimento Inicial": ENTENDIMENTO_INICIAL_CONTENT,
+};
 
-describe('Document completeness — pipeline: LLM diff response → final document', () => {
+describe("Document completeness — pipeline: LLM diff response → final document", () => {
   for (const [docType, content] of Object.entries(FIXTURES)) {
     it(`${docType}: diff is parseable and applies cleanly`, () => {
-      const diffText = makeDiff(content)
-      const chunks = parseDiff(diffText)
+      const diffText = makeDiff(content);
+      const chunks = parseDiff(diffText);
 
-      expect(chunks.length).toBeGreaterThan(0)
+      expect(chunks.length).toBeGreaterThan(0);
 
-      const result = applyAll('', diffText)
-      expect(result.length).toBeGreaterThan(0)
-    })
+      const result = applyAll("", diffText);
+      expect(result.length).toBeGreaterThan(0);
+    });
 
     it(`${docType}: generated document contains all required sections`, () => {
-      const result = applyAll('', makeDiff(content))
-      assertSections(result, REQUIRED[docType], docType)
-    })
+      const result = applyAll("", makeDiff(content));
+      assertSections(result, REQUIRED[docType], docType);
+    });
   }
 
-  it('detects missing sections (negative test)', () => {
+  it("detects missing sections (negative test)", () => {
     // A truncated ATA that is missing sections 2-6
-    const incomplete = `# Ata de Reunião\n\n## 1. Objetivo\n\nConteúdo.`
-    const result = applyAll('', makeDiff(incomplete))
+    const incomplete = `# Ata de Reunião\n\n## 1. Objetivo\n\nConteúdo.`;
+    const result = applyAll("", makeDiff(incomplete));
 
-    expect(result).toContain('## 1. Objetivo')
-    expect(result).not.toContain('## 2. Contexto')
-    expect(result).not.toContain('## 6. Observação Final')
-  })
+    expect(result).toContain("## 1. Objetivo");
+    expect(result).not.toContain("## 2. Contexto");
+    expect(result).not.toContain("## 6. Observação Final");
+  });
 
-  it('update diff: preserves existing sections and adds new content', () => {
+  it("update diff: preserves existing sections and adds new content", () => {
     // Simulate an update: document already has section 1, LLM adds section 2
-    const existing = `# Ata\n\n## 1. Objetivo\n\nConteúdo existente.`
-    const updateDiff = `@@ -3,3 +3,7 @@\n ## 1. Objetivo\n \n Conteúdo existente.\n+\n+## 2. Contexto\n+\n+Contexto adicionado.`
-    const chunks = parseDiff(updateDiff)
+    const existing = `# Ata\n\n## 1. Objetivo\n\nConteúdo existente.`;
+    const updateDiff = `@@ -3,3 +3,7 @@\n ## 1. Objetivo\n \n Conteúdo existente.\n+\n+## 2. Contexto\n+\n+Contexto adicionado.`;
+    const chunks = parseDiff(updateDiff);
 
-    expect(chunks).toHaveLength(1)
+    expect(chunks).toHaveLength(1);
 
-    const result = applyAll(existing, updateDiff)
-    expect(result).toContain('## 1. Objetivo')
-    expect(result).toContain('## 2. Contexto')
-    expect(result).toContain('Conteúdo existente.')
-    expect(result).toContain('Contexto adicionado.')
-  })
-})
+    const result = applyAll(existing, updateDiff);
+    expect(result).toContain("## 1. Objetivo");
+    expect(result).toContain("## 2. Contexto");
+    expect(result).toContain("Conteúdo existente.");
+    expect(result).toContain("Contexto adicionado.");
+  });
+});
