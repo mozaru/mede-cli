@@ -37,7 +37,7 @@ O `bin` aponta para o bundle gerado:
 ```
 
 O `better-sqlite3` é declarado como dependência de runtime e marcado como
-`external` no `tsdown.config.ts` — ele **não** é embutido no bundle e é resolvido
+`deps.neverBundle` no `tsdown.config.ts` — ele **não** é embutido no bundle e é resolvido
 via `node_modules` na máquina do usuário (binário nativo).
 
 ---

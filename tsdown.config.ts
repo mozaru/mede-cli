@@ -9,6 +9,8 @@ export default defineConfig({
   minify: true,
   sourcemap: false,
   dts: false,
-  external: ["better-sqlite3"],
+  deps: {
+    neverBundle: ["better-sqlite3"],
+  },
   banner: {},
 });
