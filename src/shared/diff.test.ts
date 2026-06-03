@@ -66,6 +66,20 @@ describe("parseDiff", () => {
     expect(chunks[0].location).toBe("@@ -1,1 +1,2 @@");
   });
 
+  it("ignores trailing markdown code block markers and conversational text", () => {
+    const diff = [
+      "@@ -1,1 +1,2 @@",
+      " context",
+      "+added",
+      "```",
+      "Here is some commentary from the model.",
+    ].join("\n");
+    const chunks = parseDiff(diff);
+
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].content).toBe(" context\n+added");
+  });
+
   it("returns empty array for NO_CHANGES response", () => {
     expect(parseDiff("NO_CHANGES")).toHaveLength(0);
   });

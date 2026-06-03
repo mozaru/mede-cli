@@ -17,6 +17,27 @@ interface ChunkApplyModel {
 type DiffFunction = (contentOld: string, contentNew: string) => Array<ChunkModel>;
 type ApplyFunction = (content: string, chunk: ChunkModel) => ChunkApplyModel;
 
+function cleanHunkLines(lines: string[]): string[] {
+  const validLines: string[] = [];
+  for (const line of lines) {
+    if (
+      line === "" ||
+      line.startsWith("+") ||
+      line.startsWith("-") ||
+      line.startsWith(" ") ||
+      line.startsWith("\\")
+    ) {
+      validLines.push(line);
+    } else {
+      break;
+    }
+  }
+  while (validLines.length > 0 && validLines[validLines.length - 1] === "") {
+    validLines.pop();
+  }
+  return validLines;
+}
+
 function parseDiff(value: string): Array<ChunkModel> {
   const resp: Array<ChunkModel> = [];
   const parts = value.split(/(?=@@.*@@\n)/);
@@ -28,7 +49,9 @@ function parseDiff(value: string): Array<ChunkModel> {
 
     const lines = trimmedPart.split(/\r?\n/);
     const location = lines[0];
-    const content = lines.slice(1).join("\n");
+    const rawContentLines = lines.slice(1);
+    const cleanContentLines = cleanHunkLines(rawContentLines);
+    const content = cleanContentLines.join("\n");
 
     resp.push({
       index: ++currentIndex,

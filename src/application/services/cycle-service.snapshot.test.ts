@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -42,6 +42,10 @@ let artifacts: CycleArtifactRepository;
 let project: ProjectEntity;
 let config: MedeConfigModelEntity;
 let readmePath: string;
+let changeSets: ChangeSetRepository;
+let changeChunks: ChangeChunkRepository;
+let phaseAttachments: PhaseAttachmentRepository;
+let conversations: PhaseConversationRepository;
 
 function setup(): void {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "mede-cycle-"));
@@ -62,10 +66,10 @@ function setup(): void {
   cycles = new CycleRepository(uow);
   phases = new PhaseRepository(uow);
   artifacts = new CycleArtifactRepository(uow);
-  const changeSets = new ChangeSetRepository(uow);
-  const changeChunks = new ChangeChunkRepository(uow);
-  const phaseAttachments = new PhaseAttachmentRepository(uow);
-  const conversations = new PhaseConversationRepository(uow);
+  changeSets = new ChangeSetRepository(uow);
+  changeChunks = new ChangeChunkRepository(uow);
+  phaseAttachments = new PhaseAttachmentRepository(uow);
+  conversations = new PhaseConversationRepository(uow);
   const backlog = new BacklogRepository(uow);
   const backlogCounters = new BacklogInterventionCountersRepository(uow);
 
@@ -198,5 +202,42 @@ describe("CycleService.commit", () => {
 
     expect(cycles.getCurrent(project.id)).toBeNull();
     expect(fs.readFileSync(readmePath, "utf-8")).toBe("v2-kept");
+  });
+});
+
+describe("CycleService.retry", () => {
+  it("clears the stale phase data before running retry", async () => {
+    const { cycle } = service.begin(project.id);
+    const phase = phases.list(cycle.id)[0];
+
+    conversations.insert({ id: 0, phaseId: phase.id, createdAt: "", actor: "user", content: "hi" });
+
+    const changeSetRepo = uow.connection.prepare(
+      "insert into changeSet (phaseId,cycleArtifactId,fileName,completed,currentChangeChunkIndex,changeChunkCount,currentOffset,startedAt,updatedAt) values (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    );
+    const insertResult = changeSetRepo.run(phase.id, 1, "test.md", 0, 1, 1, 0, "", "");
+    const changeSetId = Number(insertResult.lastInsertRowid);
+
+    changeChunks.insert({
+      id: 0,
+      phaseId: phase.id,
+      changeSetId,
+      index: 1,
+      status: "AWAITING_APPROVAL",
+      blockLocation: "@@ -1 +1 @@",
+      changeContent: "+test",
+      startedAt: "",
+      updatedAt: ""
+    });
+
+    expect(conversations.list(phase.id)).toHaveLength(1);
+
+    service["phaseConversationService"].sendMessage = vi.fn().mockResolvedValue(null);
+
+    await service.retry();
+
+    expect(conversations.list(phase.id)).toHaveLength(0);
+    expect(uow.connection.prepare("select count(*) as count from changeSet where phaseId = ?").get(phase.id).count).toBe(0);
+    expect(changeChunks.list(changeSetId)).toHaveLength(0);
   });
 });
