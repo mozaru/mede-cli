@@ -790,10 +790,21 @@ export class CycleService implements ICycleService {
     this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
     this.assertTrue(cycle.status === "OPEN", "O ciclo atual não está aberto");
 
-    const phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
+    let phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
     this.assertNotNull(phase, "Fase não encontrada");
 
     const config = this.parseConfig(configEntity.content);
+
+    // Clean up existing data for this phase before retrying
+    this.changeChunkRepository.deleteFromPhase(phase.id);
+    this.changeSetRepository.deleteFromPhase(phase.id);
+    this.phaseAttachmentRepository.deleteFromPhase(phase.id);
+    this.phaseConversationRepository.deleteFromPhase(phase.id);
+
+    this.phaseRepository.reset(phase.id);
+
+    phase = this.phaseRepository.getById(phase.id) ?? phase;
+
     const changeSet = await this.phaseConversationService.sendMessage(
       project,
       config,
