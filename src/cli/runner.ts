@@ -3,13 +3,13 @@ import { Command } from "commander";
 import { reportCliError } from "./error-handler.js";
 import { setOutputFormat } from "./output.js";
 import { startRepl } from "./repl.js";
-import { ChangesHandler } from "../commands/changes-handler.js";
-import { ConfigHandler } from "../commands/config-handler.js";
-import { CycleHandler } from "../commands/cycle-handler.js";
-import { FilesHandler } from "../commands/files-handler.js";
-import { InitHandler } from "../commands/init-handler.js";
-import { LlmHandler } from "../commands/llm-handler.js";
-import { StatusHandler } from "../commands/status-handler.js";
+import { ChangesHandler } from "./commands/changes-handler.js";
+import { ConfigHandler } from "./commands/config-handler.js";
+import { CycleHandler } from "./commands/cycle-handler.js";
+import { FilesHandler } from "./commands/files-handler.js";
+import { InitHandler } from "./commands/init-handler.js";
+import { LlmHandler } from "./commands/llm-handler.js";
+import { StatusHandler } from "./commands/status-handler.js";
 
 // Single source of truth for the version: read package.json at runtime. Using a
 // URL relative to this module keeps it working both in dev (tsx) and in the
@@ -270,11 +270,18 @@ export function buildProgram(): Command {
 export async function runCli(): Promise<void> {
   const args = process.argv.slice(2);
 
-  // No subcommand at all: drop into the interactive console (Q3, minimal).
-  // Any explicit command (or --help/--version) keeps the one-shot behavior,
-  // which scripting, CI and the --json flag rely on.
-  if (args.length === 0) {
-    await startRepl();
+  // No subcommand or --repl flag: drop into interactive mode.
+  // We default to TUI if stdout is a TTY and the user did not explicitly request the REPL via --repl.
+  if (args.length === 0 || (args.length === 1 && args[0] === "--repl")) {
+    const isInteractive = !!process.stdout.isTTY;
+    const forceRepl = args.includes("--repl");
+
+    if (isInteractive && !forceRepl) {
+      const { startTui } = await import("./tui.js");
+      await startTui();
+    } else {
+      await startRepl();
+    }
     return;
   }
 

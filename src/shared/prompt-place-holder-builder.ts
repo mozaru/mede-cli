@@ -1,5 +1,5 @@
-import { BacklogEntity } from "../entities/backlog-entity.js";
-import type { IBacklogRepository } from "../repositories/interfaces/backlog-repository-interface.js";
+import { BacklogEntity } from "../domain/entities/backlog-entity.js";
+import type { IBacklogRepository } from "../domain/interfaces/repositories/backlog-repository-interface.js";
 import { CurrentStateParser, type CurrentStateParserResult } from "./current-state-parser.js";
 
 type PlaceholderKey =

@@ -63,13 +63,39 @@ npm run dev -- --help    # equivale a `mede-cli --help`
 
 ### Configuração de credenciais da LLM
 
-As credenciais dos provedores **nunca** ficam no `mede.config.json`. Informe o
-nome da variável de ambiente em `llm.apiKeyEnv` e exporte a chave no ambiente:
+As credenciais dos provedores de LLM podem ser fornecidas de três formas no `mede.config.json`, configurando a propriedade `llm.auth`:
 
-```bash
-# exemplo para um provedor compatível com OpenAI
-export OPENAI_API_KEY="sk-..."
-```
+1. **`apiKey` (Padrão):**
+   A chave de API é lida diretamente de uma variável de ambiente definida em `llm.apiKeyEnv`.
+   ```bash
+   export OPENAI_API_KEY="sk-..."
+   ```
+
+2. **`oauth`:**
+   Autenticação interativa via OAuth. Roda-se o comando `mede-cli llm login` para autenticar e armazenar as credenciais cifradas no cofre local (`~/.mede/keys.json`).
+   * Para Azure e Google Cloud (Vertex AI), usa-se o fluxo **Device Code**.
+   * Para OpenRouter, usa-se o fluxo **PKCE** (que abre o navegador e inicia um servidor local de callback).
+   * **Configuração:**
+     No arquivo `mede.config.json`, adicione o bloco `oauth` dentro de `llm`:
+     ```json
+     "llm": {
+       "provider": "openrouter",
+       "model": "google/gemini-2.5-pro",
+       "endpoint": "https://openrouter.ai/api/v1",
+       "apiKeyEnv": "OPENROUTER_API_KEY",
+       "auth": "oauth",
+       "oauth": {
+         "clientId": "seu-client-id-openrouter",
+         "callbackPort": 8765
+       }
+     }
+     ```
+     *Nota: A porta de callback `callbackPort` é opcional e padronizada para 8765.*
+
+3. **`adc` (Application Default Credentials):**
+   Utiliza as credenciais padrão do ambiente local (ex: do Google Cloud SDK obtido via `gcloud auth application-default print-access-token`). Não armazena nada no cofre do MEDE-CLI.
+
+---
 
 ### Console interativo
 
@@ -536,9 +562,21 @@ mede-cli cat readme.md -b
 
 ---
 
-### `mede-cli llm providers`
+### `mede-cli llm`
 
-Lista os provedores compatíveis.
+Inspeciona a configuração e exibe o status de modelos/provedores LLM ativos.
+
+---
+
+### `mede-cli llm login`
+
+Inicia o fluxo de login interativo via OAuth (fluxo Device Code para Azure/Google ou fluxo PKCE com abertura de navegador local para OpenRouter) e armazena os tokens de acesso com segurança no cofre de segredos local.
+
+---
+
+### `mede-cli llm logout`
+
+Limpa as credenciais OAuth locais salvas no cofre para o provedor ativo.
 
 ---
 

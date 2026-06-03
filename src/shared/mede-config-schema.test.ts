@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseMedeConfig } from "./mede-config-schema.js";
-import { MedeConfigModelEntity } from "../entities/mede-config-model-entity.js";
+import { MedeConfigModelEntity } from "../domain/entities/mede-config-model-entity.js";
 import { jsonToStr } from "./json.js";
 
 // A fully-populated default config is, by construction, a valid config.

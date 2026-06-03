@@ -201,7 +201,37 @@ Implementados em `src/shared/llm/`:
 - `gemini-llm-provider.ts`
 - `azure-openai-llm-provider.ts`
 
-Credenciais **sempre via variável de ambiente** (`apiKeyEnv`). Nunca gravar em texto puro.
+### Modos de Autenticação (`llm.auth`)
+
+O MEDE-CLI suporta três modos de autenticação para os provedores de LLM:
+
+1. **`apiKey` (Padrão):**
+   * Lê a chave de API diretamente da variável de ambiente especificada no campo `llm.apiKeyEnv`.
+2. **`oauth`:**
+   * Utiliza fluxos de autenticação OAuth interativos e armazena os tokens com segurança no cofre de segredos local (armazenado em `~/.mede/keys.json`).
+   * Para Azure e Google/Vertex, utiliza o fluxo **Device Code**.
+   * Para OpenRouter, utiliza o fluxo **PKCE com callback local** e abertura automática do navegador.
+   * **Configuração:**
+     ```json
+     "llm": {
+       "provider": "openrouter",
+       "model": "google/gemini-2.5-pro",
+       "endpoint": "https://openrouter.ai/api/v1",
+       "apiKeyEnv": "OPENROUTER_API_KEY",
+       "auth": "oauth",
+       "oauth": {
+         "clientId": "seu-client-id",
+         "callbackPort": 8765
+       }
+     }
+     ```
+3. **`adc` (Application Default Credentials):**
+   * Utiliza credenciais padrão do ambiente local (ex: do Google Cloud SDK obtido via `gcloud auth application-default print-access-token`). Não armazena nada no cofre do MEDE-CLI.
+
+### Comandos de Autenticação
+
+* **`mede-cli llm login`:** Inicia o fluxo interativo correspondente ao provedor configurado. Exibe o código/link de ativação no fluxo Device Code ou abre o navegador no fluxo PKCE.
+* **`mede-cli llm logout`:** Remove as credenciais armazenadas para o provedor selecionado no cofre local do MEDE-CLI. No modo `adc`, apenas exibe instruções de revogação do respectivo SDK.
 
 ---
 

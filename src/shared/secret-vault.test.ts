@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { FileSecretVault } from "./secret-vault.js";
+import { FileSecretVault, SystemKeychainSecretVault, DockerCredentialHelperSecretVault, createSecretVault } from "./secret-vault.js";
 
 describe("FileSecretVault", () => {
   let dir: string;
@@ -61,5 +61,32 @@ describe("FileSecretVault", () => {
     new FileSecretVault({ filePath: nested }).set("k", "v");
 
     expect(fs.existsSync(nested)).toBe(true);
+  });
+
+  it("honors MEDE_VAULT_PATH environment variable if filePath is not explicitly passed", () => {
+    const envFilePath = path.join(dir, "env-credentials.json");
+    process.env.MEDE_VAULT_PATH = envFilePath;
+    try {
+      const vault = new FileSecretVault();
+      vault.set("oauth:test", "val-env");
+      expect(vault.get("oauth:test")).toBe("val-env");
+      expect(fs.existsSync(envFilePath)).toBe(true);
+    } finally {
+      delete process.env.MEDE_VAULT_PATH;
+    }
+  });
+
+  it("createSecretVault creates correct instances based on credentialsHelper parameter or env", () => {
+    expect(createSecretVault()).toBeInstanceOf(FileSecretVault);
+    expect(createSecretVault("system")).toBeInstanceOf(SystemKeychainSecretVault);
+    expect(createSecretVault("keychain")).toBeInstanceOf(SystemKeychainSecretVault);
+    expect(createSecretVault("wincred")).toBeInstanceOf(DockerCredentialHelperSecretVault);
+
+    process.env.MEDE_CREDENTIALS_HELPER = "keychain";
+    try {
+      expect(createSecretVault()).toBeInstanceOf(SystemKeychainSecretVault);
+    } finally {
+      delete process.env.MEDE_CREDENTIALS_HELPER;
+    }
   });
 });

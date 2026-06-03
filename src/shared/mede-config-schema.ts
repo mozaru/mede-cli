@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MedeConfigModelEntity } from "../entities/mede-config-model-entity.js";
+import { MedeConfigModelEntity } from "../domain/entities/mede-config-model-entity.js";
 
 // Single source of truth for validating mede.config.json. Centralizes what was
 // previously scattered, unvalidated `JSON.parse(...) as MedeConfigModelEntity`
@@ -72,6 +72,7 @@ const llmSchema = z.object({
   temperature: z.number().min(0, "temperature não pode ser negativa"),
   maxTokens: z.number().int().positive("maxTokens deve ser um inteiro positivo"),
   timeoutMs: z.number().int().positive("timeoutMs deve ser um inteiro positivo"),
+  credentialsHelper: z.string().optional(),
 });
 
 // Prompt sections are optional and only partially filled in real configs.
