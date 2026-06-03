@@ -2,4 +2,6 @@ dist
 node_modules
 coverage
 .mede
+src-prisma
+src-old
 *.md

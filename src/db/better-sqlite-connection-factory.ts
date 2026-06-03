@@ -1,9 +1,9 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import BetterSqlite3 from 'better-sqlite3';
-import type Database from 'better-sqlite3';
+import fs from "node:fs";
+import path from "node:path";
+import BetterSqlite3 from "better-sqlite3";
+import type Database from "better-sqlite3";
 
-import type { IDbConnectionFactory } from './db-connection-factory-interface.js';
+import type { IDbConnectionFactory } from "./db-connection-factory-interface.js";
 
 export interface BetterSqliteConnectionFactoryOptions {
   projectRootPath?: string;
@@ -29,15 +29,15 @@ export class BetterSqliteConnectionFactory implements IDbConnectionFactory {
   private static readonly MIGRATIONS: Migration[] = [
     {
       version: 1,
-      description: 'initial schema',
+      description: "initial schema",
       up: (connection) => connection.exec(BetterSqliteConnectionFactory.INITIAL_SCHEMA),
     },
   ];
 
   public constructor(options?: BetterSqliteConnectionFactoryOptions) {
     this.projectRootPath = options?.projectRootPath ?? process.cwd();
-    this.medeDirectoryName = options?.medeDirectoryName ?? '.mede';
-    this.databaseFileName = options?.databaseFileName ?? 'mede.db';
+    this.medeDirectoryName = options?.medeDirectoryName ?? ".mede";
+    this.databaseFileName = options?.databaseFileName ?? "mede.db";
   }
 
   public createConnection(): Database.Database {
@@ -49,8 +49,8 @@ export class BetterSqliteConnectionFactory implements IDbConnectionFactory {
 
     // foreign_keys is a per-connection pragma, so it must be set on every
     // connection, not once per process.
-    connection.pragma('foreign_keys = ON');
-    connection.pragma('journal_mode = WAL');
+    connection.pragma("foreign_keys = ON");
+    connection.pragma("journal_mode = WAL");
 
     this.runMigrations(connection);
 
@@ -60,7 +60,7 @@ export class BetterSqliteConnectionFactory implements IDbConnectionFactory {
   // Applies every migration whose version is greater than the database's current
   // user_version, each inside its own transaction, then records the new version.
   private runMigrations(connection: Database.Database): void {
-    const currentVersion = Number(connection.pragma('user_version', { simple: true })) || 0;
+    const currentVersion = Number(connection.pragma("user_version", { simple: true })) || 0;
 
     const pending = BetterSqliteConnectionFactory.MIGRATIONS.filter(
       (migration) => migration.version > currentVersion,

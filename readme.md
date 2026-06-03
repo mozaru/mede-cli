@@ -20,6 +20,62 @@ O MEDE-CLI organiza a evolução documental como um **processo causal estruturad
 
 ---
 
+## ✦ Instalação
+
+### Requisitos
+
+* **Node.js ≥ 20** (testado em 20 e 22);
+* **npm** (acompanha o Node.js);
+* Toolchain de compilação nativa para o `better-sqlite3`. Na maioria das
+  plataformas o pacote usa binários pré-compilados; se não houver binário para o
+  seu ambiente, será necessário ter Python 3 e um compilador C++ instalados
+  (`build-essential` no Linux, *Xcode Command Line Tools* no macOS ou
+  *Visual Studio Build Tools* no Windows).
+
+### Instalação global (via npm)
+
+```bash
+npm install -g mede-cli
+mede-cli --help
+```
+
+### Execução pontual (sem instalar)
+
+```bash
+npx mede-cli --help
+```
+
+### A partir do código-fonte
+
+```bash
+git clone https://github.com/mozaru/mede-cli.git
+cd mede-cli
+npm install
+npm run build        # gera dist/cli/index.mjs
+npm link             # disponibiliza o comando `mede-cli` globalmente
+```
+
+Durante o desenvolvimento é possível executar sem compilar:
+
+```bash
+npm run dev -- --help    # equivale a `mede-cli --help`
+```
+
+### Configuração de credenciais da LLM
+
+As credenciais dos provedores **nunca** ficam no `mede.config.json`. Informe o
+nome da variável de ambiente em `llm.apiKeyEnv` e exporte a chave no ambiente:
+
+```bash
+# exemplo para um provedor compatível com OpenAI
+export OPENAI_API_KEY="sk-..."
+```
+
+Para detalhes de empacotamento, publicação no npm e versionamento, consulte
+[DISTRIBUICAO.md](./DISTRIBUICAO.md).
+
+---
+
 ## ✦ Publicações Relacionadas
 
 Os fundamentos conceituais do MEDE-CLI, da metodologia MEDE e da linha de pesquisa relacionada podem ser encontrados nos seguintes trabalhos:

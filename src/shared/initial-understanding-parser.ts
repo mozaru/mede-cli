@@ -3,7 +3,6 @@ import { BacklogEntity } from "../entities/backlog-entity.js";
 import type { IFileSystemRepository } from "../repositories/interfaces/file-system-repository-interface.js";
 import { FileSystemRepository } from "../repositories/file-system-repository.js";
 
-
 export interface InitialUnderstandingParserResult {
   backlogItems: BacklogEntity[];
   metadata: {
@@ -23,13 +22,10 @@ export class InitialUnderstandingParser {
   private readonly fileSystemRepository: IFileSystemRepository;
 
   constructor(fileSystemRepository?: IFileSystemRepository) {
-    this.fileSystemRepository =
-      fileSystemRepository ?? new FileSystemRepository();
+    this.fileSystemRepository = fileSystemRepository ?? new FileSystemRepository();
   }
 
-  public parse(
-    filePath: string
-  ): InitialUnderstandingParserResult {
+  public parse(filePath: string): InitialUnderstandingParserResult {
     const content = this.fileSystemRepository.readFile(filePath);
 
     const backlogItems = this.extractIndexedBacklogItemsFromContent(content, filePath);
@@ -41,13 +37,11 @@ export class InitialUnderstandingParser {
         objective: this.extractObjective(content),
         summary: this.extractSummary(content),
         totalParsedItems: backlogItems.length,
-      }
+      },
     };
   }
 
-  public extractIndexedBacklogItems(
-    filePath: string
-  ): BacklogEntity[] {
+  public extractIndexedBacklogItems(filePath: string): BacklogEntity[] {
     const content = this.fileSystemRepository.readFile(filePath);
     return this.extractIndexedBacklogItemsFromContent(content, filePath);
   }
@@ -94,33 +88,27 @@ export class InitialUnderstandingParser {
         const itemOrigin = this.getCell(row, originIndex);
         const currentStatus = this.getCell(row, statusIndex);
 
-        if (
-          !itemCode ||
-          !itemType ||
-          !itemName ||
-          !itemOrigin ||
-          !currentStatus
-        ) {
+        if (!itemCode || !itemType || !itemName || !itemOrigin || !currentStatus) {
           return null;
         }
 
         return {
-          id:0,
-          projectId:0,
+          id: 0,
+          projectId: 0,
           documentType: reconstructionSource,
-          referenceDate:"",
-          nature:"INITIAL_UNDERSTANDING",
-          interventionType:itemType,
-          sequence:this.parseSequenceFromItemCode(itemCode),
-          immutableId:itemCode,
-          description:itemName,
-          tags:[],
-          ata:"",
-          source:itemOrigin,
-          deliver:"",          
-          status:currentStatus,
-          createdAt:"",
-          updatedAt:""
+          referenceDate: "",
+          nature: "INITIAL_UNDERSTANDING",
+          interventionType: itemType,
+          sequence: this.parseSequenceFromItemCode(itemCode),
+          immutableId: itemCode,
+          description: itemName,
+          tags: [],
+          ata: "",
+          source: itemOrigin,
+          deliver: "",
+          status: currentStatus,
+          createdAt: "",
+          updatedAt: "",
         } as BacklogEntity;
       })
       .filter((item): item is BacklogEntity => item !== null);
@@ -188,9 +176,7 @@ export class InitialUnderstandingParser {
     const tables = this.extractMarkdownTables(content);
 
     for (const table of tables) {
-      const normalizedHeaders = table.headers.map((header) =>
-        this.normalizeHeader(header)
-      );
+      const normalizedHeaders = table.headers.map((header) => this.normalizeHeader(header));
 
       const hasId = normalizedHeaders.includes("id");
       const hasType = normalizedHeaders.includes("tipo");
@@ -219,9 +205,7 @@ export class InitialUnderstandingParser {
       const headerLine = lines[index]?.trim();
       const separatorLine = lines[index + 1]?.trim();
 
-      if (this.isTableLine(headerLine) &&
-        this.isSeparatorLine(separatorLine)
-      ) {
+      if (this.isTableLine(headerLine) && this.isSeparatorLine(separatorLine)) {
         const headers = this.parseTableLine(headerLine);
         const rows: string[][] = [];
         index += 2;
@@ -279,10 +263,7 @@ export class InitialUnderstandingParser {
     return map;
   }
 
-  private findHeaderIndex(
-    map: Map<string, number>,
-    candidates: string[],
-  ): number | null {
+  private findHeaderIndex(map: Map<string, number>, candidates: string[]): number | null {
     for (const candidate of candidates) {
       const found = map.get(candidate);
       if (found !== undefined) {

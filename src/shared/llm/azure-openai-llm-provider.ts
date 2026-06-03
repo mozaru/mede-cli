@@ -95,11 +95,7 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
     });
   }
 
-  public addInputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addInputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim();
 
@@ -121,11 +117,7 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
     });
   }
 
-  public addOutputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addOutputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim() ?? "";
 
@@ -143,19 +135,15 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
     });
   }
 
-
   public async generateText(): Promise<LlmTextGenerationResult> {
     const endpoint = this.resolveEndpoint();
     const apiKey = this.resolveApiKey();
-    const timeoutMs =
-      this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
+    const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const requestMessages = this.buildRequestMessages();
 
     if (requestMessages.length === 0) {
-      throw new Error(
-        "No messages were provided to AzureOpenAiLlmProvider before generateText().",
-      );
+      throw new Error("No messages were provided to AzureOpenAiLlmProvider before generateText().");
     }
 
     const controller = new AbortController();
@@ -171,19 +159,15 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
         body: JSON.stringify({
           model: this.config.llm.model,
           messages: requestMessages,
-          temperature:
-            this.options.temperature ?? this.config.llm.temperature,
-          max_tokens:
-            this.options.maxTokens ?? this.config.llm.maxTokens,
+          temperature: this.options.temperature ?? this.config.llm.temperature,
+          max_tokens: this.options.maxTokens ?? this.config.llm.maxTokens,
         }),
         signal: controller.signal,
       });
 
       if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(
-          `Azure OpenAI request failed with status ${response.status}: ${errorBody}`,
-        );
+        throw new Error(`Azure OpenAI request failed with status ${response.status}: ${errorBody}`);
       }
 
       const data = (await response.json()) as AzureChatCompletionResponse;
@@ -203,9 +187,7 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
       };
     } catch (error) {
       if (this.isAbortError(error)) {
-        throw new Error(
-          `Azure OpenAI request aborted due to timeout after ${timeoutMs}ms.`,
-        );
+        throw new Error(`Azure OpenAI request aborted due to timeout after ${timeoutMs}ms.`);
       }
 
       throw error;
@@ -243,9 +225,7 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
     const rawEndpoint = this.config.llm.endpoint?.trim();
 
     if (!rawEndpoint) {
-      throw new Error(
-        "LLM endpoint is required for Azure OpenAI provider.",
-      );
+      throw new Error("LLM endpoint is required for Azure OpenAI provider.");
     }
 
     const normalizedEndpoint = rawEndpoint.replace(/\/$/, "");
@@ -263,17 +243,13 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
     const apiKeyEnv = this.config.llm.apiKeyEnv?.trim();
 
     if (!apiKeyEnv) {
-      throw new Error(
-        "LLM apiKeyEnv is not configured for Azure OpenAI provider.",
-      );
+      throw new Error("LLM apiKeyEnv is not configured for Azure OpenAI provider.");
     }
 
     const apiKey = process.env[apiKeyEnv];
 
     if (!apiKey?.trim()) {
-      throw new Error(
-        `Environment variable "${apiKeyEnv}" is not set or is empty.`,
-      );
+      throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
     }
 
     return apiKey;
@@ -282,8 +258,7 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
   private isAbortError(error: unknown): boolean {
     return (
       error instanceof Error &&
-      (error.name === "AbortError" ||
-        error.message.toLowerCase().includes("abort"))
+      (error.name === "AbortError" || error.message.toLowerCase().includes("abort"))
     );
   }
 }

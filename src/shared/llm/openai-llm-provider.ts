@@ -57,7 +57,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
   public setUserPrompt(prompt: string): void {
     this.userPrompt = prompt?.trim() ?? "";
   }
-  
+
   public setExtraInfo(info: string): void {
     this.extraInfo = info?.trim() ?? "";
   }
@@ -102,11 +102,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
     });
   }
 
-  public addInputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addInputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim();
 
@@ -128,11 +124,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
     });
   }
 
-  public addOutputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addOutputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim() ?? "";
 
@@ -150,19 +142,15 @@ export class OpenAiLlmProvider implements ILlmProvider {
     });
   }
 
-
   public async generateText(): Promise<LlmTextGenerationResult> {
     const endpoint = this.resolveEndpoint();
     const apiKey = this.resolveApiKey();
-    const timeoutMs =
-      this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
+    const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const requestMessages = this.buildRequestMessages();
 
     if (requestMessages.length === 0) {
-      throw new Error(
-        "No messages were provided to OpenAiLlmProvider before generateText().",
-      );
+      throw new Error("No messages were provided to OpenAiLlmProvider before generateText().");
     }
 
     const controller = new AbortController();
@@ -178,19 +166,15 @@ export class OpenAiLlmProvider implements ILlmProvider {
         body: JSON.stringify({
           model: this.config.llm.model,
           messages: requestMessages,
-          temperature:
-            this.options.temperature ?? this.config.llm.temperature,
-          max_tokens:
-            this.options.maxTokens ?? this.config.llm.maxTokens,
+          temperature: this.options.temperature ?? this.config.llm.temperature,
+          max_tokens: this.options.maxTokens ?? this.config.llm.maxTokens,
         }),
         signal: controller.signal,
       });
 
       if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(
-          `OpenAI request failed with status ${response.status}: ${errorBody}`,
-        );
+        throw new Error(`OpenAI request failed with status ${response.status}: ${errorBody}`);
       }
 
       const data = (await response.json()) as OpenAiChatCompletionResponse;
@@ -210,9 +194,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
       };
     } catch (error) {
       if (this.isAbortError(error)) {
-        throw new Error(
-          `OpenAI request aborted due to timeout after ${timeoutMs}ms.`,
-        );
+        throw new Error(`OpenAI request aborted due to timeout after ${timeoutMs}ms.`);
       }
 
       throw error;
@@ -224,7 +206,6 @@ export class OpenAiLlmProvider implements ILlmProvider {
   private buildRequestMessages(): OpenAiChatCompletionMessage[] {
     const useDeveloperRole = this.shouldUseDeveloperRole();
     const requestMessages: OpenAiChatCompletionMessage[] = [];
-
 
     if (this.systemPrompt) {
       requestMessages.push({
@@ -259,7 +240,6 @@ export class OpenAiLlmProvider implements ILlmProvider {
         content: this.extraInfo,
       });
 
-
     if (this.userPrompt)
       requestMessages.push({
         role: "user",
@@ -285,8 +265,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
   }
 
   private resolveEndpoint(): string {
-    const baseEndpoint =
-      this.config.llm.endpoint?.trim() || "https://api.openai.com/v1";
+    const baseEndpoint = this.config.llm.endpoint?.trim() || "https://api.openai.com/v1";
 
     return `${baseEndpoint.replace(/\/$/, "")}/chat/completions`;
   }
@@ -295,17 +274,13 @@ export class OpenAiLlmProvider implements ILlmProvider {
     const apiKeyEnv = this.config.llm.apiKeyEnv?.trim();
 
     if (!apiKeyEnv) {
-      throw new Error(
-        "LLM apiKeyEnv is not configured for OpenAI provider.",
-      );
+      throw new Error("LLM apiKeyEnv is not configured for OpenAI provider.");
     }
 
     const apiKey = process.env[apiKeyEnv];
 
     if (!apiKey?.trim()) {
-      throw new Error(
-        `Environment variable "${apiKeyEnv}" is not set or is empty.`,
-      );
+      throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
     }
 
     return apiKey;
@@ -314,8 +289,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
   private isAbortError(error: unknown): boolean {
     return (
       error instanceof Error &&
-      (error.name === "AbortError" ||
-        error.message.toLowerCase().includes("abort"))
+      (error.name === "AbortError" || error.message.toLowerCase().includes("abort"))
     );
   }
 }

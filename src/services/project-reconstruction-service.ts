@@ -17,7 +17,7 @@ import { IProjectReconstructionService } from "./interfaces/project-reconstructi
 import { MedeConfigModelEntity } from "../entities/mede-config-model-entity.js";
 import { jsonToStr } from "../shared/json.js";
 
-export class ProjectReconstructionService implements IProjectReconstructionService{
+export class ProjectReconstructionService implements IProjectReconstructionService {
   private readonly fileSystemRepository: IFileSystemRepository;
   private readonly configRepository: IProjectConfigRepository;
   private readonly projectRepository: IProjectRepository;
@@ -43,8 +43,10 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
     this.projectRepository = projectRepository;
     this.backlogRepository = backlogRepository;
     this.backlogInterventionCountersRepository = backlogInterventionCountersRepository;
-    this.currentStateParser = currentStateParser ?? new CurrentStateParser(this.fileSystemRepository);
-    this.initialUnderstandingParser = initialUnderstandingParser ?? new InitialUnderstandingParser(this.fileSystemRepository);
+    this.currentStateParser =
+      currentStateParser ?? new CurrentStateParser(this.fileSystemRepository);
+    this.initialUnderstandingParser =
+      initialUnderstandingParser ?? new InitialUnderstandingParser(this.fileSystemRepository);
   }
 
   public reconstruct(): ProjectReconstructionServiceResult {
@@ -60,14 +62,16 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
 
     const readmeFound = this.fileSystemRepository.exists(readmePath);
 
-    const currentStatePath = path.join( docsRootPath, config.fileNames.currentState );
+    const currentStatePath = path.join(docsRootPath, config.fileNames.currentState);
 
     const initialUnderstandingFound = this.fileSystemRepository.exists(initialUnderstandingPath);
 
     const currentStateFound = this.fileSystemRepository.exists(currentStatePath);
 
-    let project = this.projectRepository.list().find((item) => item.rootProjectPath === this.projectRootPath) ?? null;
- 
+    let project =
+      this.projectRepository.list().find((item) => item.rootProjectPath === this.projectRootPath) ??
+      null;
+
     let projectCreated = false;
     let projectUpdated = false;
 
@@ -79,14 +83,14 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
         docsRootPath: docsRootPath,
         documentationLanguage: config.language,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       } as ProjectEntity;
 
       project = this.projectRepository.insert(project);
       projectCreated = true;
     }
 
-    const persistedProjectConfig = this.persistProjectConfig( project.id, configPath);
+    const persistedProjectConfig = this.persistProjectConfig(project.id, configPath);
 
     void persistedProjectConfig;
 
@@ -95,24 +99,25 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
     let projectNameFromReadme: string | null = null;
     let projectNameFromInitialUnderstanding: string | null = null;
     let projectNameFromCurrentState: string | null = null;
-    let projectNameSource: "readme" | "initial-understanding" | "current-state" | "unknown" = "unknown";
+    let projectNameSource: "readme" | "initial-understanding" | "current-state" | "unknown" =
+      "unknown";
 
     if (initialUnderstandingFound) {
-      const initialUnderstandingResult = this.initialUnderstandingParser.parse(initialUnderstandingPath);   
+      const initialUnderstandingResult =
+        this.initialUnderstandingParser.parse(initialUnderstandingPath);
       const parsedName = initialUnderstandingResult.metadata.systemName?.trim() ?? "";
       projectNameFromInitialUnderstanding = parsedName;
       backlogItemsToPersist = initialUnderstandingResult.backlogItems;
     }
 
     if (currentStateFound) {
-      const currentStateResult = this.currentStateParser.parse(currentStatePath);           
+      const currentStateResult = this.currentStateParser.parse(currentStatePath);
       const parsedName = currentStateResult.metadata.systemName?.trim() ?? "";
       projectNameFromCurrentState = parsedName;
       backlogItemsToPersist = currentStateResult.backlogItems;
-      backlogSequenceCountersToPersist =
-        currentStateResult.metadata.classificationCounters.map((item) =>
-          this.buildBacklogSequenceCounter(project!.id, item.key, item.lastSequenceNumber)
-        );            
+      backlogSequenceCountersToPersist = currentStateResult.metadata.classificationCounters.map(
+        (item) => this.buildBacklogSequenceCounter(project!.id, item.key, item.lastSequenceNumber),
+      );
     }
 
     if (readmeFound) {
@@ -151,7 +156,7 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
         projectUpdated = true;
       }
     } else {
-      project = mergedProject;      
+      project = mergedProject;
     }
 
     let backlogItemsRebuilt = 0;
@@ -200,15 +205,12 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
     };
   }
 
-  private persistProjectConfig(
-    projectId: number,
-    configPath: string,
-  ): ProjectConfigEntity {
-    const rawConfig = this.fileSystemRepository.exists(configPath) ? this.fileSystemRepository.readFile(configPath) : jsonToStr(new MedeConfigModelEntity());
+  private persistProjectConfig(projectId: number, configPath: string): ProjectConfigEntity {
+    const rawConfig = this.fileSystemRepository.exists(configPath)
+      ? this.fileSystemRepository.readFile(configPath)
+      : jsonToStr(new MedeConfigModelEntity());
 
-    const configHash = createHash("sha256")
-      .update(rawConfig, "utf-8")
-      .digest("hex");
+    const configHash = createHash("sha256").update(rawConfig, "utf-8").digest("hex");
 
     const existing = this.configRepository.getCurrent(projectId);
 
@@ -216,7 +218,7 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
       this.configRepository.updateContent(existing.id, rawConfig, configHash);
       const updated = this.configRepository.getById(existing.id);
       if (updated === null) {
-       throw new Error("Config not found after update");
+        throw new Error("Config not found after update");
       }
       return updated;
     }
@@ -257,9 +259,7 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
     return counter;
   }
 
-  private extractProjectNameFromReadme(
-    readmePath: string,
-  ): string | null {
+  private extractProjectNameFromReadme(readmePath: string): string | null {
     if (!this.fileSystemRepository.exists(readmePath)) {
       return null;
     }
@@ -280,16 +280,14 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
     return projectName;
   }
 
-  private loadOrCreateDefault() : { config: any; created: boolean }
-  {
+  private loadOrCreateDefault(): { config: MedeConfigModelEntity; created: boolean } {
     const configPath = path.join(this.projectRootPath, "mede.config.json");
-    let config : MedeConfigModelEntity = new MedeConfigModelEntity(); 
-    let created : boolean = true;
-    if (this.fileSystemRepository.exists(configPath))
-    {
+    let config: MedeConfigModelEntity = new MedeConfigModelEntity();
+    let created: boolean = true;
+    if (this.fileSystemRepository.exists(configPath)) {
       config = this.fileSystemRepository.readJsonFile(configPath) as MedeConfigModelEntity;
       created = false;
-    } 
-    return { config, created }
-  } 
+    }
+    return { config, created };
+  }
 }

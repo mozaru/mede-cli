@@ -106,11 +106,7 @@ export class GeminiLlmProvider implements ILlmProvider {
     });
   }
 
-  public addInputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+  public addInputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim();
 
@@ -131,12 +127,8 @@ export class GeminiLlmProvider implements ILlmProvider {
       ].join("\n"),
     });
   }
-  
-  public addOutputDoc(
-    id: number,
-    artifactPath: string,
-    currentContent: string,
-  ): void {
+
+  public addOutputDoc(id: number, artifactPath: string, currentContent: string): void {
     const safePath = artifactPath?.trim() || `artifact-${id}`;
     const safeContent = currentContent?.trim() ?? "";
 
@@ -154,11 +146,9 @@ export class GeminiLlmProvider implements ILlmProvider {
     });
   }
 
-
   public async generateText(): Promise<LlmTextGenerationResult> {
     const { endpoint, apiKey } = this.resolveEndpointAndApiKey();
-    const timeoutMs =
-      this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
+    const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const { systemInstruction, contents } = this.buildRequestMessages();
 
@@ -182,10 +172,8 @@ export class GeminiLlmProvider implements ILlmProvider {
           systemInstruction,
           contents,
           generationConfig: {
-            temperature:
-              this.options.temperature ?? this.config.llm.temperature ?? 0.1,
-            maxOutputTokens:
-              this.options.maxTokens ?? this.config.llm.maxTokens ?? 4096,
+            temperature: this.options.temperature ?? this.config.llm.temperature ?? 0.1,
+            maxOutputTokens: this.options.maxTokens ?? this.config.llm.maxTokens ?? 4096,
           },
         }),
         signal: controller.signal,
@@ -193,9 +181,7 @@ export class GeminiLlmProvider implements ILlmProvider {
 
       if (!response.ok) {
         const errorBody = await response.text();
-        throw new Error(
-          `Gemini request failed with status ${response.status}: ${errorBody}`,
-        );
+        throw new Error(`Gemini request failed with status ${response.status}: ${errorBody}`);
       }
 
       const data = (await response.json()) as GeminiGenerateContentResponse;
@@ -220,9 +206,7 @@ export class GeminiLlmProvider implements ILlmProvider {
       };
     } catch (error) {
       if (this.isAbortError(error)) {
-        throw new Error(
-          `Gemini request aborted due to timeout after ${timeoutMs}ms.`,
-        );
+        throw new Error(`Gemini request aborted due to timeout after ${timeoutMs}ms.`);
       }
 
       throw error;
@@ -241,14 +225,11 @@ export class GeminiLlmProvider implements ILlmProvider {
     const apiKey = process.env[apiKeyEnv];
 
     if (!apiKey?.trim()) {
-      throw new Error(
-        `Environment variable "${apiKeyEnv}" is not set or is empty.`,
-      );
+      throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
     }
 
     const baseEndpoint =
-      this.config.llm.endpoint?.trim() ||
-      "https://generativelanguage.googleapis.com/v1beta";
+      this.config.llm.endpoint?.trim() || "https://generativelanguage.googleapis.com/v1beta";
 
     const model = this.config.llm.model?.trim();
 
@@ -285,9 +266,7 @@ export class GeminiLlmProvider implements ILlmProvider {
     }
 
     return {
-      systemInstruction: this.systemPrompt
-        ? { parts: [{ text: this.systemPrompt }] }
-        : undefined,
+      systemInstruction: this.systemPrompt ? { parts: [{ text: this.systemPrompt }] } : undefined,
       contents,
     };
   }
@@ -295,8 +274,7 @@ export class GeminiLlmProvider implements ILlmProvider {
   private isAbortError(error: unknown): boolean {
     return (
       error instanceof Error &&
-      (error.name === "AbortError" ||
-        error.message.toLowerCase().includes("abort"))
+      (error.name === "AbortError" || error.message.toLowerCase().includes("abort"))
     );
   }
 }

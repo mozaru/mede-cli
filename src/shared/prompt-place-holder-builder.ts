@@ -1,9 +1,6 @@
 import { BacklogEntity } from "../entities/backlog-entity.js";
 import type { IBacklogRepository } from "../repositories/interfaces/backlog-repository-interface.js";
-import {
-  CurrentStateParser,
-  type CurrentStateParserResult,
-} from "./current-state-parser.js";
+import { CurrentStateParser, type CurrentStateParserResult } from "./current-state-parser.js";
 
 type PlaceholderKey =
   | "##TABELA_INTERVENCAO##"
@@ -50,23 +47,14 @@ export class PromptPlaceholderBuilder {
     projectId: number,
     previousCurrentStateFilePath: string,
   ): PromptPlaceholderContentMap {
-    const currentItems = this.normalizeBacklogItems(
-      this.backlogRepository.list(projectId),
-    );
+    const currentItems = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
 
-    const previousState = this.currentStateParser.parse(
-      previousCurrentStateFilePath,
-    );
+    const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
 
     return {
       "##TABELA_INTERVENCAO##": this.buildInterventionTable(currentItems),
-      "##TABELA_BACKLOG_RECENTE##": this.buildRecentBacklogTable(
-        currentItems,
-        previousState,
-      ),
-      "##TABELA_ESTATISTICA_ENTREGA##": this.buildDeliveryStatistics(
-        currentItems,
-      ),
+      "##TABELA_BACKLOG_RECENTE##": this.buildRecentBacklogTable(currentItems, previousState),
+      "##TABELA_ESTATISTICA_ENTREGA##": this.buildDeliveryStatistics(currentItems),
       "##TABELA_BACKLOG_INICIAL##": this.buildInitialBacklogTable(currentItems),
       "##TABELA_SITUACAO_ATUAL##": this.buildCurrentStateTable(currentItems),
     };
@@ -138,18 +126,13 @@ export class PromptPlaceholderBuilder {
     currentItems: BacklogEntity[],
     previousState: CurrentStateParserResult,
   ): string {
-    const baselineDate = this.parseReferenceDate(
-      previousState.metadata.referenceDate,
-    );
+    const baselineDate = this.parseReferenceDate(previousState.metadata.referenceDate);
 
     const previousMap = this.indexByImmutableId(previousState.backlogItems);
 
     const comparisons = currentItems
       .map((current) => this.compareWithPrevious(current, previousMap, baselineDate))
-      .filter(
-        (item) =>
-          item.isNewInPeriod || item.wasDeliveredInPeriod || item.changedInPeriod,
-      )
+      .filter((item) => item.isNewInPeriod || item.wasDeliveredInPeriod || item.changedInPeriod)
       .sort((a, b) => this.compareBacklogItems(a.current, b.current));
 
     return this.toMarkdownTable(
@@ -191,8 +174,7 @@ export class PromptPlaceholderBuilder {
       (item) => this.normalizeStatus(item.status) !== "CANCELADO",
     ).length;
 
-    const deliveryPercent =
-      totalRelevant === 0 ? 0 : (totalDelivered / totalRelevant) * 100;
+    const deliveryPercent = totalRelevant === 0 ? 0 : (totalDelivered / totalRelevant) * 100;
 
     return [
       `Total itens entregues: **${totalDelivered}**  `,
@@ -252,8 +234,7 @@ export class PromptPlaceholderBuilder {
     const changedInPeriod =
       updatedAt !== null && baselineDate !== null
         ? updatedAt.getTime() >= baselineDate.getTime()
-        : previous === null ||
-          this.hasRelevantDifference(current, previous);
+        : previous === null || this.hasRelevantDifference(current, previous);
 
     return {
       current,
@@ -264,22 +245,16 @@ export class PromptPlaceholderBuilder {
     };
   }
 
-  private hasRelevantDifference(
-    current: BacklogEntity,
-    previous: BacklogEntity | null,
-  ): boolean {
+  private hasRelevantDifference(current: BacklogEntity, previous: BacklogEntity | null): boolean {
     if (!previous) {
       return true;
     }
 
     return (
-      this.normalizeText(current.description) !==
-        this.normalizeText(previous.description) ||
+      this.normalizeText(current.description) !== this.normalizeText(previous.description) ||
       this.normalizeText(current.source) !== this.normalizeText(previous.source) ||
-      this.normalizeText(current.deliver) !==
-        this.normalizeText(previous.deliver) ||
-      this.normalizeStatus(current.status) !==
-        this.normalizeStatus(previous.status) ||
+      this.normalizeText(current.deliver) !== this.normalizeText(previous.deliver) ||
+      this.normalizeStatus(current.status) !== this.normalizeStatus(previous.status) ||
       this.formatTags(current.tags) !== this.formatTags(previous.tags)
     );
   }
@@ -304,9 +279,7 @@ export class PromptPlaceholderBuilder {
 
   private normalizeTags(tags: string[] | string | null | undefined): string[] {
     if (Array.isArray(tags)) {
-      return tags
-        .map((item) => (item ?? "").trim())
-        .filter((item) => item.length > 0);
+      return tags.map((item) => (item ?? "").trim()).filter((item) => item.length > 0);
     }
 
     if (typeof tags === "string") {
@@ -337,28 +310,19 @@ export class PromptPlaceholderBuilder {
 
   private compareBacklogItems(a: BacklogEntity, b: BacklogEntity): number {
     return (
-      this.normalizeText(a.referenceDate).localeCompare(
-        this.normalizeText(b.referenceDate),
-      ) ||
-      this.normalizeText(a.documentType).localeCompare(
-        this.normalizeText(b.documentType),
-      ) ||
+      this.normalizeText(a.referenceDate).localeCompare(this.normalizeText(b.referenceDate)) ||
+      this.normalizeText(a.documentType).localeCompare(this.normalizeText(b.documentType)) ||
       this.normalizeText(a.nature).localeCompare(this.normalizeText(b.nature)) ||
       this.normalizeText(a.interventionType).localeCompare(
         this.normalizeText(b.interventionType),
       ) ||
       a.sequence - b.sequence ||
-      this.normalizeText(a.immutableId).localeCompare(
-        this.normalizeText(b.immutableId),
-      )
+      this.normalizeText(a.immutableId).localeCompare(this.normalizeText(b.immutableId))
     );
   }
 
   private toMarkdownTable(headers: string[], rows: string[][]): string {
-    const safeRows =
-      rows.length > 0
-        ? rows
-        : [headers.map(() => "—")];
+    const safeRows = rows.length > 0 ? rows : [headers.map(() => "—")];
 
     const headerLine = `| ${headers.join(" | ")} |`;
     const separatorLine = `| ${headers.map(() => "---").join(" | ")} |`;

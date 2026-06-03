@@ -47,11 +47,9 @@ const prefixesSchema = z.object({
 });
 
 const llmSchema = z.object({
-  provider: z
-    .string()
-    .refine((value) => SUPPORTED_PROVIDERS.includes(value.trim().toLowerCase()), {
-      message: `provider não suportado (use um de: ${SUPPORTED_PROVIDERS.join(", ")})`,
-    }),
+  provider: z.string().refine((value) => SUPPORTED_PROVIDERS.includes(value.trim().toLowerCase()), {
+    message: `provider não suportado (use um de: ${SUPPORTED_PROVIDERS.join(", ")})`,
+  }),
   model: z.string().min(1, "model é obrigatório"),
   endpoint: z.string(),
   apiKeyEnv: z.string().min(1, "apiKeyEnv é obrigatório"),

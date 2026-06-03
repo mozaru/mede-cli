@@ -1,6 +1,4 @@
-
-export interface ILlmService
-{
-    providers(): string;
-    test(prompt: string): Promise<string>;
+export interface ILlmService {
+  providers(): string;
+  test(prompt: string): Promise<string>;
 }
