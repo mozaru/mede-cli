@@ -1,35 +1,36 @@
-import { BetterSqliteConnectionFactory } from "../db/better-sqlite-connection-factory.js";
-import { UnitOfWork } from "../db/unit-of-work.js";
+import { BetterSqliteConnectionFactory } from "../infrastructure/db/better-sqlite-connection-factory.js";
+import type { BetterSqliteConnectionFactoryOptions } from "../infrastructure/db/better-sqlite-connection-factory.js";
+import { UnitOfWork } from "../infrastructure/db/unit-of-work.js";
 
-import { BacklogRepository } from "../repositories/backlog-repository.js";
-import { BacklogInterventionCountersRepository } from "../repositories/backlog-intervention-counters-repository.js";
-import { ChangeChunkRepository } from "../repositories/change-chunk-repository.js";
-import { ChangeSetRepository } from "../repositories/change-set-repository.js";
-import { CycleArtifactRepository } from "../repositories/cycle-artifact-repository.js";
-import { CycleRepository } from "../repositories/cycle-repository.js";
-import { PhaseAttachmentRepository } from "../repositories/phase-attachment-repository.js";
-import { PhaseConversationRepository } from "../repositories/phase-conversation-repository.js";
-import { PhaseRepository } from "../repositories/phase-repository.js";
-import { ProjectConfigRepository } from "../repositories/project-config-repository.js";
-import { ProjectRepository } from "../repositories/project-repository.js";
+import { BacklogRepository } from "../infrastructure/repositories/backlog-repository.js";
+import { BacklogInterventionCountersRepository } from "../infrastructure/repositories/backlog-intervention-counters-repository.js";
+import { ChangeChunkRepository } from "../infrastructure/repositories/change-chunk-repository.js";
+import { ChangeSetRepository } from "../infrastructure/repositories/change-set-repository.js";
+import { CycleArtifactRepository } from "../infrastructure/repositories/cycle-artifact-repository.js";
+import { CycleRepository } from "../infrastructure/repositories/cycle-repository.js";
+import { PhaseAttachmentRepository } from "../infrastructure/repositories/phase-attachment-repository.js";
+import { PhaseConversationRepository } from "../infrastructure/repositories/phase-conversation-repository.js";
+import { PhaseRepository } from "../infrastructure/repositories/phase-repository.js";
+import { ProjectConfigRepository } from "../infrastructure/repositories/project-config-repository.js";
+import { ProjectRepository } from "../infrastructure/repositories/project-repository.js";
 
-import { ChangesService } from "../services/changes-service.js";
-import { ConfigService } from "../services/config-service.js";
-import { CycleService } from "../services/cycle-service.js";
-import { FilesService } from "../services/files-service.js";
-import { InitService } from "../services/init-service.js";
-import { LlmService } from "../services/llm-service.js";
-import { PhaseConversationService } from "../services/phase-conversation-service.js";
-import { ProjectReconstructionService } from "../services/project-reconstruction-service.js";
-import { StatusService } from "../services/status-service.js";
+import { ChangesService } from "../application/services/changes-service.js";
+import { ConfigService } from "../application/services/config-service.js";
+import { CycleService } from "../application/services/cycle-service.js";
+import { FilesService } from "../application/services/files-service.js";
+import { InitService } from "../application/services/init-service.js";
+import { LlmService } from "../application/services/llm-service.js";
+import { PhaseConversationService } from "../application/services/phase-conversation-service.js";
+import { ProjectReconstructionService } from "../application/services/project-reconstruction-service.js";
+import { StatusService } from "../application/services/status-service.js";
 
-import type { IChangesService } from "../services/interfaces/changes-service-interface.js";
-import type { IConfigService } from "../services/interfaces/config-service-interface.js";
-import type { ICycleService } from "../services/interfaces/cycle-service-interface.js";
-import type { IFilesService } from "../services/interfaces/files-service-interface.js";
-import type { IInitService } from "../services/interfaces/init-service-interface.js";
-import type { ILlmService } from "../services/interfaces/llm-service-interface.js";
-import type { IStatusService } from "../services/interfaces/status-service-interface.js";
+import type { IChangesService } from "../domain/interfaces/services/changes-service-interface.js";
+import type { IConfigService } from "../domain/interfaces/services/config-service-interface.js";
+import type { ICycleService } from "../domain/interfaces/services/cycle-service-interface.js";
+import type { IFilesService } from "../domain/interfaces/services/files-service-interface.js";
+import type { IInitService } from "../domain/interfaces/services/init-service-interface.js";
+import type { ILlmService } from "../domain/interfaces/services/llm-service-interface.js";
+import type { IStatusService } from "../domain/interfaces/services/status-service-interface.js";
 
 // Composition root: wires the unit of work, repositories and services exactly
 // once. Handlers ask the container for the service they need instead of
@@ -50,8 +51,9 @@ export interface Container {
   dispose(): void;
 }
 
-export function createContainer(): Container {
-  const uow = new UnitOfWork(new BetterSqliteConnectionFactory());
+export function createContainer(options?: BetterSqliteConnectionFactoryOptions): Container {
+  const inMemory = options?.inMemory ?? (process.argv.includes("--in-memory") || process.env.MEDE_IN_MEMORY === "true");
+  const uow = new UnitOfWork(new BetterSqliteConnectionFactory({ ...options, inMemory }));
 
   const projectRepository = new ProjectRepository(uow);
   const projectConfigRepository = new ProjectConfigRepository(uow);

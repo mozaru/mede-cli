@@ -1,7 +1,7 @@
 import path from "node:path";
-import { BacklogEntity } from "../entities/backlog-entity.js";
-import type { IFileSystemRepository } from "../repositories/interfaces/file-system-repository-interface.js";
-import { FileSystemRepository } from "../repositories/file-system-repository.js";
+import { BacklogEntity } from "../domain/entities/backlog-entity.js";
+import type { IFileSystemRepository } from "../domain/interfaces/repositories/file-system-repository-interface.js";
+import { FileSystemRepository } from "../infrastructure/repositories/file-system-repository.js";
 
 export interface InitialUnderstandingParserResult {
   backlogItems: BacklogEntity[];

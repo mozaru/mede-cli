@@ -68,4 +68,16 @@ describe("container shared wiring (Q1 single connection)", () => {
       b.dispose();
     }
   });
+
+  it("honors options and env vars for in-memory connection", () => {
+    const containerOpt = createContainer({ inMemory: true });
+    expect(containerOpt).toBeDefined();
+    containerOpt.dispose();
+
+    process.env.MEDE_IN_MEMORY = "true";
+    const containerEnv = createContainer();
+    expect(containerEnv).toBeDefined();
+    containerEnv.dispose();
+    delete process.env.MEDE_IN_MEMORY;
+  });
 });

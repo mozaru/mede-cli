@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { CurrentStateParser } from "./current-state-parser.js";
-import type { IFileSystemRepository } from "../repositories/interfaces/file-system-repository-interface.js";
+import type { IFileSystemRepository } from "../domain/interfaces/repositories/file-system-repository-interface.js";
 
 // The parser only reads file content; a minimal fake feeds Markdown directly,
 // keeping these tests free of any real filesystem access.

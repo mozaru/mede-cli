@@ -6,7 +6,7 @@ import globals from "globals";
 export default tseslint.config(
   {
     // Only the `src` tree is part of the build; ignore generated/legacy trees.
-    ignores: ["dist/**", "node_modules/**", "coverage/**", "src-prisma/**", "src-old/**"],
+    ignores: ["dist/**", "node_modules/**", "coverage/**", "src-prisma/**", "src-old/**", "scratch/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
