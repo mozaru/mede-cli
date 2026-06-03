@@ -387,9 +387,9 @@ export class PhaseConversationService implements IPhaseConversationService {
   }
 
   public applyAll(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity {
-    this.assert(phase.status === "REFINING", "Phase not in refining state");
+    this.assert(phase.status === "REFINING", "A fase não está em refinamento");
     const doc = this.cycleArtifactRepository.getById(changeSet.cycleArtifactId);
-    this.assertNotNull(doc, "Cycle artifact not found");
+    this.assertNotNull(doc, "Artefato do ciclo não encontrado");
 
     let newContent = doc.currentContent;
     for (const chunk of this.changeChunkRepository.list(changeSet.id)) {
@@ -423,22 +423,22 @@ export class PhaseConversationService implements IPhaseConversationService {
     this.phaseRepository.awaitingApproval(phase.id);
 
     const currentChangeSet = this.changeSetRepository.getById(changeSet.id);
-    this.assertNotNull(currentChangeSet, "ChangeSet not found after applyAll");
+    this.assertNotNull(currentChangeSet, "Change-set não encontrado após aplicar tudo");
 
     return currentChangeSet;
   }
 
   public apply(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity | null {
-    this.assert(phase.status === "REFINING", "Phase not in refining state");
+    this.assert(phase.status === "REFINING", "A fase não está em refinamento");
     const chunk = this.changeChunkRepository.getByIndex(
       changeSet.id,
       changeSet.currentChangeChunkIndex,
     );
-    this.assertNotNull(chunk, "Diff chunk not found");
-    this.assert(chunk.status === "AWAITING_APPROVAL", "diff not in awaiting approval");
+    this.assertNotNull(chunk, "Trecho-diff não encontrado");
+    this.assert(chunk.status === "AWAITING_APPROVAL", "trecho-diff não está aguardando aprovação");
 
     const doc = this.cycleArtifactRepository.getById(changeSet.cycleArtifactId);
-    this.assertNotNull(doc, "Cycle artifact not found");
+    this.assertNotNull(doc, "Artefato do ciclo não encontrado");
 
     const result = this.applyDiff(doc.currentContent, {
       index: chunk.index,
@@ -472,7 +472,7 @@ export class PhaseConversationService implements IPhaseConversationService {
   }
 
   public discardAll(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity {
-    this.assert(phase.status === "REFINING", "Phase not in refining state");
+    this.assert(phase.status === "REFINING", "A fase não está em refinamento");
     for (const chunk of this.changeChunkRepository.list(changeSet.id)) {
       if (
         chunk.status === "AWAITING_APPROVAL" &&
@@ -491,19 +491,19 @@ export class PhaseConversationService implements IPhaseConversationService {
     this.phaseRepository.awaitingApproval(phase.id);
 
     const currentChangeSet = this.changeSetRepository.getById(changeSet.id);
-    this.assertNotNull(currentChangeSet, "ChangeSet not found after discardAll");
+    this.assertNotNull(currentChangeSet, "Change-set não encontrado após descartar tudo");
 
     return currentChangeSet;
   }
 
   public discard(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity | null {
-    this.assert(phase.status === "REFINING", "Phase not in refining state");
+    this.assert(phase.status === "REFINING", "A fase não está em refinamento");
     const chunk = this.changeChunkRepository.getByIndex(
       changeSet.id,
       changeSet.currentChangeChunkIndex,
     );
-    this.assertNotNull(chunk, "Diff chunk not found");
-    this.assert(chunk.status === "AWAITING_APPROVAL", "diff not in awaiting approval");
+    this.assertNotNull(chunk, "Trecho-diff não encontrado");
+    this.assert(chunk.status === "AWAITING_APPROVAL", "trecho-diff não está aguardando aprovação");
 
     this.changeChunkRepository.reject(chunk.id);
 

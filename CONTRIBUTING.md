@@ -65,6 +65,11 @@ Diretrizes adicionais:
   (`llm.apiKeyEnv`).
 - **Não edite arquivos gerados.** O diretório `src-prisma/` é produzido por
   geração de código e está fora do escopo de lint/format.
+- **Prompts são conteúdo.** Os prompts da metodologia ficam em `prompts/`
+  (Markdown) e são carregados em runtime — edite-os ali, não no código. Os
+  arquivos em `prompts/system/` usam os placeholders `{{DIFF_RULES}}` e
+  `{{TEMPLATE}}`, substituídos por `prompts/fragments/diff-rules.md` e pelo
+  template da fase.
 
 ---
 

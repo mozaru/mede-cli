@@ -1,4 +1,5 @@
 import { createContainer } from "../cli/container.js";
+import { emitResult } from "../cli/output.js";
 import type { IStatusService } from "../services/interfaces/status-service-interface.js";
 
 export class StatusHandler {
@@ -10,6 +11,6 @@ export class StatusHandler {
 
   public execute(): void {
     const status = this.statusService.showStatus();
-    console.log(status);
+    emitResult(status);
   }
 }

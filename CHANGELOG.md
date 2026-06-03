@@ -8,6 +8,9 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não lançado]
 
 ### Adicionado
+- Flag global `--json`: emite a saída dos comandos e os erros em JSON
+  (`{ "ok": true, "output": ... }` / `{ "ok": false, "error": ... }`) para
+  consumo por scripts. Apresentador centralizado em `src/cli/output.ts`.
 - Tratamento de erro global na CLI: falhas viram mensagem amigável e código de
   saída diferente de zero (variável `MEDE_DEBUG` mostra o stack completo).
 - Transações atômicas nas operações multi-passo do ciclo (`begin`,
@@ -38,6 +41,14 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   comportamento atual.
 - `SECURITY.md` com política de divulgação responsável.
 
+### Alterado
+- Prompts da metodologia externalizados como assets versionados em `prompts/`
+  (`fragments/diff-rules.md`, `templates/*.md`, `system/*.md` com placeholders
+  `{{DIFF_RULES}}`/`{{TEMPLATE}}`, `user/*.md`), carregados em runtime por
+  `llm-prompts-provider.ts` (antes um único arquivo de ~3.250 linhas com os
+  textos embutidos em código). A API pública (24 constantes exportadas) não
+  mudou; `prompts/` é publicado no pacote npm.
+
 ### Qualidade
 - Todo o código-fonte passa em `prettier --check` e `eslint` sem erros nem
   warnings. `.prettierignore` alinhado ao escopo do ESLint (ignora `src-prisma`
@@ -48,8 +59,14 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
   rodar a suíte com cobertura.
 - Testes do núcleo `CycleService` (snapshot/`begin`, `rollback`, `commit`) —
   a garantia central da metodologia — e do `FileSystemRepository`/`path-safety`.
-  Cobertura geral subiu de ~29% para ~38% das linhas; 170 testes no total.
+- Teste end-to-end pela camada de comando da CLI (`CycleHandler`/`ChangesHandler`
+  → container → serviços → SQLite + filesystem, só o provedor de LLM é falso):
+  `cycle`, `apply`→`approve`, `reject -a`→`commit` e `rollback`. Cobertura geral
+  subiu de ~29% para ~53% das linhas; 174 testes no total.
 - Governança OSS: `CONTRIBUTING.md`, templates de issue e de pull request.
+- Padronização de idioma (pt-BR): descrições e textos de ajuda de todos os
+  comandos da CLI e mensagens de erro voltadas ao usuário nos serviços, antes
+  misturados com inglês e com typos.
 
 ### Corrigido
 - Métodos de escrita dos repositórios agora reportam corretamente se uma linha

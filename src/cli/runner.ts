@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { Command } from "commander";
 import { reportCliError } from "./error-handler.js";
+import { setOutputFormat } from "./output.js";
 import { ChangesHandler } from "../commands/changes-handler.js";
 import { ConfigHandler } from "../commands/config-handler.js";
 import { CycleHandler } from "../commands/cycle-handler.js";
@@ -32,9 +33,19 @@ export async function runCli(): Promise<void> {
 
   program.name("mede-cli").description("MEDE CLI").version(resolveVersion());
 
+  // Global flag: emit machine-readable JSON instead of human text. Place it
+  // before the subcommand (e.g. `mede-cli --json status`). The preAction hook
+  // applies it before any command runs.
+  program.option("--json", "Emite a saída em JSON (para uso em scripts)");
+  program.hook("preAction", () => {
+    if (program.opts().json) {
+      setOutputFormat("json");
+    }
+  });
+
   program //mede-cli status
     .command("status")
-    .description("Show current project status")
+    .description("Mostra o estado atual do projeto")
     .action(() => {
       const handler = new StatusHandler();
       handler.execute();
@@ -42,11 +53,11 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli init -p
     .command("init")
-    .description("Initialize the MEDE project or reconstruct local state")
-    .option("-p, --prompt <text>", "Initial user prompt")
+    .description("Inicializa o projeto MEDE ou reconstrói o estado local")
+    .option("-p, --prompt <text>", "Prompt inicial do usuário")
     .option(
       "-f, --file <path>",
-      "Attach a file or directory to the init context",
+      "Anexa um arquivo ou diretório ao contexto do init",
       collectRepeatedOption,
       [],
     )
@@ -58,8 +69,8 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli files -b
     .command("files")
-    .description("Lista os arquivos modificados no ciclo atua")
-    .option("-b, --backup", "Indica se eh o arquivo atual ou o backup")
+    .description("Lista os arquivos modificados no ciclo atual")
+    .option("-b, --backup", "Mostra os arquivos do snapshot inicial em vez dos atuais")
     .action((options: { backup?: boolean }) => {
       const handler = new FilesHandler();
 
@@ -68,8 +79,8 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli cat <file> -b
     .command("cat <file>")
-    .description("Mostra o conteúdo completo do arquivo 'file', no ciclo atua")
-    .option("-b, --backup", "Indica se eh o arquivo atual ou o backup")
+    .description("Mostra o conteúdo completo do arquivo 'file' no ciclo atual")
+    .option("-b, --backup", "Mostra a versão do snapshot inicial em vez da atual")
     .action((file: string, options: { backup?: boolean }) => {
       const handler = new FilesHandler();
 
@@ -78,7 +89,7 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli diff <file>
     .command("diff <file>")
-    .description("Mostra o diff do arquivo 'file', no ciclo atua")
+    .description("Mostra o diff do arquivo 'file' no ciclo atual")
     .action((file: string) => {
       const handler = new FilesHandler();
 
@@ -87,7 +98,7 @@ export async function runCli(): Promise<void> {
 
   const config = program //mede-cli config
     .command("config")
-    .description("Inspect MEDE configuration")
+    .description("Mostra a configuração atual do MEDE")
     .action(async () => {
       const handler = new ConfigHandler();
       await handler.execute();
@@ -95,7 +106,7 @@ export async function runCli(): Promise<void> {
 
   config //mede-cli config init
     .command("init")
-    .description("create MEDE configuration")
+    .description("Cria o arquivo mede.config.json")
     .action(async () => {
       const handler = new ConfigHandler();
       await handler.executeInit();
@@ -103,7 +114,7 @@ export async function runCli(): Promise<void> {
 
   config //mede-cli config apply
     .command("apply")
-    .description("apply MEDE configuration changes")
+    .description("Aplica alterações manuais feitas na configuração")
     .action(async () => {
       const handler = new ConfigHandler();
       await handler.executeApply();
@@ -111,11 +122,11 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli cycle -p ".." -f "file1;dir;file2;"
     .command("cycle")
-    .description("Execute the next methodological cycle")
-    .option("-p, --prompt <text>", "Cycle prompt")
+    .description("Inicia o próximo ciclo metodológico")
+    .option("-p, --prompt <text>", "Prompt do ciclo")
     .option(
       "-f, --file <path>",
-      "Attach a file or directory to the cycle context",
+      "Anexa um arquivo ou diretório ao contexto do ciclo",
       collectRepeatedOption,
       [],
     )
@@ -126,8 +137,8 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli approve -a
     .command("approve")
-    .description("Approve and apply a change-set")
-    .option("-a, --all", "approve all phases of current cycle")
+    .description("Aprova e aplica o change-set da fase atual")
+    .option("-a, --all", "Aprova automaticamente todas as fases seguintes")
     .action(async (options: { all?: boolean }) => {
       const handler = new CycleHandler();
       await handler.executeApprove(options.all ?? false);
@@ -135,8 +146,8 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli reject -a
     .command("reject")
-    .description("Reject a change-set")
-    .option("-a, --all", "reject all phases of current cycle")
+    .description("Rejeita o change-set da fase atual")
+    .option("-a, --all", "Rejeita automaticamente todas as fases seguintes")
     .action(async (options: { all?: boolean }) => {
       const handler = new CycleHandler();
       await handler.executeReject(options.all ?? false);
@@ -144,7 +155,7 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli reset
     .command("reset")
-    .description("Reset current cycle, rollback all changes")
+    .description("Reinicia a fase atual, descartando a proposta corrente")
     .action(async () => {
       const handler = new CycleHandler();
       await handler.executeReset();
@@ -152,7 +163,7 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli retry
     .command("retry")
-    .description("retry current cycle, after llm error")
+    .description("Repete a geração da fase atual após erro da LLM")
     .action(async () => {
       const handler = new CycleHandler();
       await handler.executeRetry();
@@ -160,11 +171,11 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli refine -p "..." -f "file1;dir;file2
     .command("refine")
-    .description("Refine current change-set in current phase of currente cycle")
-    .option("-p, --prompt <text>", "Cycle prompt")
+    .description("Refina o change-set da fase atual do ciclo")
+    .option("-p, --prompt <text>", "Prompt de refinamento")
     .option(
       "-f, --file <path>",
-      "Attach a file or directory to the cycle context",
+      "Anexa um arquivo ou diretório ao contexto do refinamento",
       collectRepeatedOption,
       [],
     )
@@ -175,7 +186,7 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli commit
     .command("commit")
-    .description("commit all changes")
+    .description("Finaliza o ciclo, mantendo todas as alterações aprovadas")
     .action(() => {
       const handler = new CycleHandler();
       handler.executeCommit();
@@ -183,7 +194,7 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli rollback
     .command("rollback")
-    .description("rollback all changes")
+    .description("Cancela o ciclo, restaurando o snapshot inicial")
     .action(() => {
       const handler = new CycleHandler();
       handler.executeRollback();
@@ -191,8 +202,8 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli pending -a
     .command("pending")
-    .description("List chunks pending of current change-set")
-    .option("-a, --all", "list all chunks of current change-set")
+    .description("Lista os trecho-diffs pendentes do change-set atual")
+    .option("-a, --all", "Lista todos os trecho-diffs do change-set atual")
     .action((options: { all?: boolean }) => {
       const handler = new ChangesHandler();
       handler.executePending(options.all ?? false);
@@ -200,8 +211,8 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli apply -a
     .command("apply")
-    .description("Apply current diff")
-    .option("-a, --all", "apply all diff of current change-set")
+    .description("Aplica o trecho-diff atual")
+    .option("-a, --all", "Aplica todos os trecho-diffs do change-set atual")
     .action((options: { all?: boolean }) => {
       const handler = new ChangesHandler();
       handler.executeApply(options.all ?? false);
@@ -209,8 +220,8 @@ export async function runCli(): Promise<void> {
 
   program //mede-cli discard -a
     .command("discard")
-    .description("Discard a current diff")
-    .option("-a, --all", "discard all diff of current change-set")
+    .description("Descarta o trecho-diff atual")
+    .option("-a, --all", "Descarta todos os trecho-diffs do change-set atual")
     .action((options: { all?: boolean }) => {
       const handler = new ChangesHandler();
       handler.executeDiscard(options.all ?? false);
@@ -218,8 +229,8 @@ export async function runCli(): Promise<void> {
 
   const llm = program //mede-cli llm
     .command("llm")
-    .description("Inspect or test current LLM configuration")
-    .option("-p, --prompt <text>", "Prompt for llm test action")
+    .description("Inspeciona a configuração de LLM atual")
+    .option("-p, --prompt <text>", "Prompt para o teste da LLM")
     .action(() => {
       const handler = new LlmHandler();
       handler.execute();
@@ -227,8 +238,8 @@ export async function runCli(): Promise<void> {
 
   llm ////mede-cli llm test -p "..."
     .command("test")
-    .description("create MEDE configuration")
-    .option("-p, --prompt <text>", "Prompt for llm test action")
+    .description("Executa um prompt de teste isolado na LLM")
+    .option("-p, --prompt <text>", "Prompt para o teste da LLM")
     .action(async (options: { prompt?: string }) => {
       const handler = new LlmHandler();
       await handler.executeTest(options.prompt ?? "");

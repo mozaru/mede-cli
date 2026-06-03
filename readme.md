@@ -71,6 +71,20 @@ nome da variável de ambiente em `llm.apiKeyEnv` e exporte a chave no ambiente:
 export OPENAI_API_KEY="sk-..."
 ```
 
+### Saída em JSON (para scripts)
+
+Qualquer comando aceita a flag global `--json` (posicionada antes do subcomando),
+que emite o resultado e os erros em JSON estável em vez de texto:
+
+```bash
+mede-cli --json status
+# sucesso → {"ok":true,"output":"..."}
+# erro    → {"ok":false,"error":"..."}
+```
+
+O código de saída continua diferente de zero em caso de falha, permitindo
+combinar o JSON com a verificação do status de saída em scripts.
+
 Para detalhes de empacotamento, publicação no npm e versionamento, consulte
 [DISTRIBUICAO.md](./DISTRIBUICAO.md).
 

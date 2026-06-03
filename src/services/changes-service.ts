@@ -41,21 +41,21 @@ export class ChangesService {
 
   public pending(all: boolean): string {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const config = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(config, "Config not found");
+    this.assertNotNull(config, "Configuração não encontrada");
     void config;
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     const phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-    this.assertNotNull(phase, "Phase not found");
-    this.assert(phase.status === "REFINING", "Phase not in refining state");
+    this.assertNotNull(phase, "Fase não encontrada");
+    this.assert(phase.status === "REFINING", "A fase não está em refinamento");
 
     const changeSet = this.changeSetRepository.getCurrent(phase.id);
-    this.assertNotNull(changeSet, "Change Set not found");
+    this.assertNotNull(changeSet, "Change-set não encontrado");
 
     let response = "";
 
@@ -73,8 +73,8 @@ export class ChangesService {
         changeSet.currentChangeChunkIndex,
       );
 
-      this.assertNotNull(chunk, "Chunk not found");
-      this.assert(chunk.status === "AWAITING_APPROVAL", "Current chunk not pending");
+      this.assertNotNull(chunk, "Trecho-diff não encontrado");
+      this.assert(chunk.status === "AWAITING_APPROVAL", "O trecho-diff atual não está pendente");
 
       response += `\n    [${chunk.index}] ${changeSet.fileName}\n`;
       response += `    ${chunk.blockLocation}\n`;
@@ -97,21 +97,21 @@ export class ChangesService {
 
   public apply(all: boolean): string {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const config = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(config, "Config not found");
+    this.assertNotNull(config, "Configuração não encontrada");
     void config;
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     let phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-    this.assertNotNull(phase, "Phase not found");
-    this.assert(phase.status === "REFINING", "Phase not in refining state");
+    this.assertNotNull(phase, "Fase não encontrada");
+    this.assert(phase.status === "REFINING", "A fase não está em refinamento");
 
     let changeSet = this.changeSetRepository.getCurrent(phase.id);
-    this.assertNotNull(changeSet, "Change Set not found");
+    this.assertNotNull(changeSet, "Change-set não encontrado");
 
     if (all) {
       this.phaseConversationService.applyAll(phase, changeSet);
@@ -120,7 +120,7 @@ export class ChangesService {
     }
 
     phase = this.phaseRepository.getById(phase.id);
-    this.assertNotNull(phase, "Phase not found after apply");
+    this.assertNotNull(phase, "Fase não encontrada após a aplicação");
 
     changeSet = this.changeSetRepository.getById(changeSet.id);
     return this.statusService.generate(project, cycle, phase, changeSet);
@@ -128,21 +128,21 @@ export class ChangesService {
 
   public discard(all: boolean): string {
     const project = this.getCurrentProject();
-    this.assertNotNull(project, "Project not found");
+    this.assertNotNull(project, "Projeto não encontrado");
 
     const config = this.getCurrentProjectConfig(project.id);
-    this.assertNotNull(config, "Config not found");
+    this.assertNotNull(config, "Configuração não encontrada");
     void config;
 
     const cycle = this.cycleRepository.getCurrent(project.id);
-    this.assertNotNull(cycle, "No active cycle for current project");
+    this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
     let phase = this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
-    this.assertNotNull(phase, "Phase not found");
-    this.assert(phase.status === "REFINING", "Phase not in refining state");
+    this.assertNotNull(phase, "Fase não encontrada");
+    this.assert(phase.status === "REFINING", "A fase não está em refinamento");
 
     let changeSet = this.changeSetRepository.getCurrent(phase.id);
-    this.assertNotNull(changeSet, "Change Set not found");
+    this.assertNotNull(changeSet, "Change-set não encontrado");
 
     if (all) {
       this.phaseConversationService.discardAll(phase, changeSet);
@@ -151,7 +151,7 @@ export class ChangesService {
     }
 
     phase = this.phaseRepository.getById(phase.id);
-    this.assertNotNull(phase, "Phase not found after discard");
+    this.assertNotNull(phase, "Fase não encontrada após o descarte");
 
     changeSet = this.changeSetRepository.getById(changeSet.id);
     return this.statusService.generate(project, cycle, phase, changeSet);

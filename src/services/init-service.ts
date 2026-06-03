@@ -60,12 +60,12 @@ export class InitService implements IInitService {
    */
   public async init(prompt: string = "", files: string[] = []): Promise<string> {
     const projectResult = this.docsRepository.reconstruct();
-    if (!projectResult) throw new Error("Project not reconstructed");
+    if (!projectResult) throw new Error("Projeto não reconstruído");
     const project = projectResult.project;
-    if (!project) throw new Error("Project not found");
+    if (!project) throw new Error("Projeto não encontrado");
 
     const resolvedConfig = this.projectConfigRepository.getCurrent(project.id);
-    if (!resolvedConfig) throw new Error("Config not found");
+    if (!resolvedConfig) throw new Error("Configuração não encontrada");
     const config = JSON.parse(resolvedConfig?.content) as MedeConfigModelEntity;
 
     const result = this.cycleService.beginInitialization(project.id);
