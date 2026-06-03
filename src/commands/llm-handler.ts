@@ -17,4 +17,17 @@ export class LlmHandler {
     const resp = await this.llmService.test(prompt);
     emitResult(resp);
   }
+
+  public async executeLogin(): Promise<void> {
+    // The device-code flow prints the verification URL/code mid-flow so the user
+    // can authorize before login resolves; the final confirmation goes through
+    // the normal result channel (so --json still wraps it).
+    const resp = await this.llmService.login((message) => console.log(message));
+    emitResult(resp);
+  }
+
+  public executeLogout(): void {
+    const resp = this.llmService.logout();
+    emitResult(resp);
+  }
 }
