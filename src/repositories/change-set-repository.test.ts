@@ -30,7 +30,7 @@ let cycleArtifactId: number;
 
 function freshDatabase(): void {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "mede-changeset-repo-"));
-  const factory = new BetterSqliteConnectionFactory({ projectRootPath: root });
+  const factory = new BetterSqliteConnectionFactory({ inMemory: true });
   uow = new UnitOfWork(factory);
   uow.ensureConnection();
 }

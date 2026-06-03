@@ -54,6 +54,22 @@ describe("schema migrations", () => {
     }
   });
 
+  it("provisions an in-memory database without touching the filesystem", () => {
+    const connection = new BetterSqliteConnectionFactory({
+      projectRootPath: root,
+      inMemory: true,
+    }).createConnection();
+
+    try {
+      expect(userVersion(connection)).toBe(1);
+      expect(tableNames(connection)).toContain("Project");
+      // No `.mede` directory is created for an in-memory database.
+      expect(fs.existsSync(path.join(root, ".mede"))).toBe(false);
+    } finally {
+      connection.close();
+    }
+  });
+
   it("is idempotent when re-opening an already-migrated database", () => {
     new BetterSqliteConnectionFactory({ projectRootPath: root }).createConnection().close();
 

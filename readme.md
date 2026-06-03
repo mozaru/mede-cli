@@ -71,6 +71,24 @@ nome da variável de ambiente em `llm.apiKeyEnv` e exporte a chave no ambiente:
 export OPENAI_API_KEY="sk-..."
 ```
 
+### Console interativo
+
+Executar `mede-cli` **sem argumentos** abre um console interativo (REPL) que
+reaproveita exatamente os mesmos comandos:
+
+```text
+$ mede-cli
+MEDE-CLI — console interativo
+mede> status
+mede> cycle -p "novo ciclo"
+mede> approve
+mede> exit
+```
+
+Digite `help` para a lista de comandos, `<comando> --help` para detalhes e
+`exit`/`quit` para sair. Qualquer comando explícito (ex.: `mede-cli status`)
+mantém o comportamento one-shot, usado por scripts, CI e pela flag `--json`.
+
 ### Saída em JSON (para scripts)
 
 Qualquer comando aceita a flag global `--json` (posicionada antes do subcomando),

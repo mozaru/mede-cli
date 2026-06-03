@@ -25,7 +25,7 @@ let projects: ProjectRepository;
 // new database on connect, so each temp DB comes fully provisioned.
 function freshDatabase(): void {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "mede-cycle-repo-"));
-  const factory = new BetterSqliteConnectionFactory({ projectRootPath: root });
+  const factory = new BetterSqliteConnectionFactory({ inMemory: true });
   uow = new UnitOfWork(factory);
   uow.ensureConnection();
   cycles = new CycleRepository(uow);

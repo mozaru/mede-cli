@@ -1,4 +1,4 @@
-import { createContainer } from "../cli/container.js";
+import { getContainer } from "../cli/container.js";
 import { emitResult } from "../cli/output.js";
 import type { IChangesService } from "../services/interfaces/changes-service-interface.js";
 
@@ -6,7 +6,7 @@ export class ChangesHandler {
   private readonly changesService: IChangesService;
 
   constructor() {
-    this.changesService = createContainer().changesService;
+    this.changesService = getContainer().changesService;
   }
 
   public executeApply(all: boolean): void {
