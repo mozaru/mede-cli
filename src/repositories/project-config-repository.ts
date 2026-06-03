@@ -31,7 +31,7 @@ export class ProjectConfigRepository implements IProjectConfigRepository
                 content: content,
                 hashContent: hashContent
             });
-        return true;
+        return result.changes > 0;
     }
     public list(projectId: number): ProjectConfigEntity[]
     {

@@ -69,7 +69,7 @@ export class PhaseRepository implements IPhaseRepository
                 status: "AWAITING_APPROVAL",
                 finishedAt: null
             });
-        return true;
+        return result.changes > 0;
     }
     public nonEmpty(id: number): boolean
     {
@@ -81,7 +81,7 @@ export class PhaseRepository implements IPhaseRepository
                 status: "REFINING",
                 finishedAt: null
             });
-        return true;
+        return result.changes > 0;
     }
     public approve(id: number): boolean
     {
@@ -92,7 +92,7 @@ export class PhaseRepository implements IPhaseRepository
                 status: "APPROVED",
                 finishedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
     public reject(id: number): boolean
     {
@@ -103,7 +103,7 @@ export class PhaseRepository implements IPhaseRepository
                 status: "REJECTED",
                 finishedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
     public skip(id: number): boolean
     {
@@ -114,7 +114,7 @@ export class PhaseRepository implements IPhaseRepository
                 status: "SKIPPED",
                 finishedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
     public awaitingApproval(id: number): boolean
     {
@@ -125,7 +125,7 @@ export class PhaseRepository implements IPhaseRepository
                 status: "AWAITING_APPROVAL",
                 finishedAt: null
             });
-        return true;
+        return result.changes > 0;
     }
     public reset(id: number): boolean
     {
@@ -138,6 +138,6 @@ export class PhaseRepository implements IPhaseRepository
                 startedAt: new Date().toISOString(),
                 finishedAt: null
             });
-        return true;
+        return result.changes > 0;
     }
 }

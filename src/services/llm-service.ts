@@ -2,8 +2,9 @@ import type { IProjectRepository } from "../repositories/interfaces/project-repo
 import type { IProjectConfigRepository } from "../repositories/interfaces/project-config-repository-interface.js";
 import { LlmProviderFactory } from "../shared/llm/llm-provider-factory.js";
 import { MedeConfigModelEntity } from "../entities/mede-config-model-entity.js";
-import { strToJson } from "../shared/json.js";
-import { MedeLlmConfigEntity } from "../entities/mede-llm-config-entity.js";
+import { parseMedeConfig } from "../shared/mede-config-schema.js";
+import { withRetry } from "../shared/retry.js";
+import { logger } from "../shared/logger.js";
 
 export class LlmService
 {
@@ -72,65 +73,25 @@ export class LlmService
         const configEntity = this.projectConfigRepository.getCurrent(project.id);
         this.assertNotNull(configEntity, "Config not found");
 
-        const config = strToJson(configEntity.content) as MedeConfigModelEntity;
+        const config = parseMedeConfig(configEntity.content);
         const llm = LlmProviderFactory.create(config);
         llm.setOptions(config.llm);
         llm.setUserPrompt(prompt);
 
-        return (await llm.generateText()).rawText;
+        const response = await withRetry(() => llm.generateText(), {
+            onRetry: (error, attempt, delayMs) =>
+                logger.warn(
+                    `LLM falhou (tentativa ${attempt}); novo retry em ${delayMs}ms: ` +
+                        `${error instanceof Error ? error.message : String(error)}`,
+                ),
+        });
+
+        return response.rawText;
     }
 
     private parseConfig(content: string): MedeConfigModelEntity
     {
-        if (content.trim() === "")
-        {
-            throw new Error("Config content is empty");
-        }
-
-        let parsed: MedeConfigModelEntity;
-
-        try
-        {
-            parsed = JSON.parse(content) as MedeConfigModelEntity;
-        }
-        catch
-        {
-            throw new Error("Config content is not valid JSON");
-        }
-
-        if (!this.isLlmConfigModel(parsed.llm))
-        {
-            throw new Error("Config content has invalid LLM structure");
-        }
-
-        return parsed;
-    }
-
-    private isLlmConfigModel(value: unknown): value is MedeLlmConfigEntity
-    {
-        if (typeof value !== "object" || value === null)
-        {
-            return false;
-        }
-
-        const obj = value as Record<string, unknown>;
-
-        if (typeof obj.llm !== "object" || obj.llm === null)
-        {
-            return false;
-        }
-
-        const llm = obj.llm as Record<string, unknown>;
-
-        return (
-            typeof llm.provider === "string" &&
-            typeof llm.model === "string" &&
-            typeof llm.endpoint === "string" &&
-            typeof llm.apiKeyEnv === "string" &&
-            typeof llm.temperature === "number" &&
-            typeof llm.maxTokens === "number" &&
-            typeof llm.timeoutMs === "number"
-        );
+        return parseMedeConfig(content);
     }
 
     private assertNotNull<T>(value: T | null, message: string): asserts value is T
