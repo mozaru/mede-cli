@@ -2,6 +2,7 @@ import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { buildProgram } from "./runner.js";
 import { formatCliError } from "./error-handler.js";
+import { clearSharedContainer, createContainer, setSharedContainer } from "./container.js";
 
 // Minimal interactive console (Q3). A long-lived process reads one command per
 // line and dispatches it to the very same commander program the one-shot CLI
@@ -61,6 +62,14 @@ export async function startRepl(): Promise<void> {
   const rl = readline.createInterface({ input, output });
   printWelcome();
 
+  // Q1 — single connection per session: the interactive console builds one
+  // container (one long-lived SQLite connection) and shares it with every
+  // handler, instead of each command re-assembling the graph and opening a fresh
+  // connection. The one-shot CLI leaves no shared container, so it keeps its
+  // per-process behavior untouched.
+  const container = createContainer();
+  setSharedContainer(container);
+
   try {
     for (;;) {
       let line: string;
@@ -98,6 +107,8 @@ export async function startRepl(): Promise<void> {
     }
   } finally {
     rl.close();
+    clearSharedContainer();
+    container.dispose();
   }
 
   output.write("Até logo.\n");
