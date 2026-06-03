@@ -54,7 +54,7 @@ function setup(): void {
   readmePath = path.join(docsRoot, config.fileNames.readme);
   fs.writeFileSync(readmePath, "v1", "utf-8");
 
-  uow = new UnitOfWork(new BetterSqliteConnectionFactory({ projectRootPath: root }));
+  uow = new UnitOfWork(new BetterSqliteConnectionFactory({ inMemory: true }));
   uow.ensureConnection();
 
   const projects = new ProjectRepository(uow);

@@ -1,4 +1,4 @@
-import { createContainer } from "../cli/container.js";
+import { getContainer } from "../cli/container.js";
 import { emitResult } from "../cli/output.js";
 import { ICycleService } from "../services/interfaces/cycle-service-interface.js";
 
@@ -6,7 +6,7 @@ export class CycleHandler {
   private readonly cycleService: ICycleService;
 
   constructor() {
-    this.cycleService = createContainer().cycleService;
+    this.cycleService = getContainer().cycleService;
   }
 
   public async executeCycle(prompt: string, files: Array<string>): Promise<void> {

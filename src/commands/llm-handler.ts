@@ -1,4 +1,4 @@
-import { createContainer } from "../cli/container.js";
+import { getContainer } from "../cli/container.js";
 import { emitResult } from "../cli/output.js";
 import type { ILlmService } from "../services/interfaces/llm-service-interface.js";
 
@@ -6,7 +6,7 @@ export class LlmHandler {
   private readonly llmService: ILlmService;
 
   constructor() {
-    this.llmService = createContainer().llmService;
+    this.llmService = getContainer().llmService;
   }
 
   public execute(): void {

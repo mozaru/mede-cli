@@ -9,6 +9,10 @@ export interface BetterSqliteConnectionFactoryOptions {
   projectRootPath?: string;
   medeDirectoryName?: string;
   databaseFileName?: string;
+  // When true, the database lives in RAM (no `.mede` directory, no file). Used by
+  // single-connection unit tests — faster and free of temp dirs / Windows file
+  // locks. Not for production, where state must survive between command runs.
+  inMemory?: boolean;
 }
 
 interface Migration {
@@ -21,6 +25,7 @@ export class BetterSqliteConnectionFactory implements IDbConnectionFactory {
   private readonly projectRootPath: string;
   private readonly medeDirectoryName: string;
   private readonly databaseFileName: string;
+  private readonly inMemory: boolean;
 
   // Ordered list of schema migrations. Each one runs exactly once per database,
   // gated by PRAGMA user_version, so new and existing databases converge to the
@@ -38,23 +43,32 @@ export class BetterSqliteConnectionFactory implements IDbConnectionFactory {
     this.projectRootPath = options?.projectRootPath ?? process.cwd();
     this.medeDirectoryName = options?.medeDirectoryName ?? ".mede";
     this.databaseFileName = options?.databaseFileName ?? "mede.db";
+    this.inMemory = options?.inMemory ?? false;
   }
 
   public createConnection(): Database.Database {
-    const medeDirectoryPath = path.join(this.projectRootPath, this.medeDirectoryName);
-    fs.mkdirSync(medeDirectoryPath, { recursive: true });
-
-    const databasePath = path.join(medeDirectoryPath, this.databaseFileName);
-    const connection = new BetterSqlite3(databasePath);
+    const connection = this.inMemory
+      ? new BetterSqlite3(":memory:")
+      : new BetterSqlite3(this.resolveDatabasePath());
 
     // foreign_keys is a per-connection pragma, so it must be set on every
     // connection, not once per process.
     connection.pragma("foreign_keys = ON");
-    connection.pragma("journal_mode = WAL");
+
+    // WAL is a file-based journal mode; it is meaningless for an in-memory db.
+    if (!this.inMemory) {
+      connection.pragma("journal_mode = WAL");
+    }
 
     this.runMigrations(connection);
 
     return connection;
+  }
+
+  private resolveDatabasePath(): string {
+    const medeDirectoryPath = path.join(this.projectRootPath, this.medeDirectoryName);
+    fs.mkdirSync(medeDirectoryPath, { recursive: true });
+    return path.join(medeDirectoryPath, this.databaseFileName);
   }
 
   // Applies every migration whose version is greater than the database's current

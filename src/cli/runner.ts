@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { Command } from "commander";
 import { reportCliError } from "./error-handler.js";
 import { setOutputFormat } from "./output.js";
+import { startRepl } from "./repl.js";
 import { ChangesHandler } from "../commands/changes-handler.js";
 import { ConfigHandler } from "../commands/config-handler.js";
 import { CycleHandler } from "../commands/cycle-handler.js";
@@ -28,7 +29,9 @@ function collectRepeatedOption(value: string, previous: string[] = []): string[]
   return [...previous, value];
 }
 
-export async function runCli(): Promise<void> {
+// Builds the fully-configured commander program. Extracted so both the one-shot
+// CLI (runCli) and the interactive console (REPL) drive the exact same commands.
+export function buildProgram(): Command {
   const program = new Command();
 
   program.name("mede-cli").description("MEDE CLI").version(resolveVersion());
@@ -244,6 +247,22 @@ export async function runCli(): Promise<void> {
       const handler = new LlmHandler();
       await handler.executeTest(options.prompt ?? "");
     });
+
+  return program;
+}
+
+export async function runCli(): Promise<void> {
+  const args = process.argv.slice(2);
+
+  // No subcommand at all: drop into the interactive console (Q3, minimal).
+  // Any explicit command (or --help/--version) keeps the one-shot behavior,
+  // which scripting, CI and the --json flag rely on.
+  if (args.length === 0) {
+    await startRepl();
+    return;
+  }
+
+  const program = buildProgram();
 
   // A single guard around parseAsync catches both synchronous throws from
   // sync actions and rejected promises from async actions, turning any failure

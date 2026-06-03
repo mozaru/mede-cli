@@ -8,6 +8,10 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 ## [Não lançado]
 
 ### Adicionado
+- Console interativo (REPL): executar `mede-cli` sem argumentos abre uma sessão
+  interativa que reaproveita os mesmos comandos (`buildProgram` compartilhado
+  entre a CLI one-shot e o console). Built-ins `help`/`exit`; erros e `--help`
+  não encerram a sessão. Comandos explícitos seguem one-shot.
 - Flag global `--json`: emite a saída dos comandos e os erros em JSON
   (`{ "ok": true, "output": ... }` / `{ "ok": false, "error": ... }`) para
   consumo por scripts. Apresentador centralizado em `src/cli/output.ts`.

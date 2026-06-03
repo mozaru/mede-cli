@@ -44,6 +44,10 @@ export interface Container {
   configService: IConfigService;
   filesService: IFilesService;
   llmService: ILlmService;
+  // Closes the underlying unit of work / SQLite connection. The one-shot CLI lets
+  // the process exit instead of calling this; the interactive console disposes its
+  // shared container when the session ends.
+  dispose(): void;
 }
 
 export function createContainer(): Container {
@@ -146,5 +150,26 @@ export function createContainer(): Container {
     configService,
     filesService,
     llmService,
+    dispose: () => uow[Symbol.dispose](),
   };
+}
+
+// Interactive-console support: when a shared container is set, handlers reuse it
+// (one long-lived SQLite connection for the whole session) instead of building a
+// fresh graph per command. In one-shot mode no shared container is set, so each
+// command keeps building its own — identical to the previous behavior.
+let sharedContainer: Container | null = null;
+
+export function setSharedContainer(container: Container): void {
+  sharedContainer = container;
+}
+
+export function clearSharedContainer(): void {
+  sharedContainer = null;
+}
+
+// The container a handler should use: the shared one if a session is active,
+// otherwise a fresh, self-contained graph.
+export function getContainer(): Container {
+  return sharedContainer ?? createContainer();
 }

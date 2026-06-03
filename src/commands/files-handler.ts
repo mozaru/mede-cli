@@ -1,4 +1,4 @@
-import { createContainer } from "../cli/container.js";
+import { getContainer } from "../cli/container.js";
 import { emitResult } from "../cli/output.js";
 import type { IFilesService } from "../services/interfaces/files-service-interface.js";
 
@@ -6,7 +6,7 @@ export class FilesHandler {
   private readonly filesService: IFilesService;
 
   constructor() {
-    this.filesService = createContainer().filesService;
+    this.filesService = getContainer().filesService;
   }
 
   public executeCat(file: string, backup: boolean): void {

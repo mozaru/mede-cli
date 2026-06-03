@@ -59,7 +59,7 @@ function setup(): void {
   // The placeholder builder reads the current-state document; provide a minimal one.
   fs.writeFileSync(path.join(docsRoot, "situacao-atual.md"), "# Situação Atual\n");
 
-  uow = new UnitOfWork(new BetterSqliteConnectionFactory({ projectRootPath: root }));
+  uow = new UnitOfWork(new BetterSqliteConnectionFactory({ inMemory: true }));
   uow.ensureConnection();
 
   const projects = new ProjectRepository(uow);

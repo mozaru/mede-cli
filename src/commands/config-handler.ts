@@ -1,4 +1,4 @@
-import { createContainer } from "../cli/container.js";
+import { getContainer } from "../cli/container.js";
 import { emitResult } from "../cli/output.js";
 import type { IConfigService } from "../services/interfaces/config-service-interface.js";
 
@@ -6,7 +6,7 @@ export class ConfigHandler {
   private readonly configService: IConfigService;
 
   constructor() {
-    this.configService = createContainer().configService;
+    this.configService = getContainer().configService;
   }
 
   public execute(): void {
