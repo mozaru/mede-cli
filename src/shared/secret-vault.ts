@@ -107,27 +107,36 @@ export class FileSecretVault implements ISecretVault {
 }
 
 export class SystemKeychainSecretVault implements ISecretVault {
+  private readonly cache = new Map<string, string>();
+
   public get(key: string): string | undefined {
+    if (this.cache.has(key)) {
+      return this.cache.get(key);
+    }
     try {
+      let value: string | undefined = undefined;
       if (process.platform === "darwin") {
         const stdout = execSync(`security find-generic-password -s mede-cli -a "${key}" -w`, {
           stdio: ["ignore", "pipe", "ignore"],
         });
-        return stdout.toString().trim() || undefined;
-      }
-      
-      if (process.platform === "win32") {
+        value = stdout.toString().trim() || undefined;
+      } else if (process.platform === "win32") {
         const script = `$vault = New-Object Windows.Security.Credentials.PasswordVault; try { $cred = $vault.Retrieve('mede-cli', '${key}'); $cred.RetrievePassword(); Write-Output $cred.Password } catch {}`;
         const stdout = execSync(`powershell -NoProfile -NonInteractive -Command "${script}"`, {
           stdio: ["ignore", "pipe", "ignore"],
         });
-        return stdout.toString().trim() || undefined;
+        value = stdout.toString().trim() || undefined;
+      } else {
+        const stdout = execSync(`secret-tool lookup service mede-cli account "${key}"`, {
+          stdio: ["ignore", "pipe", "ignore"],
+        });
+        value = stdout.toString().trim() || undefined;
       }
-      
-      const stdout = execSync(`secret-tool lookup service mede-cli account "${key}"`, {
-        stdio: ["ignore", "pipe", "ignore"],
-      });
-      return stdout.toString().trim() || undefined;
+
+      if (value !== undefined) {
+        this.cache.set(key, value);
+      }
+      return value;
     } catch {
       return undefined;
     }
@@ -150,6 +159,7 @@ export class SystemKeychainSecretVault implements ISecretVault {
           stdio: ["pipe", "ignore", "ignore"],
         });
       }
+      this.cache.set(key, value);
     } catch (err) {
       throw new Error(`Falha ao gravar no chaveiro do sistema: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -171,6 +181,7 @@ export class SystemKeychainSecretVault implements ISecretVault {
           stdio: "ignore",
         });
       }
+      this.cache.delete(key);
     } catch {
       // ignore
     }
@@ -179,6 +190,7 @@ export class SystemKeychainSecretVault implements ISecretVault {
 
 export class DockerCredentialHelperSecretVault implements ISecretVault {
   private readonly helperBin: string;
+  private readonly cache = new Map<string, string>();
 
   constructor(helperName: string) {
     this.helperBin = helperName.startsWith("docker-credential-")
@@ -187,13 +199,20 @@ export class DockerCredentialHelperSecretVault implements ISecretVault {
   }
 
   public get(key: string): string | undefined {
+    if (this.cache.has(key)) {
+      return this.cache.get(key);
+    }
     try {
       const stdout = execSync(`${this.helperBin} get`, {
         input: key,
         stdio: ["pipe", "pipe", "ignore"],
       });
       const parsed = JSON.parse(stdout.toString()) as { Secret?: string };
-      return parsed.Secret;
+      const secret = parsed.Secret;
+      if (secret !== undefined) {
+        this.cache.set(key, secret);
+      }
+      return secret;
     } catch {
       return undefined;
     }
@@ -210,6 +229,7 @@ export class DockerCredentialHelperSecretVault implements ISecretVault {
         input: payload,
         stdio: ["pipe", "ignore", "ignore"],
       });
+      this.cache.set(key, value);
     } catch (err) {
       throw new Error(`Falha ao gravar via helper ${this.helperBin}: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -221,6 +241,7 @@ export class DockerCredentialHelperSecretVault implements ISecretVault {
         input: key,
         stdio: ["pipe", "ignore", "ignore"],
       });
+      this.cache.delete(key);
     } catch {
       // ignore
     }

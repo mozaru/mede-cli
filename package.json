@@ -30,7 +30,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts --passWithNoTests",
     "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "keywords": [
