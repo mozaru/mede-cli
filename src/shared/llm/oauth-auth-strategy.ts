@@ -2,6 +2,7 @@ import { MedeConfigModelEntity } from "../../entities/mede-config-model-entity.j
 import type { ISecretVault } from "../secret-vault.js";
 import type { ILlmAuthStrategy } from "./llm-auth.js";
 import { DeviceCodeConfig, DeviceCodeFlow, OAuthTokens } from "./oauth-device-code-flow.js";
+import { resolveDeviceCodeConfig } from "./oauth-provider-presets.js";
 
 // Refresh a little before the real expiry so an in-flight request doesn't race
 // the clock.
@@ -43,15 +44,7 @@ export function buildDeviceCodeConfig(config: MedeConfigModelEntity): DeviceCode
     return undefined;
   }
 
-  const deviceAuthUrl = oauth.deviceAuthUrl?.trim();
-  const tokenUrl = oauth.tokenUrl?.trim();
-  const clientId = oauth.clientId?.trim();
-
-  if (!deviceAuthUrl || !tokenUrl || !clientId) {
-    return undefined;
-  }
-
-  return { deviceAuthUrl, tokenUrl, clientId, scope: oauth.scope?.trim() || undefined };
+  return resolveDeviceCodeConfig(config.llm.provider, oauth);
 }
 
 export interface OAuthAuthStrategyDeps {

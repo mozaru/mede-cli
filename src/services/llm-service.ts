@@ -12,12 +12,15 @@ import {
   oauthVaultKey,
   serializeTokens,
 } from "../shared/llm/oauth-auth-strategy.js";
+import { OpenRouterPkceFlow, createBrowserAuthorize } from "../shared/llm/openrouter-pkce-flow.js";
 
 export interface LlmLoginDeps {
   vault?: ISecretVault;
   fetch?: typeof fetch;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
+  // OpenRouter PKCE: overrides the browser+callback step (tests).
+  authorize?: (authUrl: string, callbackUrl: string) => Promise<string>;
 }
 
 export class LlmService {
@@ -91,6 +94,19 @@ export class LlmService {
   // before this resolves).
   public async login(display: (message: string) => void, deps?: LlmLoginDeps): Promise<string> {
     const config = this.getCurrentConfig();
+    const vault = deps?.vault ?? new FileSecretVault();
+
+    // OpenRouter authenticates via OAuth PKCE that *provisions an API key*. Store
+    // the key as a non-expiring token so OAuthAuthStrategy serves it as a Bearer.
+    if (this.isOpenRouter(config)) {
+      const flow = new OpenRouterPkceFlow({
+        fetch: deps?.fetch ?? fetch,
+        authorize: deps?.authorize ?? createBrowserAuthorize({ notify: display }),
+      });
+      const key = await flow.login();
+      vault.set(oauthVaultKey(config.llm.provider), serializeTokens({ accessToken: key }));
+      return `Login OpenRouter concluído (key provisionada e guardada no cofre).${this.authReminder(config)}`;
+    }
 
     const deviceConfig = buildDeviceCodeConfig(config);
     if (!deviceConfig) {
@@ -113,15 +129,24 @@ export class LlmService {
     });
 
     const tokens = await flow.authenticate();
-    const vault = deps?.vault ?? new FileSecretVault();
     vault.set(oauthVaultKey(config.llm.provider), serializeTokens(tokens));
 
-    const reminder =
-      (config.llm.auth ?? "apiKey").trim().toLowerCase() === "oauth"
-        ? ""
-        : '\nLembrete: defina "llm.auth": "oauth" no mede.config.json para usar estas credenciais.';
+    return `Login OAuth concluído para o provider ${config.llm.provider}.${this.authReminder(config)}`;
+  }
 
-    return `Login OAuth concluído para o provider ${config.llm.provider}.${reminder}`;
+  private isOpenRouter(config: MedeConfigModelEntity): boolean {
+    return (
+      config.llm.provider.trim().toLowerCase() === "openrouter" ||
+      (config.llm.endpoint ?? "").toLowerCase().includes("openrouter.ai")
+    );
+  }
+
+  // Reminds the user to flip auth to "oauth" when they logged in but the config
+  // still points at another mode (so the stored credential is actually used).
+  private authReminder(config: MedeConfigModelEntity): string {
+    return (config.llm.auth ?? "apiKey").trim().toLowerCase() === "oauth"
+      ? ""
+      : '\nLembrete: defina "llm.auth": "oauth" no mede.config.json para usar estas credenciais.';
   }
 
   // Removes any stored OAuth tokens for the configured provider.

@@ -1,6 +1,7 @@
 import { MedeConfigModelEntity } from "../../entities/mede-config-model-entity.js";
 import { FileSecretVault, ISecretVault } from "../secret-vault.js";
 import { OAuthAuthStrategy } from "./oauth-auth-strategy.js";
+import { AdcAuthStrategy, AdcTokenFetcher, createGcloudTokenFetcher } from "./adc-auth-strategy.js";
 
 // Authentication strategy for LLM providers (Q2). Decouples *where the credential
 // comes from* (env var, OAuth token, Google ADC) from *how a provider injects it
@@ -67,12 +68,13 @@ export interface LlmAuthDeps {
   vault?: ISecretVault;
   fetch?: typeof fetch;
   now?: () => number;
+  // Overrides the gcloud-backed token source for the adc strategy (tests).
+  adcTokenFetcher?: AdcTokenFetcher;
 }
 
 // Picks the auth strategy for a provider based on `config.llm.auth` (default
-// "apiKey"). "oauth" reads tokens stored by `mede-cli llm login`; "adc" is
-// accepted by the config schema but not wired yet, so it fails with a clear,
-// actionable message instead of silently doing nothing.
+// "apiKey"). "oauth" reads tokens stored by `mede-cli llm login`; "adc" mints a
+// short-lived token from the machine's Google ADC (gcloud).
 export function createLlmAuthStrategy(
   config: MedeConfigModelEntity,
   providerLabel: string,
@@ -92,10 +94,10 @@ export function createLlmAuthStrategy(
       });
 
     case "adc":
-      throw new Error(
-        `O modo de autenticação "${config.llm.auth}" ainda não está disponível para o provider ` +
-          `${providerLabel} (será habilitado na próxima fase da Q2). Use auth "apiKey" ou "oauth".`,
-      );
+      return new AdcAuthStrategy(providerLabel, {
+        fetchToken: deps?.adcTokenFetcher ?? createGcloudTokenFetcher(),
+        now: deps?.now ?? Date.now,
+      });
 
     default:
       throw new Error(
