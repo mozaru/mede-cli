@@ -6,7 +6,8 @@ import { FileSystemRepository } from "../repositories/file-system-repository.js"
 import { ListFilesOptionsEntity } from "../entities/list-files-options-entity.js";
 import * as LlmPrompts from "../shared/llm/llm-prompts-provider.js";
 import { MedeConfigModelEntity } from "../entities/mede-config-model-entity.js";
-import { jsonToStr, strToJson } from "../shared/json.js";
+import { jsonToStr } from "../shared/json.js";
+import { parseMedeConfig } from "../shared/mede-config-schema.js";
 import { calculateHashFromContent } from "../shared/crypto.js";
 
 export class ConfigService
@@ -327,13 +328,12 @@ export class ConfigService
 
     private readConfigFile(filePath: string): MedeConfigModelEntity
     {
-        const json = this.fileSystemRepository.readJsonFile(filePath);
-        return json as MedeConfigModelEntity;
+        return parseMedeConfig(this.fileSystemRepository.readFile(filePath));
     }
 
     private parseConfig(content: string): MedeConfigModelEntity
     {
-        return strToJson(content) as MedeConfigModelEntity;
+        return parseMedeConfig(content);
     }
 
     private assert(condition: boolean, message: string): void

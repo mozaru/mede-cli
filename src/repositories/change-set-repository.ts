@@ -65,7 +65,7 @@ export class ChangeSetRepository implements IChangeSetRepository
                 completed: 1,
                 updatedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
     public updateChunkIndex(id: number, currentChangeChunkIndex: number, currentOffset: number): boolean
     {
@@ -77,7 +77,7 @@ export class ChangeSetRepository implements IChangeSetRepository
                 currentOffset: currentOffset,
                 updatedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
     public deleteFromPhase(phaseId: number): boolean
     {

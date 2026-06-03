@@ -61,6 +61,6 @@ export class BacklogInterventionCountersRepository implements IBacklogInterventi
                 lastNumber: lastNumber,
                 updatedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
 }

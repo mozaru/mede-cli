@@ -2,7 +2,6 @@ import type { ProjectEntity } from "../entities/project-entity.js";
 import type { CycleEntity } from "../entities/cycle-entity.js";
 import type { PhaseEntity } from "../entities/phase-entity.js";
 import type { ChangeSetEntity } from "../entities/change-set-entity.js";
-import type { CycleArtifactEntity } from "../entities/cycle-artifact-entity.js";
 
 import type { IChangeSetRepository } from "../repositories/interfaces/change-set-repository-interface.js";
 import type { ICycleArtifactRepository } from "../repositories/interfaces/cycle-artifact-repository-interface.js";

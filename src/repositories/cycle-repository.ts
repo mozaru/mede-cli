@@ -69,7 +69,7 @@ export class CycleRepository implements ICycleRepository
                 id: id,
                 currentPhaseIndex: currentPhaseIndex
             });
-        return true;
+        return result.changes > 0;
     }
     public awaiting(id: number): boolean
     {
@@ -79,30 +79,37 @@ export class CycleRepository implements ICycleRepository
                 id: id,
                 status: "AWAITING_COMMIT"
             });
-        return true;
+        return result.changes > 0;
     }
-    public commit(id: number): boolean
-    {
-        this._uow.ensureTransactionForWrite();
-        const sql = "update cycle set status = @status, finishedAt = @finishedAt  where id = @id";
-        const result = this._uow.connection.prepare(sql).run({
-                id: id,
-                status: "COMMITTED",
-                finishedAt: new Date().toISOString()
-            });
-        return true;
-    }
-    public rollback(id: number): boolean
-    {
-        this._uow.ensureTransactionForWrite();
-        const sql = "update cycle set status = @status, finishedAt = @finishedAt  where id = @id";
-        const result = this._uow.connection.prepare(sql).run({
-                id: id,
-                status: "ROLLEDBACK",
-                finishedAt: new Date().toISOString()
-            });
-        return true;
-    }
+    // CÓDIGO MORTO: commit() e rollback() não são chamados em lugar nenhum.
+    // O fluxo de commit/rollback em CycleService.clearCycle() apaga o ciclo do
+    // banco (cycleRepository.delete), em vez de transicionar o status para
+    // COMMITTED/ROLLEDBACK. O estado é reconstruível a partir dos Markdown
+    // persistidos, então não há trilha de auditoria do ciclo no SQLite.
+    // Mantidos comentados intencionalmente caso o design passe a persistir o
+    // status final em vez de deletar o ciclo.
+    // public commit(id: number): boolean
+    // {
+    //     this._uow.ensureTransactionForWrite();
+    //     const sql = "update cycle set status = @status, finishedAt = @finishedAt  where id = @id";
+    //     const result = this._uow.connection.prepare(sql).run({
+    //             id: id,
+    //             status: "COMMITTED",
+    //             finishedAt: new Date().toISOString()
+    //         });
+    //     return result.changes > 0;
+    // }
+    // public rollback(id: number): boolean
+    // {
+    //     this._uow.ensureTransactionForWrite();
+    //     const sql = "update cycle set status = @status, finishedAt = @finishedAt  where id = @id";
+    //     const result = this._uow.connection.prepare(sql).run({
+    //             id: id,
+    //             status: "ROLLEDBACK",
+    //             finishedAt: new Date().toISOString()
+    //         });
+    //     return result.changes > 0;
+    // }
     public approveAll(id: number): boolean
     {
         this._uow.ensureTransactionForWrite();
@@ -111,7 +118,7 @@ export class CycleRepository implements ICycleRepository
                 id: id,
                 autoMode: "APPROVE_ALL"
             });
-        return true;
+        return result.changes > 0;
     }
     public rejectAll(id: number): boolean
     {
@@ -121,6 +128,6 @@ export class CycleRepository implements ICycleRepository
                 id: id,
                 autoMode: "REJECT_ALL"
             });
-        return true;
+        return result.changes > 0;
     }
 }

@@ -18,13 +18,15 @@ import { FileSystemRepository } from "../repositories/file-system-repository.js"
 import { LlmProviderFactory } from "../shared/llm/llm-provider-factory.js";
 import { MedeConfigModelEntity } from "../entities/mede-config-model-entity.js";
 import * as Diff from "../shared/diff.js";
+import { validateDiffChunks } from "../shared/diff-schema.js";
+import { withRetry } from "../shared/retry.js";
+import { logger } from "../shared/logger.js";
 import * as LlmPrompts from "../shared/llm/llm-prompts-provider.js";
 import { LlmRole } from "../shared/llm/llm-provider.interface.js";
 import { IPhaseConversationService } from "./interfaces/phase-conversation-service-interface.js";
 import { PromptPlaceholderBuilder } from "../shared/prompt-place-holder-builder.js";
 import { IBacklogRepository } from "../repositories/interfaces/backlog-repository-interface.js";
 import { ProjectEntity } from "../entities/project-entity.js";
-import { date } from "zod";
 
 export class PhaseConversationService implements IPhaseConversationService 
 {
@@ -314,7 +316,13 @@ export class PhaseConversationService implements IPhaseConversationService
 
         llm.setUserPrompt(prompt);
 
-        const response = await llm.generateText();
+        const response = await withRetry(() => llm.generateText(), {
+            onRetry: (error, attempt, delayMs) =>
+                logger.warn(
+                    `LLM falhou (tentativa ${attempt}); novo retry em ${delayMs}ms: ` +
+                        `${error instanceof Error ? error.message : String(error)}`,
+                ),
+        });
 
         const userMessage = new PhaseConversationEntity();
         userMessage.id = 0;
@@ -355,7 +363,7 @@ export class PhaseConversationService implements IPhaseConversationService
 
             cycleArtifact = this.cycleArtifactRepository.insert(artifact);
         }
-        const chunks = Diff.parseDiff(response.rawText);        
+        const chunks = validateDiffChunks(Diff.parseDiff(response.rawText));
         const changeSet = new ChangeSetEntity();
         changeSet.id = 0;
         changeSet.phaseId = phase.id;

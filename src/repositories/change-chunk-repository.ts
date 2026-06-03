@@ -77,7 +77,7 @@ export class ChangeChunkRepository implements IChangeChunkRepository
         const sql = "select tp.id,tp.`index`,tp.status,tp.blockLocation,tp.changeContent,tp.startedAt,tp.updatedAt,Phase12.id as phaseId,ChangeSet13.id as changeSetId from changeChunk tp left join Phase Phase12 on (tp.phaseId = Phase12.id)  left join ChangeSet ChangeSet13 on (tp.changeSetId = ChangeSet13.id)  where tp.changeSetId = @changeSetId and tp.status = @status";
         const row = this._uow.connection.prepare(sql).get({
         changeSetId: changeSetId,
-        status: "awaitingApproval"  }) as ChangeChunkEntity | undefined;
+        status: "AWAITING_APPROVAL"  }) as ChangeChunkEntity | undefined;
         return row ?? null;
     }
     public approve(id: number): boolean
@@ -89,7 +89,7 @@ export class ChangeChunkRepository implements IChangeChunkRepository
                 status: "APPROVED",
                 updatedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
     public reject(id: number): boolean
     {
@@ -100,6 +100,6 @@ export class ChangeChunkRepository implements IChangeChunkRepository
                 status: "REJECTED",
                 updatedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
 }

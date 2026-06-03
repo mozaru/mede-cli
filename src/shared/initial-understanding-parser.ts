@@ -1,5 +1,4 @@
 import path from "node:path";
-import { ProjectEntity } from "../entities/project-entity.js";
 import { BacklogEntity } from "../entities/backlog-entity.js";
 import type { IFileSystemRepository } from "../repositories/interfaces/file-system-repository-interface.js";
 import { FileSystemRepository } from "../repositories/file-system-repository.js";

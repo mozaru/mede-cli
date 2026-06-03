@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import { Command } from "commander";
+import { reportCliError } from "./error-handler.js";
 import { ChangesHandler } from "../commands/changes-handler.js";
 import { ConfigHandler } from "../commands/config-handler.js";
 import { CycleHandler } from "../commands/cycle-handler.js";
@@ -6,6 +8,20 @@ import { FilesHandler } from "../commands/files-handler.js";
 import { InitHandler } from "../commands/init-handler.js";
 import { LlmHandler } from "../commands/llm-handler.js";
 import { StatusHandler } from "../commands/status-handler.js";
+
+// Single source of truth for the version: read package.json at runtime. Using a
+// URL relative to this module keeps it working both in dev (tsx) and in the
+// bundled dist artifact, and avoids importing JSON across the tsconfig rootDir.
+function resolveVersion(): string {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+    ) as { version?: string };
+    return pkg.version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
 
 function collectRepeatedOption(
   value: string,
@@ -28,13 +44,13 @@ function parseOptionalNumber(value?: string): number | null {
   return parsed;
 }
 
-export function runCli(): void {
+export async function runCli(): Promise<void> {
   const program = new Command();
 
   program
     .name("mede-cli")
     .description("MEDE CLI")
-    .version("0.1.1");
+    .version(resolveVersion());
 
   program  //mede-cli status 
     .command("status")
@@ -243,5 +259,12 @@ export function runCli(): void {
       await handler.executeTest(options.prompt??"");
     });
 
-  program.parse(process.argv);
+  // A single guard around parseAsync catches both synchronous throws from
+  // sync actions and rejected promises from async actions, turning any failure
+  // into a friendly message plus a non-zero exit code.
+  try {
+    await program.parseAsync(process.argv);
+  } catch (error) {
+    reportCliError(error);
+  }
 }

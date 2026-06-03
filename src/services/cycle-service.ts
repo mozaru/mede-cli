@@ -1,3 +1,4 @@
+import type { IUnitOfWork } from "../db/unit-of-work-interface.js";
 import type { IFileSystemRepository } from "../repositories/interfaces/file-system-repository-interface.js";
 import type { IProjectRepository } from "../repositories/interfaces/project-repository-interface.js";
 import type { IProjectConfigRepository } from "../repositories/interfaces/project-config-repository-interface.js";
@@ -19,11 +20,13 @@ import { IProjectReconstructionService } from "./interfaces/project-reconstructi
 import { IPhaseConversationService } from "./interfaces/phase-conversation-service-interface.js";
 import { IStatusService } from "./interfaces/status-service-interface.js";
 import { MedeConfigModelEntity } from "../entities/mede-config-model-entity.js";
+import { parseMedeConfig } from "../shared/mede-config-schema.js";
 import { CycleResponseModel } from "../models/cycle.model.js";
 
 
 export class CycleService implements ICycleService
 {
+    private readonly uow: IUnitOfWork;
     private readonly projectRepository: IProjectRepository;
     private readonly projectConfigRepository: IProjectConfigRepository;
     private readonly cycleRepository: ICycleRepository;
@@ -39,6 +42,7 @@ export class CycleService implements ICycleService
     private readonly fileSystemRepository: IFileSystemRepository;
 
     constructor(
+        uow: IUnitOfWork,
         docsService: IProjectReconstructionService,
         phaseConversationService: IPhaseConversationService,
         statusService: IStatusService,
@@ -54,6 +58,7 @@ export class CycleService implements ICycleService
         fileSystemRepository: IFileSystemRepository | null = null,
     )
     {
+        this.uow = uow;
         this.docsService = docsService;
         this.phaseConversationService = phaseConversationService;
         this.statusService = statusService;
@@ -67,6 +72,32 @@ export class CycleService implements ICycleService
         this.changeChunkRepository = changeChunkRepository;
         this.phaseAttachmentRepository = phaseAttachmentRepository;
         this.phaseConversationRepository = phaseConversationRepository;
+    }
+
+    // Runs a block of pure-DB writes inside a single SQLite transaction so that
+    // multi-step cycle operations are all-or-nothing. Reentrant: if a transaction
+    // is already open (e.g. begin() calling createBackupDocs()), it just joins the
+    // outer transaction instead of opening/committing a nested one.
+    private transactional<T>(work: () => T): T
+    {
+        if (this.uow.isTransactional)
+        {
+            return work();
+        }
+
+        this.uow.requireTransaction();
+
+        try
+        {
+            const result = work();
+            this.uow.commit();
+            return result;
+        }
+        catch (error)
+        {
+            this.uow.rollback();
+            throw error;
+        }
     }
 
     public createBackupDocs(projectId: number, cycleId: number): void
@@ -85,6 +116,8 @@ export class CycleService implements ICycleService
         const config = this.parseConfig(configEntity.content);
         const now = this.getCurrentDateTime();
 
+        this.transactional(() =>
+        {
         this.insertBackupArtifact(
             cycleId,
             "initialUnderstanding",
@@ -148,6 +181,7 @@ export class CycleService implements ICycleService
             this.fileSystemRepository.combinePath(config.docsRoot, config.fileNames.timeline),
             now
         );
+        });
     }
 
     public restoreBackup(cycle: CycleEntity): void
@@ -173,17 +207,20 @@ export class CycleService implements ICycleService
 
     public clearCycle(cycle: CycleEntity): void
     {
-        for (const phase of this.phaseRepository.list(cycle.id))
+        this.transactional(() =>
         {
-            this.changeChunkRepository.deleteFromPhase(phase.id);
-            this.changeSetRepository.deleteFromPhase(phase.id);
-            this.phaseAttachmentRepository.deleteFromPhase(phase.id);
-            this.phaseConversationRepository.deleteFromPhase(phase.id);
-        }
+            for (const phase of this.phaseRepository.list(cycle.id))
+            {
+                this.changeChunkRepository.deleteFromPhase(phase.id);
+                this.changeSetRepository.deleteFromPhase(phase.id);
+                this.phaseAttachmentRepository.deleteFromPhase(phase.id);
+                this.phaseConversationRepository.deleteFromPhase(phase.id);
+            }
 
-        this.phaseRepository.deleteFromCycle(cycle.id);
-        this.cycleArtifactRepository.deleteFromCycle(cycle.id);
-        this.cycleRepository.delete(cycle.id);
+            this.phaseRepository.deleteFromCycle(cycle.id);
+            this.cycleArtifactRepository.deleteFromCycle(cycle.id);
+            this.cycleRepository.delete(cycle.id);
+        });
     }
 
     public beginInitialization(projectId: number): CycleResponseModel
@@ -209,37 +246,40 @@ export class CycleService implements ICycleService
         cycle.startedAt = this.getCurrentDateTime();
         cycle.finishedAt = "";
 
-        const insertedCycle = this.cycleRepository.insert(cycle);
-
         const readmeFileName = this.fileSystemRepository.combinePath(config.docsRoot, config.fileNames.readme);
         const initialUnderstandingFileName = this.fileSystemRepository.combinePath(config.docsRoot, config.fileNames.initialUnderstanding);
 
-        const insertedPhase = this.insertPhase(
-            insertedCycle.id,
-            "GENERATE_README",
-            1,
-            [],
-            readmeFileName,
-            "LIVE",
-            "readme"
-        );
-        
-        this.insertPhase(
-            insertedCycle.id,
-            "GENERATE_INITIAL_UNDERSTANDING",
-            2,
-            [],
-            initialUnderstandingFileName,
-            "LIVE",
-            "initialUnderstanding"
-        );
+        return this.transactional(() =>
+        {
+            const insertedCycle = this.cycleRepository.insert(cycle);
 
-        this.createBackupDocs(project.id, insertedCycle.id);
+            const insertedPhase = this.insertPhase(
+                insertedCycle.id,
+                "GENERATE_README",
+                1,
+                [],
+                readmeFileName,
+                "LIVE",
+                "readme"
+            );
 
-        return {
-            cycle: insertedCycle,
-            phase: insertedPhase
-        };
+            this.insertPhase(
+                insertedCycle.id,
+                "GENERATE_INITIAL_UNDERSTANDING",
+                2,
+                [],
+                initialUnderstandingFileName,
+                "LIVE",
+                "initialUnderstanding"
+            );
+
+            this.createBackupDocs(project.id, insertedCycle.id);
+
+            return {
+                cycle: insertedCycle,
+                phase: insertedPhase
+            };
+        });
     }
 
     public begin(projectId: number): CycleResponseModel
@@ -300,6 +340,8 @@ export class CycleService implements ICycleService
         cycle.startedAt = this.getCurrentDateTime();
         cycle.finishedAt = "";
 
+        return this.transactional(() =>
+        {
         const insertedCycle = this.cycleRepository.insert(cycle);
 
         this.createBackupDocs(project.id, insertedCycle.id);
@@ -418,6 +460,7 @@ export class CycleService implements ICycleService
             cycle: insertedCycle,
             phase: firstPhase
         };
+        });
     }
 
     public next(cycle: CycleEntity): CycleResponseModel
@@ -925,23 +968,7 @@ export class CycleService implements ICycleService
 
     private parseConfig(content: string): MedeConfigModelEntity
     {
-        if (content.trim() === "")
-        {
-            throw new Error("Config content is empty");
-        }
-
-        let parsed: unknown;
-
-        try
-        {
-            parsed = JSON.parse(content);
-        }
-        catch
-        {
-            throw new Error("Config content is not valid JSON");
-        }
-
-        return parsed as MedeConfigModelEntity;
+        return parseMedeConfig(content);
     }
 
     private formatDate(date: Date): string

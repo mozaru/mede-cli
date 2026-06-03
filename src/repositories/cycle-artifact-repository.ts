@@ -65,7 +65,7 @@ export class CycleArtifactRepository implements ICycleArtifactRepository
                 currentContent: currentContent,
                 updatedAt: new Date().toISOString()
             });
-        return true;
+        return result.changes > 0;
     }
     public existAnyByCycle(cycleId: number): boolean
     {

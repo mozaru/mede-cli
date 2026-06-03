@@ -11,49 +11,75 @@ export interface BetterSqliteConnectionFactoryOptions {
   databaseFileName?: string;
 }
 
+interface Migration {
+  version: number;
+  description: string;
+  up(connection: Database.Database): void;
+}
+
 export class BetterSqliteConnectionFactory implements IDbConnectionFactory {
   private readonly projectRootPath: string;
   private readonly medeDirectoryName: string;
   private readonly databaseFileName: string;
-  private static initialized = false;
+
+  // Ordered list of schema migrations. Each one runs exactly once per database,
+  // gated by PRAGMA user_version, so new and existing databases converge to the
+  // latest schema. Migration 1 uses IF NOT EXISTS so it is also safe on legacy
+  // databases created before versioning existed (which report user_version 0).
+  private static readonly MIGRATIONS: Migration[] = [
+    {
+      version: 1,
+      description: 'initial schema',
+      up: (connection) => connection.exec(BetterSqliteConnectionFactory.INITIAL_SCHEMA),
+    },
+  ];
 
   public constructor(options?: BetterSqliteConnectionFactoryOptions) {
     this.projectRootPath = options?.projectRootPath ?? process.cwd();
     this.medeDirectoryName = options?.medeDirectoryName ?? '.mede';
     this.databaseFileName = options?.databaseFileName ?? 'mede.db';
-
   }
 
   public createConnection(): Database.Database {
-    const medeDirectoryPath = path.join(
-      this.projectRootPath,
-      this.medeDirectoryName
-    );
-
+    const medeDirectoryPath = path.join(this.projectRootPath, this.medeDirectoryName);
     fs.mkdirSync(medeDirectoryPath, { recursive: true });
 
-    const databasePath = path.join(
-      medeDirectoryPath,
-      this.databaseFileName
-    );
-    const hasDatabase = fs.existsSync(databasePath); 
+    const databasePath = path.join(medeDirectoryPath, this.databaseFileName);
     const connection = new BetterSqlite3(databasePath);
 
-    if (!BetterSqliteConnectionFactory.initialized) {
-      connection.pragma('foreign_keys = ON');
-      connection.pragma('journal_mode = WAL');
-      if (!hasDatabase)
-        this.migrate(connection);
-      this.seedReferenceData(connection);
-      BetterSqliteConnectionFactory.initialized = true;
-    }
+    // foreign_keys is a per-connection pragma, so it must be set on every
+    // connection, not once per process.
+    connection.pragma('foreign_keys = ON');
+    connection.pragma('journal_mode = WAL');
+
+    this.runMigrations(connection);
 
     return connection;
   }
 
-  private migrate(connection: Database.Database): void {
-    connection.exec(`
-create table Project (
+  // Applies every migration whose version is greater than the database's current
+  // user_version, each inside its own transaction, then records the new version.
+  private runMigrations(connection: Database.Database): void {
+    const currentVersion = Number(connection.pragma('user_version', { simple: true })) || 0;
+
+    const pending = BetterSqliteConnectionFactory.MIGRATIONS.filter(
+      (migration) => migration.version > currentVersion,
+    ).sort((a, b) => a.version - b.version);
+
+    for (const migration of pending) {
+      const applyMigration = connection.transaction(() => {
+        migration.up(connection);
+        // PRAGMA does not accept bound parameters; the version is an integer we
+        // control, so interpolation here is safe.
+        connection.pragma(`user_version = ${migration.version}`);
+      });
+
+      applyMigration();
+    }
+  }
+
+  private static readonly INITIAL_SCHEMA = `
+create table if not exists Project (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'name' VARCHAR(50) NOT NULL,
         'rootProjectPath' VARCHAR(300) NULL,
@@ -63,7 +89,7 @@ create table Project (
         'updatedAt' DATETIME NOT NULL
 );
 
-create table ProjectConfig (
+create table if not exists ProjectConfig (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'projectId' INTEGER NOT NULL,
         'medeConfigPath' VARCHAR(300) NULL,
@@ -74,7 +100,7 @@ create table ProjectConfig (
         FOREIGN KEY (projectId) REFERENCES Project(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table LlmProfile (
+create table if not exists LlmProfile (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'projectId' INTEGER NOT NULL,
         'profileName' VARCHAR(50) NOT NULL,
@@ -90,7 +116,7 @@ create table LlmProfile (
         FOREIGN KEY (projectId) REFERENCES Project(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table Backlog (
+create table if not exists Backlog (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'projectId' INTEGER NOT NULL,
         'documentType' VARCHAR(3) NOT NULL,
@@ -110,7 +136,7 @@ create table Backlog (
         FOREIGN KEY (projectId) REFERENCES Project(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table BacklogInterventionCounters (
+create table if not exists BacklogInterventionCounters (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'projectId' INTEGER NOT NULL,
         'name' VARCHAR(3) NOT NULL,
@@ -120,7 +146,7 @@ create table BacklogInterventionCounters (
         FOREIGN KEY (projectId) REFERENCES Project(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table Cycle (
+create table if not exists Cycle (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'projectId' INTEGER NOT NULL,
         'status' VARCHAR(20) NOT NULL,
@@ -132,7 +158,7 @@ create table Cycle (
         FOREIGN KEY (projectId) REFERENCES Project(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table Phase (
+create table if not exists Phase (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'cycleId' INTEGER NOT NULL,
         'name' VARCHAR(50) NOT NULL,
@@ -148,7 +174,7 @@ create table Phase (
         FOREIGN KEY (cycleId) REFERENCES Cycle(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table CycleArtifact (
+create table if not exists CycleArtifact (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'cycleId' INTEGER NOT NULL,
         'backupContent' TEXT NULL,
@@ -161,7 +187,7 @@ create table CycleArtifact (
         FOREIGN KEY (cycleId) REFERENCES Cycle(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table PhaseConversation (
+create table if not exists PhaseConversation (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'phaseId' INTEGER NOT NULL,
         'createdAt' DATETIME NOT NULL,
@@ -170,7 +196,7 @@ create table PhaseConversation (
         FOREIGN KEY (phaseId) REFERENCES Phase(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table PhaseAttachment (
+create table if not exists PhaseAttachment (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'phaseId' INTEGER NOT NULL,
         'createdAt' DATETIME NOT NULL,
@@ -182,7 +208,7 @@ create table PhaseAttachment (
         FOREIGN KEY (phaseId) REFERENCES Phase(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table ChangeSet (
+create table if not exists ChangeSet (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'phaseId' INTEGER NOT NULL,
         'cycleArtifactId' INTEGER NOT NULL,
@@ -197,7 +223,7 @@ create table ChangeSet (
         FOREIGN KEY (cycleArtifactId) REFERENCES CycleArtifact(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-create table ChangeChunk (
+create table if not exists ChangeChunk (
         'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
         'phaseId' INTEGER NOT NULL,
         'changeSetId' INTEGER NOT NULL,
@@ -209,31 +235,6 @@ create table ChangeChunk (
         'updatedAt' DATETIME NOT NULL,
         FOREIGN KEY (phaseId) REFERENCES Phase(id) ON UPDATE CASCADE ON DELETE CASCADE,
         FOREIGN KEY (changeSetId) REFERENCES ChangeSet(id) ON UPDATE CASCADE ON DELETE CASCADE
-);      
-    `);
-  }
-
-  private seedReferenceData(connection: Database.Database): void {
-    // reservado para seed futura
-  }
-
-  private ensureColumnExists(
-    connection: Database.Database,
-    tableName: string,
-    columnName: string,
-    columnDefinition: string
-  ): void {
-    const rows = connection
-      .prepare(`PRAGMA table_info(${tableName})`)
-      .all() as Array<{ name: string }>;
-
-    const hasColumn = rows.some((row) => row.name === columnName);
-
-    if (!hasColumn) {
-      connection.exec(`
-        ALTER TABLE ${tableName}
-        ADD COLUMN ${columnName} ${columnDefinition}
-      `);
-    }
-  }
+);
+`;
 }
