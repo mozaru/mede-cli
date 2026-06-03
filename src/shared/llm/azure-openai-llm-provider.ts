@@ -6,6 +6,7 @@ import {
   LlmRole,
   LlmTextGenerationResult,
 } from "./llm-provider.interface.js";
+import { ILlmAuthStrategy, createLlmAuthStrategy } from "./llm-auth.js";
 
 interface AzureChatCompletionChoice {
   index: number;
@@ -38,9 +39,13 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
   private systemPrompt: string = "";
   private userPrompt: string = "";
   private extraInfo: string = "";
+  private readonly authStrategy: ILlmAuthStrategy;
 
   constructor(config: MedeConfigModelEntity) {
     this.config = config;
+    this.authStrategy = createLlmAuthStrategy(config, "Azure OpenAI", (apiKey) => ({
+      "api-key": apiKey,
+    }));
   }
 
   public setSystemPrompt(prompt: string): void {
@@ -137,7 +142,7 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
 
   public async generateText(): Promise<LlmTextGenerationResult> {
     const endpoint = this.resolveEndpoint();
-    const apiKey = this.resolveApiKey();
+    const authHeaders = await this.authStrategy.resolveAuthHeaders();
     const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const requestMessages = this.buildRequestMessages();
@@ -154,7 +159,7 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "api-key": apiKey,
+          ...authHeaders,
         },
         body: JSON.stringify({
           model: this.config.llm.model,
@@ -237,22 +242,6 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
 
     const separator = normalizedEndpoint.includes("?") ? "&" : "?";
     return `${normalizedEndpoint}${separator}api-version=2024-10-21`;
-  }
-
-  private resolveApiKey(): string {
-    const apiKeyEnv = this.config.llm.apiKeyEnv?.trim();
-
-    if (!apiKeyEnv) {
-      throw new Error("LLM apiKeyEnv is not configured for Azure OpenAI provider.");
-    }
-
-    const apiKey = process.env[apiKeyEnv];
-
-    if (!apiKey?.trim()) {
-      throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
-    }
-
-    return apiKey;
   }
 
   private isAbortError(error: unknown): boolean {

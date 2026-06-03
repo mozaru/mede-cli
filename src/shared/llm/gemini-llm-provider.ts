@@ -6,6 +6,7 @@ import {
   LlmRole,
   LlmTextGenerationResult,
 } from "./llm-provider.interface.js";
+import { ILlmAuthStrategy, createLlmAuthStrategy } from "./llm-auth.js";
 
 interface GeminiPart {
   text?: string;
@@ -49,9 +50,13 @@ export class GeminiLlmProvider implements ILlmProvider {
   private systemPrompt: string = "";
   private userPrompt: string = "";
   private extraInfo: string = "";
+  private readonly authStrategy: ILlmAuthStrategy;
 
   constructor(config: MedeConfigModelEntity) {
     this.config = config;
+    this.authStrategy = createLlmAuthStrategy(config, "Gemini", (apiKey) => ({
+      "x-goog-api-key": apiKey,
+    }));
   }
 
   public setSystemPrompt(prompt: string): void {
@@ -147,7 +152,8 @@ export class GeminiLlmProvider implements ILlmProvider {
   }
 
   public async generateText(): Promise<LlmTextGenerationResult> {
-    const { endpoint, apiKey } = this.resolveEndpointAndApiKey();
+    const endpoint = this.resolveEndpoint();
+    const authHeaders = await this.authStrategy.resolveAuthHeaders();
     const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const { systemInstruction, contents } = this.buildRequestMessages();
@@ -166,7 +172,7 @@ export class GeminiLlmProvider implements ILlmProvider {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-goog-api-key": apiKey,
+          ...authHeaders,
         },
         body: JSON.stringify({
           systemInstruction,
@@ -215,19 +221,7 @@ export class GeminiLlmProvider implements ILlmProvider {
     }
   }
 
-  private resolveEndpointAndApiKey(): { endpoint: string; apiKey: string } {
-    const apiKeyEnv = this.config.llm.apiKeyEnv?.trim();
-
-    if (!apiKeyEnv) {
-      throw new Error("LLM apiKeyEnv is not configured for Gemini provider.");
-    }
-
-    const apiKey = process.env[apiKeyEnv];
-
-    if (!apiKey?.trim()) {
-      throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
-    }
-
+  private resolveEndpoint(): string {
     const baseEndpoint =
       this.config.llm.endpoint?.trim() || "https://generativelanguage.googleapis.com/v1beta";
 
@@ -237,12 +231,9 @@ export class GeminiLlmProvider implements ILlmProvider {
       throw new Error("LLM model is required for Gemini provider.");
     }
 
-    return {
-      endpoint:
-        `${baseEndpoint.replace(/\/$/, "")}` +
-        `/models/${encodeURIComponent(model)}:generateContent`,
-      apiKey,
-    };
+    return (
+      `${baseEndpoint.replace(/\/$/, "")}` + `/models/${encodeURIComponent(model)}:generateContent`
+    );
   }
 
   private buildRequestMessages(): {

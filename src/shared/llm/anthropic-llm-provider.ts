@@ -6,6 +6,7 @@ import {
   LlmRole,
   LlmTextGenerationResult,
 } from "./llm-provider.interface.js";
+import { ILlmAuthStrategy, createLlmAuthStrategy } from "./llm-auth.js";
 
 interface AnthropicContentBlock {
   type: string;
@@ -37,9 +38,13 @@ export class AnthropicLlmProvider implements ILlmProvider {
   private systemPrompt: string = "";
   private userPrompt: string = "";
   private extraInfo: string = "";
+  private readonly authStrategy: ILlmAuthStrategy;
 
   constructor(config: MedeConfigModelEntity) {
     this.config = config;
+    this.authStrategy = createLlmAuthStrategy(config, "Anthropic", (apiKey) => ({
+      "x-api-key": apiKey,
+    }));
   }
 
   public setSystemPrompt(prompt: string): void {
@@ -136,7 +141,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
 
   public async generateText(): Promise<LlmTextGenerationResult> {
     const endpoint = this.resolveEndpoint();
-    const apiKey = this.resolveApiKey();
+    const authHeaders = await this.authStrategy.resolveAuthHeaders();
     const timeoutMs = this.options.timeoutMs ?? this.config.llm.timeoutMs ?? 60000;
 
     const { system, anthropicMessages } = this.buildRequestMessages();
@@ -155,7 +160,7 @@ export class AnthropicLlmProvider implements ILlmProvider {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-api-key": apiKey,
+          ...authHeaders,
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
@@ -208,22 +213,6 @@ export class AnthropicLlmProvider implements ILlmProvider {
     const baseEndpoint = this.config.llm.endpoint?.trim() || "https://api.anthropic.com";
 
     return `${baseEndpoint.replace(/\/$/, "")}/v1/messages`;
-  }
-
-  private resolveApiKey(): string {
-    const apiKeyEnv = this.config.llm.apiKeyEnv?.trim();
-
-    if (!apiKeyEnv) {
-      throw new Error("LLM apiKeyEnv is not configured for Anthropic provider.");
-    }
-
-    const apiKey = process.env[apiKeyEnv];
-
-    if (!apiKey?.trim()) {
-      throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
-    }
-
-    return apiKey;
   }
 
   private buildRequestMessages(): {
