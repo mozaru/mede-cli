@@ -2,9 +2,9 @@ import type { IFileSystemRepository } from "../../domain/interfaces/repositories
 import type { IProjectRepository } from "../../domain/interfaces/repositories/project-repository-interface.js";
 import type { IProjectConfigRepository } from "../../domain/interfaces/repositories/project-config-repository-interface.js";
 import type { ICycleRepository } from "../../domain/interfaces/repositories/cycle-repository-interface.js";
+import fs from "node:fs";
 import { FileSystemRepository } from "../../infrastructure/repositories/file-system-repository.js";
 import { ListFilesOptionsEntity } from "../../domain/entities/list-files-options-entity.js";
-import * as LlmPrompts from "../../infrastructure/llm/llm-prompts-provider.js";
 import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
 import { jsonToStr } from "../../shared/json.js";
 import { parseMedeConfig } from "../../shared/mede-config-schema.js";
@@ -300,6 +300,17 @@ export class ConfigService {
     }
 
     if (!this.fileSystemRepository.exists(oldDocsRoot)) {
+      return;
+    }
+
+    if (this.fileSystemRepository.exists(newDocsRoot)) {
+      const entries = fs.readdirSync(oldDocsRoot);
+      for (const entry of entries) {
+        const sourcePath = this.fileSystemRepository.combinePath(oldDocsRoot, entry);
+        const targetPath = this.fileSystemRepository.combinePath(newDocsRoot, entry);
+        this.fileSystemRepository.moveFile(sourcePath, targetPath);
+      }
+      fs.rmdirSync(oldDocsRoot);
       return;
     }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as Prompts from "./llm-prompts-provider.js";
 import { I18n } from "../../shared/i18n.js";
 import fs from "node:fs";
@@ -35,6 +35,16 @@ const userPrompts = [
 ];
 
 describe("llm prompt assets loader", () => {
+  let originalLanguage: string;
+
+  beforeEach(() => {
+    originalLanguage = I18n.language;
+  });
+
+  afterEach(() => {
+    I18n.setLanguage(originalLanguage);
+  });
+
   it("loads all 12 system and 12 user prompts as non-empty strings", () => {
     expect(systemPrompts).toHaveLength(12);
     expect(userPrompts).toHaveLength(12);
@@ -53,8 +63,6 @@ describe("llm prompt assets loader", () => {
   });
 
   it("injects the shared diff rules into every system prompt", () => {
-    // A stable phrase from prompts/fragments/diff-rules.md must appear in each
-    // system prompt after substitution.
     for (const prompt of systemPrompts) {
       expect(prompt.toLowerCase()).toContain("diff");
     }
@@ -64,35 +72,67 @@ describe("llm prompt assets loader", () => {
     I18n.setLanguage("en-US");
     expect(Prompts.SYSTEM_PROMPT_README).toBeDefined();
     expect(Prompts.SYSTEM_PROMPT_README.length).toBeGreaterThan(0);
-    I18n.setLanguage("pt-BR");
   });
 
-  it("overrides specific prompts when files exist in .mede/prompts/ on a file-by-file basis", () => {
-    const localPromptsDir = path.join(process.cwd(), ".mede", "prompts", "system");
-    fs.mkdirSync(localPromptsDir, { recursive: true });
-    
-    const readmeOverridePath = path.join(localPromptsDir, "readme.md");
-    fs.writeFileSync(readmeOverridePath, "OVERRIDDEN README {{DIFF_RULES}}", "utf-8");
-    
-    try {
-      // Trigger a language change to force prompt reload
-      I18n.setLanguage("pt-BR");
-      I18n.setLanguage("en-US");
-      expect(Prompts.SYSTEM_PROMPT_README).toContain("OVERRIDDEN README");
-      
-      // Other system prompts (like meeting) should still load from package assets (fallback)
-      expect(Prompts.SYSTEM_PROMPT_MEETING).not.toContain("OVERRIDDEN README");
-    } finally {
-      // Cleanup
+  describe("Resolution hierarchy: .mede/prompts -> locales/<lang> -> fallback pt-BR", () => {
+    const medeDir = path.join(process.cwd(), ".mede");
+    const localPromptsDir = path.join(medeDir, "prompts");
+    const systemOverrideDir = path.join(localPromptsDir, "system");
+    const readmeOverridePath = path.join(systemOverrideDir, "readme.md");
+
+    afterEach(() => {
+      // Cleanup files
       try {
-        fs.unlinkSync(readmeOverridePath);
-        fs.rmdirSync(localPromptsDir);
-        fs.rmdirSync(path.join(process.cwd(), ".mede", "prompts"));
-        fs.rmdirSync(path.join(process.cwd(), ".mede"));
+        if (fs.existsSync(readmeOverridePath)) {
+          fs.unlinkSync(readmeOverridePath);
+        }
+        if (fs.existsSync(systemOverrideDir)) {
+          fs.rmdirSync(systemOverrideDir);
+        }
+        if (fs.existsSync(localPromptsDir)) {
+          fs.rmdirSync(localPromptsDir);
+        }
+        if (fs.existsSync(medeDir)) {
+          fs.rmdirSync(medeDir);
+        }
       } catch {
         // Ignore cleanup failures
       }
+    });
+
+    it("Nível 1 (Customização Local): resolves local prompt in .mede/prompts/", () => {
+      fs.mkdirSync(systemOverrideDir, { recursive: true });
+      fs.writeFileSync(readmeOverridePath, "NIVEL 1 LOCAL OVERRIDE {{DIFF_RULES}}", "utf-8");
+
+      I18n.setLanguage("en-US");
+      expect(Prompts.SYSTEM_PROMPT_README).toContain("NIVEL 1 LOCAL OVERRIDE");
+
       I18n.setLanguage("pt-BR");
-    }
+      expect(Prompts.SYSTEM_PROMPT_README).toContain("NIVEL 1 LOCAL OVERRIDE");
+    });
+
+    it("Nível 2 (Pacote/Idioma Selecionado): resolves package prompt for active language when no local override", () => {
+      // Ensure no local override file
+      if (fs.existsSync(readmeOverridePath)) {
+        fs.unlinkSync(readmeOverridePath);
+      }
+
+      I18n.setLanguage("en-US");
+      // Since it's English, check it has english key text
+      expect(Prompts.SYSTEM_PROMPT_README).toContain("documentary engineering assistant");
+      expect(Prompts.SYSTEM_PROMPT_README).not.toContain("NIVEL 1 LOCAL OVERRIDE");
+    });
+
+    it("Nível 3 (Fallback Default): falls back to pt-BR if active language is not supported or missing", () => {
+      // Ensure no local override file
+      if (fs.existsSync(readmeOverridePath)) {
+        fs.unlinkSync(readmeOverridePath);
+      }
+
+      // Set language to unsupported language 'fr-FR'
+      I18n.setLanguage("fr-FR");
+      // It should fall back to pt-BR prompts
+      expect(Prompts.SYSTEM_PROMPT_README).toContain("assistente de engenharia documental");
+    });
   });
 });
