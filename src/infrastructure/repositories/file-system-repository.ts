@@ -179,7 +179,9 @@ export class FileSystemRepository implements IFileSystemRepository {
     const normalizedTarget = path.normalize(targetPath);
     this.guardWritePath(normalizedSource);
     this.guardWritePath(normalizedTarget);
-    this.assertFileExists(normalizedSource);
+    if (!this.exists(normalizedSource)) {
+      throw new Error(I18n.t("File or directory not found: {0}", normalizedSource));
+    }
 
     const directoryPath = path.dirname(normalizedTarget);
     this.ensureDirectory(directoryPath);
