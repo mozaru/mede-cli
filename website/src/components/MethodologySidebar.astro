@@ -8,46 +8,158 @@ const pathname = Astro.url.pathname;
 const allEntries = await getCollection('metodologia');
 const prefixLower = lang === 'pt-BR' ? 'pt-br/' : 'en/';
 
-const menuItems = allEntries
+// 1. Ordena os arquivos colocando o INDICE no topo e ordenando alfabeticamente os caminhos das pastas
+const sortedEntries = allEntries
   .filter(e => e.id.toLowerCase().startsWith(prefixLower))
   .sort((a, b) => {
-    const orderDiff = (a.data.order || 0) - (b.data.order || 0);
-    if (orderDiff !== 0) return orderDiff;
+    const aIsIndice = a.id.toLowerCase().endsWith('indice');
+    const bIsIndice = b.id.toLowerCase().endsWith('indice');
+    if (aIsIndice) return -1;
+    if (bIsIndice) return 1;
     return a.id.localeCompare(b.id);
-  })
-  .map(e => {
-    const cleanSlug = e.id.replace(new RegExp(`^${prefixLower}`, 'i'), '');
-    return {
-      path: `/metodologia/${cleanSlug}`,
-      label: e.data.title
-    };
   });
 
-const activeItem = menuItems.find(item => {
-  const localized = localizePath(item.path, lang);
-  return pathname === localized || pathname === `${localized}/`;
+// 2. Mapeia os dados dos arquivos para itens de menu amigáveis
+const menuItems = sortedEntries.map(e => {
+  const cleanSlug = e.id.replace(new RegExp(`^${prefixLower}`, 'i'), '');
+  
+  let label = e.data.title;
+  if (cleanSlug === 'indice') {
+    label = lang === 'pt-BR' ? 'Índice Geral' : 'Index';
+  } else if (cleanSlug.includes('00-introducao-parte') || cleanSlug.includes('introducao-')) {
+    label = lang === 'pt-BR' ? 'Introdução' : 'Introduction';
+  }
+
+  return {
+    path: `/metodologia/${cleanSlug}`,
+    cleanSlug,
+    label
+  };
 });
 
-const activePath = activeItem?.path || '';
+// 3. Define as sessões estruturadas da barra lateral (árvore de seções)
+const groups = [
+  {
+    id: 'abertura',
+    title: lang === 'pt-BR' ? 'Abertura' : 'Opening',
+    items: []
+  },
+  {
+    id: 'parte-i',
+    title: lang === 'pt-BR' ? 'Parte I — O Problema que Ninguém Nomeia' : 'Part I — The Unnamed Problem',
+    items: []
+  },
+  {
+    id: 'parte-ii',
+    title: lang === 'pt-BR' ? 'Parte II — Por que o Problema é Estrutural' : 'Part II — Why Structural',
+    items: []
+  },
+  {
+    id: 'parte-iii',
+    title: lang === 'pt-BR' ? 'Parte III — A Metodologia MEDE' : 'Part III — The MEDE Methodology',
+    items: []
+  },
+  {
+    id: 'parte-iv',
+    title: lang === 'pt-BR' ? 'Parte IV — Na Prática' : 'Part IV — In Practice',
+    items: []
+  },
+  {
+    id: 'parte-v',
+    title: lang === 'pt-BR' ? 'Parte V — O mede-cli' : 'Part V — The mede-cli',
+    items: []
+  },
+  {
+    id: 'parte-vi',
+    title: lang === 'pt-BR' ? 'Parte VI — Adoção e Sustentabilidade' : 'Part VI — Adoption & Sustainability',
+    items: []
+  },
+  {
+    id: 'apendices',
+    title: lang === 'pt-BR' ? 'Apêndices' : 'Appendices',
+    items: []
+  },
+  {
+    id: 'artigos',
+    title: lang === 'pt-BR' ? 'Biblioteca Científica' : 'Scientific Library',
+    items: [
+      {
+        path: '/metodologia/artigos',
+        label: lang === 'pt-BR' ? 'Artigos & Publicações' : 'Papers & Publications'
+      }
+    ]
+  }
+];
+
+// Helper para determinar o grupo com base no caminho do arquivo (slug)
+function getGroupForSlug(cleanSlug: string) {
+  if (cleanSlug === 'indice' || cleanSlug.startsWith('00-prefacio')) {
+    return 'abertura';
+  }
+  if (cleanSlug.startsWith('01-parte-i')) {
+    return 'parte-i';
+  }
+  if (cleanSlug.startsWith('02-parte-ii')) {
+    return 'parte-ii';
+  }
+  if (cleanSlug.startsWith('03-parte-iii')) {
+    return 'parte-iii';
+  }
+  if (cleanSlug.startsWith('04-parte-iv')) {
+    return 'parte-iv';
+  }
+  if (cleanSlug.startsWith('05-parte-v')) {
+    return 'parte-v';
+  }
+  if (cleanSlug.startsWith('06-parte-vi')) {
+    return 'parte-vi';
+  }
+  if (cleanSlug.startsWith('apendices')) {
+    return 'apendices';
+  }
+  return 'abertura';
+}
+
+// Distribui os itens de menu nos seus respectivos grupos da árvore
+menuItems.forEach(item => {
+  const groupId = getGroupForSlug(item.cleanSlug);
+  const group = groups.find(g => g.id === groupId);
+  if (group) {
+    group.items.push(item);
+  }
+});
+
+// Remove grupos vazios (caso alguma parte ainda não tenha arquivos criados)
+const activeGroups = groups.filter(g => g.items.length > 0);
+
+// Helper para verificar se a rota é a ativa
+function isActive(itemPath: string) {
+  const localized = localizePath(itemPath, lang);
+  return pathname === localized || pathname === `${localized}/`;
+}
 ---
 
 <aside class="docs-sidebar">
-  <div class="sidebar-section">
-    <h3 class="sidebar-title">{lang === 'pt-BR' ? 'Conceito MEDE' : 'MEDE Methodology'}</h3>
-    <ul class="sidebar-menu">
-      {menuItems.map((item, idx) => (
-        <li class="sidebar-item">
-          <a 
-            href={localizePath(item.path, lang)} 
-            class:list={['sidebar-link', { active: activePath === item.path }]}
-          >
-            <span style="margin-right: 0.5rem; opacity: 0.5;">{idx + 1}.</span>
-            {item.label}
-          </a>
-        </li>
-      ))}
-    </ul>
-  </div>
+  {activeGroups.map(group => (
+    <div class="sidebar-section" style="margin-bottom: 1.75rem;">
+      <h3 class="sidebar-title" style="font-size: 0.75rem; font-weight: 700; color: hsl(var(--color-primary)); text-transform: uppercase; border-left: 2px solid hsl(var(--color-border)); padding-left: 0.5rem; margin-bottom: 0.5rem;">
+        {group.title}
+      </h3>
+      <ul class="sidebar-menu" style="padding-left: 0.75rem;">
+        {group.items.map(item => (
+          <li class="sidebar-item" style="margin-bottom: 0.25rem;">
+            <a 
+              href={localizePath(item.path, lang)} 
+              class:list={['sidebar-link', { active: isActive(item.path) }]}
+              style="font-size: 0.85rem; padding: 0.25rem 0.5rem;"
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
   
   <div style="margin-top: 3rem; padding: 1rem; background-color: rgba(6, 17, 41, 0.02); border-radius: 8px; border: 1px solid hsl(var(--color-border));">
     <p style="font-size: 0.8rem; color: hsl(var(--color-text-muted)); margin-bottom: 0.5rem; font-weight: 600; text-transform: uppercase;">
