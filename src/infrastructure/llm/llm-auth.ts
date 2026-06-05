@@ -30,15 +30,18 @@ export class ApiKeyAuthStrategy implements ILlmAuthStrategy {
   private readonly config: MedeConfigModelEntity;
   private readonly providerLabel: string;
   private readonly buildHeader: ApiKeyHeaderBuilder;
+  private readonly env: Record<string, string | undefined>;
 
   public constructor(
     config: MedeConfigModelEntity,
     providerLabel: string,
     buildHeader: ApiKeyHeaderBuilder,
+    env?: Record<string, string | undefined>,
   ) {
     this.config = config;
     this.providerLabel = providerLabel;
     this.buildHeader = buildHeader;
+    this.env = env ?? process.env;
   }
 
   public async resolveAuthHeaders(): Promise<Record<string, string>> {
@@ -52,7 +55,7 @@ export class ApiKeyAuthStrategy implements ILlmAuthStrategy {
       throw new Error(`LLM apiKeyEnv is not configured for ${this.providerLabel} provider.`);
     }
 
-    const apiKey = process.env[apiKeyEnv];
+    const apiKey = this.env[apiKeyEnv];
 
     if (!apiKey?.trim()) {
       throw new Error(`Environment variable "${apiKeyEnv}" is not set or is empty.`);
@@ -70,6 +73,8 @@ export interface LlmAuthDeps {
   now?: () => number;
   // Overrides the gcloud-backed token source for the adc strategy (tests).
   adcTokenFetcher?: AdcTokenFetcher;
+  // Overrides process.env for dependency injection in tests
+  env?: Record<string, string | undefined>;
 }
 
 // Picks the auth strategy for a provider based on `config.llm.auth` (default
@@ -85,7 +90,7 @@ export function createLlmAuthStrategy(
 
   switch (mode) {
     case "apikey":
-      return new ApiKeyAuthStrategy(config, providerLabel, buildApiKeyHeader);
+      return new ApiKeyAuthStrategy(config, providerLabel, buildApiKeyHeader, deps?.env);
 
     case "oauth":
       return new OAuthAuthStrategy(config, providerLabel, deps?.vault ?? createSecretVault(config.llm.credentialsHelper), {

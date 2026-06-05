@@ -7,6 +7,8 @@ import {
   LlmTextGenerationResult,
 } from "./llm-provider.interface.js";
 
+import { LlmAuthDeps } from "./llm-auth.js";
+
 interface OllamaChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -33,7 +35,7 @@ export class OllamaLlmProvider implements ILlmProvider {
   private userPrompt: string = "";
   private extraInfo: string = "";
 
-  constructor(config: MedeConfigModelEntity) {
+  constructor(config: MedeConfigModelEntity, deps?: LlmAuthDeps) {
     this.config = config;
   }
 

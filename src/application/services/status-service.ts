@@ -9,6 +9,7 @@ import { IProjectRepository } from "../../domain/interfaces/repositories/project
 import { ICycleRepository } from "../../domain/interfaces/repositories/cycle-repository-interface.js";
 import { IPhaseRepository } from "../../domain/interfaces/repositories/phase-repository-interface.js";
 import { isEmpty, notIsEmpty } from "../../shared/utils.js";
+import { I18n } from "../../shared/i18n.js";
 
 export class StatusService {
   private readonly changeSetRepository: IChangeSetRepository;
@@ -34,15 +35,15 @@ export class StatusService {
     let state = "";
 
     if (phase.status === "REFINING") {
-      state = "aguardando refine";
+      state = I18n.t("aguardando refine");
     } else if (phase.status === "AWAITING_APPROVAL") {
-      state = "aguardando approve/reject";
+      state = I18n.t("aguardando approve/reject");
     } else if (phase.status === "APPROVED") {
-      state = "aprovada";
+      state = I18n.t("aprovada");
     } else if (phase.status === "REJECTED") {
-      state = "rejeitada";
+      state = I18n.t("rejeitada");
     } else if (phase.status === "SKIPPED") {
-      state = "ignorada";
+      state = I18n.t("ignorada");
     } else {
       state = phase.status;
     }
@@ -54,11 +55,11 @@ export class StatusService {
     let proposal = "";
 
     if (phase.proposalState === "EMPTY") {
-      proposal = "vazia";
+      proposal = I18n.t("vazia");
     } else if (phase.proposalState === "NON_EMPTY") {
-      proposal = "não vazia";
+      proposal = I18n.t("não vazia");
     } else {
-      proposal = "não gerada";
+      proposal = I18n.t("não gerada");
     }
 
     return proposal;
@@ -141,7 +142,7 @@ export class StatusService {
 
   public showStatus(): string {
     const project: ProjectEntity | null = this.projectRepository.getCurrent();
-    if (project == null) return "Projeto não iniciado!";
+    if (project == null) return I18n.t("Projeto não iniciado!");
     const cycle: CycleEntity | null = this.cycleRepository.getCurrent(project!.id);
     const phase: PhaseEntity | null =
       cycle == null ? null : this.phaseRepository.getByIndex(cycle.id, cycle.currentPhaseIndex);
@@ -157,71 +158,92 @@ export class StatusService {
     phase: PhaseEntity | null,
     changeSet: ChangeSetEntity | null,
   ): string {
-    const phaseState = phase == null ? "--" : this.phaseStateText(phase);
-    const proposalState = phase == null ? "--" : this.proposalStateText(phase);
-    const autoMode = cycle == null ? "--" : this.autoModeText(cycle);
-    const refinements = phase == null ? "--" : this.countRefinements(phase);
-    const changedFiles = cycle == null ? "--" : this.countChangedFiles(cycle);
-    const createdFiles = cycle == null ? "--" : this.countCreatedFiles(cycle);
-    const actions = cycle == null || phase == null ? "" : this.availableActions(cycle, phase);
+    const originalLanguage = I18n.language;
+    I18n.setLanguage(project.documentationLanguage);
 
-    let artifactName = "-";
-    let changeSetInfo = "-";
+    try {
+      const phaseState = phase == null ? "--" : this.phaseStateText(phase);
+      const proposalState = phase == null ? "--" : this.proposalStateText(phase);
+      const autoMode = cycle == null ? "--" : this.autoModeText(cycle);
+      const refinements = phase == null ? "--" : this.countRefinements(phase);
+      const changedFiles = cycle == null ? "--" : this.countChangedFiles(cycle);
+      const createdFiles = cycle == null ? "--" : this.countCreatedFiles(cycle);
+      const actions = cycle == null || phase == null ? "" : this.availableActions(cycle, phase);
 
-    if (changeSet !== null) {
-      artifactName = changeSet.fileName;
-      changeSetInfo = `${changeSet.currentChangeChunkIndex}/${changeSet.changeChunkCount}`;
-    }
+      let artifactName = "-";
+      let changeSetInfo = "-";
 
-    const cycleStatus =
-      cycle == null
-        ? ""
-        : `
-    Cycle        : ${cycle?.status}
-    Phase        : ${phase?.name}
-    Artifact     : ${artifactName}
-    State        : ${phaseState}
-    Proposal     : ${proposalState}
-    Refinements  : ${refinements}
-    Changed files: ${changedFiles}
-    Created files: ${createdFiles}
-    Auto-mode    : ${autoMode}
+      if (changeSet !== null) {
+        artifactName = changeSet.fileName;
+        changeSetInfo = `${changeSet.currentChangeChunkIndex}/${changeSet.changeChunkCount}`;
+      }
+
+      const cycleStatus =
+        cycle == null
+          ? ""
+          : `
+    ${I18n.t("Cycle")}        : ${cycle?.status}
+    ${I18n.t("Phase")}        : ${phase?.name}
+    ${I18n.t("Artifact")}     : ${artifactName}
+    ${I18n.t("State")}        : ${phaseState}
+    ${I18n.t("Proposal")}     : ${proposalState}
+    ${I18n.t("Refinements")}  : ${refinements}
+    ${I18n.t("Changed files")}: ${changedFiles}
+    ${I18n.t("Created files")}: ${createdFiles}
+    ${I18n.t("Auto-mode")}    : ${autoMode}
 
        `;
 
-    return `${cycleStatus}
-      Project : ${project.name}
-      RootPath     : ${project.rootProjectPath}
-      DocsPath     : ${project.docsRootPath}
-      Language     : ${project.documentationLanguage}
-      Cycle        : ${cycle?.status}
-      Step         : ${cycle?.currentPhaseIndex}/${cycle?.phaseCount}
-      ChangeSet    : ${changeSetInfo}
+      return `${cycleStatus}
+      ${I18n.t("Project")} : ${project.name}
+      ${I18n.t("RootPath")}     : ${project.rootProjectPath}
+      ${I18n.t("DocsPath")}     : ${project.docsRootPath}
+      ${I18n.t("Language")}     : ${project.documentationLanguage}
+      ${I18n.t("Cycle")}        : ${cycle?.status}
+      ${I18n.t("Step")}         : ${cycle == null ? "--" : `${cycle.currentPhaseIndex}/${cycle.phaseCount}`}
+      ${I18n.t("ChangeSet")}    : ${changeSetInfo}
 
-    Available actions:
+    ${I18n.t("Available actions:")}
 ${actions}
 `;
+    } finally {
+      I18n.setLanguage(originalLanguage);
+    }
   }
 
   public successCommit(project: ProjectEntity, cycle: CycleEntity): string {
-    return `Cycle ${cycle.status}
-  Project : ${project.name}
-     RootPath     : ${project.rootProjectPath}
-     DocsPath     : ${project.docsRootPath}
-     Language     : ${project.documentationLanguage}
-     Cycle        : ${cycle.status}
-  Commit successful.
+    const originalLanguage = I18n.language;
+    I18n.setLanguage(project.documentationLanguage);
+
+    try {
+      return `${I18n.t("Cycle")} ${cycle.status}
+  ${I18n.t("Project")} : ${project.name}
+     ${I18n.t("RootPath")}     : ${project.rootProjectPath}
+     ${I18n.t("DocsPath")}     : ${project.docsRootPath}
+     ${I18n.t("Language")}     : ${project.documentationLanguage}
+     ${I18n.t("Cycle")}        : ${cycle.status}
+  ${I18n.t("Commit successful.")}
 `;
+    } finally {
+      I18n.setLanguage(originalLanguage);
+    }
   }
 
   public successRollback(project: ProjectEntity, cycle: CycleEntity): string {
-    return `Cycle ${cycle.status}
-  Project : ${project.name}
-     RootPath     : ${project.rootProjectPath}
-     DocsPath     : ${project.docsRootPath}
-     Language     : ${project.documentationLanguage}
-     Cycle        : ${cycle.status}
-  Rollback successful.
+    const originalLanguage = I18n.language;
+    I18n.setLanguage(project.documentationLanguage);
+
+    try {
+      return `${I18n.t("Cycle")} ${cycle.status}
+  ${I18n.t("Project")} : ${project.name}
+     ${I18n.t("RootPath")}     : ${project.rootProjectPath}
+     ${I18n.t("DocsPath")}     : ${project.docsRootPath}
+     ${I18n.t("Language")}     : ${project.documentationLanguage}
+     ${I18n.t("Cycle")}        : ${cycle.status}
+  ${I18n.t("Rollback successful.")}
 `;
+    } finally {
+      I18n.setLanguage(originalLanguage);
+    }
   }
 }

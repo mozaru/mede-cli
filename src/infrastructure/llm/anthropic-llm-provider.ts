@@ -6,7 +6,7 @@ import {
   LlmRole,
   LlmTextGenerationResult,
 } from "./llm-provider.interface.js";
-import { ILlmAuthStrategy, createLlmAuthStrategy } from "./llm-auth.js";
+import { ILlmAuthStrategy, createLlmAuthStrategy, LlmAuthDeps } from "./llm-auth.js";
 
 interface AnthropicContentBlock {
   type: string;
@@ -40,11 +40,16 @@ export class AnthropicLlmProvider implements ILlmProvider {
   private extraInfo: string = "";
   private readonly authStrategy: ILlmAuthStrategy;
 
-  constructor(config: MedeConfigModelEntity) {
+  constructor(config: MedeConfigModelEntity, deps?: LlmAuthDeps) {
     this.config = config;
-    this.authStrategy = createLlmAuthStrategy(config, "Anthropic", (apiKey) => ({
-      "x-api-key": apiKey,
-    }));
+    this.authStrategy = createLlmAuthStrategy(
+      config,
+      "Anthropic",
+      (apiKey) => ({
+        "x-api-key": apiKey,
+      }),
+      deps,
+    );
   }
 
   public setSystemPrompt(prompt: string): void {

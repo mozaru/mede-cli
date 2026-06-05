@@ -5,9 +5,10 @@ import { GeminiLlmProvider } from "./gemini-llm-provider.js";
 import { OllamaLlmProvider } from "./ollama-llm-provider.js";
 import { OpenAiLlmProvider } from "./openai-llm-provider.js";
 import { AzureOpenAiLlmProvider } from "./azure-openai-llm-provider.js";
+import { LlmAuthDeps } from "./llm-auth.js";
 
 export class LlmProviderFactory {
-  public static create(config: MedeConfigModelEntity): ILlmProvider {
+  public static create(config: MedeConfigModelEntity, deps?: LlmAuthDeps): ILlmProvider {
     const provider = config.llm.provider.trim().toLowerCase();
 
     switch (provider) {
@@ -15,23 +16,23 @@ export class LlmProviderFactory {
       case "openai-compatible":
       case "chatgpt":
       case "openrouter":
-        return new OpenAiLlmProvider(config);
+        return new OpenAiLlmProvider(config, deps);
 
       case "ollama":
-        return new OllamaLlmProvider(config);
+        return new OllamaLlmProvider(config, deps);
 
       case "anthropic":
       case "claude":
-        return new AnthropicLlmProvider(config);
+        return new AnthropicLlmProvider(config, deps);
 
       case "gemini":
       case "google":
-        return new GeminiLlmProvider(config);
+        return new GeminiLlmProvider(config, deps);
 
       case "azure":
       case "azure-openai":
       case "azure-openia":
-        return new AzureOpenAiLlmProvider(config);
+        return new AzureOpenAiLlmProvider(config, deps);
 
       case "bart":
       case "bard":
