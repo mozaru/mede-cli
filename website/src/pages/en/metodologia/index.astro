@@ -14,5 +14,5 @@ const firstSlug = enEntries.length > 0
   ? enEntries[0].id.replace(/^en\//, '')
   : 'introducao';
 
-return Astro.redirect(`/en/metodologia/${firstSlug}`);
+return Astro.redirect(`./${firstSlug}`);
 ---

@@ -14,5 +14,5 @@ const firstSlug = ptEntries.length > 0
   ? ptEntries[0].id.replace(/^(pt-br|pt-BR)\//i, '')
   : '00-prefacio/prefacio';
 
-return Astro.redirect(`/metodologia/${firstSlug}`);
+return Astro.redirect(`./${firstSlug}`);
 ---
