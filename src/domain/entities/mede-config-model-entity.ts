@@ -16,7 +16,7 @@ export class MedeConfigModelEntity {
   public prompts: MedePromptsConfigEntity;
   constructor() {
     this.configVersion = 1.0;
-    this.language = "pt-br";
+    this.language = "pt-BR";
     this.docsRoot = "docs";
     this.directories = new MedeDirectoriesConfigEntity();
     this.fileNames = new MedeFileNamesConfigEntity();

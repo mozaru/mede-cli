@@ -9,6 +9,8 @@ import { IStatusService } from "../../domain/interfaces/services/status-service-
 import { IInitService } from "../../domain/interfaces/services/init-service-interface.js";
 import { FileSystemRepository } from "../../infrastructure/repositories/file-system-repository.js";
 import { ICycleArtifactRepository } from "../../domain/interfaces/repositories/cycle-artifact-repository-interface.js";
+import { I18n } from "../../shared/i18n.js";
+
 
 export class InitService implements IInitService {
   private readonly docsRepository: IProjectReconstructionService;
@@ -60,13 +62,14 @@ export class InitService implements IInitService {
    */
   public async init(prompt: string = "", files: string[] = []): Promise<string> {
     const projectResult = this.docsRepository.reconstruct();
-    if (!projectResult) throw new Error("Projeto não reconstruído");
+    if (!projectResult) throw new Error(I18n.t("Projeto não reconstruído"));
     const project = projectResult.project;
-    if (!project) throw new Error("Projeto não encontrado");
+    if (!project) throw new Error(I18n.t("Projeto não encontrado"));
 
     const resolvedConfig = this.projectConfigRepository.getCurrent(project.id);
-    if (!resolvedConfig) throw new Error("Configuração não encontrada");
+    if (!resolvedConfig) throw new Error(I18n.t("Configuração não encontrada"));
     const config = JSON.parse(resolvedConfig?.content) as MedeConfigModelEntity;
+    I18n.setLanguage(config.language);
 
     const result = this.cycleService.beginInitialization(project.id);
     const cycle = result.cycle;

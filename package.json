@@ -9,7 +9,7 @@
   },
   "files": [
     "dist",
-    "prompts",
+    "locales",
     "readme.md",
     "CHANGELOG.md",
     "LICENSE"

@@ -67,73 +67,73 @@ export class PhaseConversationService implements IPhaseConversationService {
     switch (promptName) {
       case "meeting":
         return this.getConfigOrDefault(
-          config.systemPrompts.meeting,
+          config.systemPrompts?.meeting,
           LlmPrompts.SYSTEM_PROMPT_MEETING,
         );
 
       case "architecturalDecisions":
         return this.getConfigOrDefault(
-          config.systemPrompts.architecturalDecisions,
+          config.systemPrompts?.architecturalDecisions,
           LlmPrompts.SYSTEM_PROMPT_ADR,
         );
 
       case "systemMaintenanceSpecifications":
         return this.getConfigOrDefault(
-          config.systemPrompts.systemMaintenanceSpecifications,
+          config.systemPrompts?.systemMaintenanceSpecifications,
           LlmPrompts.SYSTEM_PROMPT_ESM,
         );
 
       case "deliveryLog":
         return this.getConfigOrDefault(
-          config.systemPrompts.deliveryLog,
+          config.systemPrompts?.deliveryLog,
           LlmPrompts.SYSTEM_PROMPT_DELIVERY_LOG,
         );
 
       case "functionalRequirements":
         return this.getConfigOrDefault(
-          config.systemPrompts.functionalRequirements,
+          config.systemPrompts?.functionalRequirements,
           LlmPrompts.SYSTEM_PROMPT_FUNCTIONAL_REQUIREMENTS,
         );
 
       case "nonFunctionalRequirements":
         return this.getConfigOrDefault(
-          config.systemPrompts.nonFunctionalRequirements,
+          config.systemPrompts?.nonFunctionalRequirements,
           LlmPrompts.SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS,
         );
 
       case "dataModel":
         return this.getConfigOrDefault(
-          config.systemPrompts.dataModel,
+          config.systemPrompts?.dataModel,
           LlmPrompts.SYSTEM_PROMPT_DATA_MODEL,
         );
 
       case "timeline":
         return this.getConfigOrDefault(
-          config.systemPrompts.timeline,
+          config.systemPrompts?.timeline,
           LlmPrompts.SYSTEM_PROMPT_TIMELINE,
         );
 
       case "scopeAndVision":
         return this.getConfigOrDefault(
-          config.systemPrompts.scopeAndVision,
+          config.systemPrompts?.scopeAndVision,
           LlmPrompts.SYSTEM_PROMPT_SCOPE_AND_VISION,
         );
 
       case "readme":
         return this.getConfigOrDefault(
-          config.systemPrompts.readme,
+          config.systemPrompts?.readme,
           LlmPrompts.SYSTEM_PROMPT_README,
         );
 
       case "currentState":
         return this.getConfigOrDefault(
-          config.systemPrompts.currentState,
+          config.systemPrompts?.currentState,
           LlmPrompts.SYSTEM_PROMPT_CURRENT_STATE,
         );
 
       case "initialUnderstanding":
         return this.getConfigOrDefault(
-          config.systemPrompts.initialUnderstanding,
+          config.systemPrompts?.initialUnderstanding,
           LlmPrompts.SYSTEM_PROMPT_INITIAL_UNDERSTANDING,
         );
 
@@ -145,62 +145,62 @@ export class PhaseConversationService implements IPhaseConversationService {
   public getPrompt(config: MedeConfigModelEntity, promptName: string): string {
     switch (promptName) {
       case "meeting":
-        return this.getConfigOrDefault(config.prompts.meeting, LlmPrompts.USER_PROMPT_MEETING);
+        return this.getConfigOrDefault(config.prompts?.meeting, LlmPrompts.USER_PROMPT_MEETING);
 
       case "architecturalDecisions":
         return this.getConfigOrDefault(
-          config.prompts.architecturalDecisions,
+          config.prompts?.architecturalDecisions,
           LlmPrompts.USER_PROMPT_ADR,
         );
 
       case "systemMaintenanceSpecifications":
         return this.getConfigOrDefault(
-          config.prompts.systemMaintenanceSpecifications,
+          config.prompts?.systemMaintenanceSpecifications,
           LlmPrompts.USER_PROMPT_ESM,
         );
 
       case "deliveryLog":
         return this.getConfigOrDefault(
-          config.prompts.deliveryLog,
+          config.prompts?.deliveryLog,
           LlmPrompts.USER_PROMPT_DELIVERY_LOG,
         );
 
       case "functionalRequirements":
         return this.getConfigOrDefault(
-          config.prompts.functionalRequirements,
+          config.prompts?.functionalRequirements,
           LlmPrompts.USER_PROMPT_FUNCTIONAL_REQUIREMENTS,
         );
 
       case "nonFunctionalRequirements":
         return this.getConfigOrDefault(
-          config.prompts.nonFunctionalRequirements,
+          config.prompts?.nonFunctionalRequirements,
           LlmPrompts.USER_PROMPT_NON_FUNCTIONAL_REQUIREMENTS,
         );
 
       case "dataModel":
-        return this.getConfigOrDefault(config.prompts.dataModel, LlmPrompts.USER_PROMPT_DATA_MODEL);
+        return this.getConfigOrDefault(config.prompts?.dataModel, LlmPrompts.USER_PROMPT_DATA_MODEL);
 
       case "timeline":
-        return this.getConfigOrDefault(config.prompts.timeline, LlmPrompts.USER_PROMPT_TIMELINE);
+        return this.getConfigOrDefault(config.prompts?.timeline, LlmPrompts.USER_PROMPT_TIMELINE);
 
       case "scopeAndVision":
         return this.getConfigOrDefault(
-          config.prompts.scopeAndVision,
+          config.prompts?.scopeAndVision,
           LlmPrompts.USER_PROMPT_SCOPE_AND_VISION,
         );
 
       case "readme":
-        return this.getConfigOrDefault(config.prompts.readme, LlmPrompts.USER_PROMPT_README);
+        return this.getConfigOrDefault(config.prompts?.readme, LlmPrompts.USER_PROMPT_README);
 
       case "currentState":
         return this.getConfigOrDefault(
-          config.prompts.currentState,
+          config.prompts?.currentState,
           LlmPrompts.USER_PROMPT_CURRENT_STATE,
         );
 
       case "initialUnderstanding":
         return this.getConfigOrDefault(
-          config.prompts.initialUnderstanding,
+          config.prompts?.initialUnderstanding,
           LlmPrompts.USER_PROMPT_INITIAL_UNDERSTANDING,
         );
 

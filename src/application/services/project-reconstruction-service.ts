@@ -16,6 +16,7 @@ import { ProjectReconstructionServiceResult } from "../../domain/models/project-
 import { IProjectReconstructionService } from "../../domain/interfaces/services/project-reconstruction-service-interface.js";
 import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
 import { jsonToStr } from "../../shared/json.js";
+import { I18n } from "../../shared/i18n.js";
 
 export class ProjectReconstructionService implements IProjectReconstructionService {
   private readonly fileSystemRepository: IFileSystemRepository;
@@ -288,6 +289,7 @@ export class ProjectReconstructionService implements IProjectReconstructionServi
       config = this.fileSystemRepository.readJsonFile(configPath) as MedeConfigModelEntity;
       created = false;
     }
+    I18n.setLanguage(config.language);
     return { config, created };
   }
 }

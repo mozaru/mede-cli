@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { config } from "dotenv";
+config();
+
 import { runCli } from "./runner.js";
 import { reportCliError } from "./error-handler.js";
 

@@ -25,3 +25,10 @@ export function emitResult(output: string): void {
 
   console.log(output);
 }
+
+// Prints a progress message during long-running tasks. Emits to stderr so it does not interfere with stdout.
+export function emitProgress(message: string): void {
+  if (currentFormat === "text") {
+    console.error(message);
+  }
+}
