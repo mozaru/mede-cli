@@ -89,9 +89,9 @@ Use [SemVer](https://semver.org/lang/pt-BR/). O `npm version` atualiza o
 `package.json`, cria o commit e a tag:
 
 ```bash
-npm version patch    # correções            → 0.1.1 -> 0.1.2
-npm version minor    # novas funcionalidades → 0.1.x -> 0.2.0
-npm version major    # mudanças incompatíveis→ 0.x.x -> 1.0.0
+npm version patch    # correções            → 1.0.0 -> 1.0.1
+npm version minor    # novas funcionalidades → 1.0.x -> 1.1.0
+npm version major    # mudanças incompatíveis→ 1.x.x -> 2.0.0
 ```
 
 ### 5. Validar o conteúdo do tarball antes de publicar

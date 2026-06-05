@@ -20,7 +20,7 @@ vi.mock("../../infrastructure/llm/llm-provider-factory.js", () => ({
       addMessage: vi.fn(),
       addAttachment: vi.fn(),
       addInputDoc: vi.fn(),
-      addOutputDoc: (id: number, artifactPath: string, currentContent: string) => {
+      addOutputDoc: (_id: number, artifactPath: string, _currentContent: string) => {
         lastDocState.path = artifactPath;
       },
       generateText,
@@ -32,7 +32,6 @@ import { InitHandler } from "./init-handler.js";
 import { ConfigHandler } from "./config-handler.js";
 import { CycleHandler } from "./cycle-handler.js";
 import { ChangesHandler } from "./changes-handler.js";
-import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
 import { BetterSqliteConnectionFactory } from "../../infrastructure/db/better-sqlite-connection-factory.js";
 import { UnitOfWork } from "../../infrastructure/db/unit-of-work.js";
 import { ProjectRepository } from "../../infrastructure/repositories/project-repository.js";

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from "vitest";
 import { StatusService } from "./status-service.js";
 import { ProjectEntity } from "../../domain/entities/project-entity.js";

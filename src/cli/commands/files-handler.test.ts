@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { FilesHandler } from "./files-handler.js";
 import { setSharedContainer, clearSharedContainer } from "../container.js";

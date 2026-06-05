@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from "vitest";
 import { PhaseConversationService } from "./phase-conversation-service.js";
 import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
