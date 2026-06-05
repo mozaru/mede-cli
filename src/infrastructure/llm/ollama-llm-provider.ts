@@ -35,7 +35,7 @@ export class OllamaLlmProvider implements ILlmProvider {
   private userPrompt: string = "";
   private extraInfo: string = "";
 
-  constructor(config: MedeConfigModelEntity, deps?: LlmAuthDeps) {
+  constructor(config: MedeConfigModelEntity, _deps?: LlmAuthDeps) {
     this.config = config;
   }
 

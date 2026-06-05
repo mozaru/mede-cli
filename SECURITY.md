@@ -2,13 +2,13 @@
 
 ## Versões suportadas
 
-O MEDE-CLI está em desenvolvimento inicial (linha `0.1.x`). Correções de
+O MEDE-CLI está na versão estável (linha `1.x.x`). Correções de
 segurança são aplicadas sobre a versão mais recente publicada no npm.
 
 | Versão  | Suportada |
 | ------- | --------- |
-| 0.1.x   | ✅        |
-| < 0.1   | ❌        |
+| 1.x.x   | ✅        |
+| < 1.0   | ❌        |
 
 ## Reportando uma vulnerabilidade
 

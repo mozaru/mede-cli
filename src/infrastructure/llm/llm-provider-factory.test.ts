@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from "vitest";
 import { LlmProviderFactory } from "./llm-provider-factory.js";
 import { OpenAiLlmProvider } from "./openai-llm-provider.js";

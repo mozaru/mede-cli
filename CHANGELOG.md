@@ -7,6 +7,8 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.0.0] - 2026-06-05
+
 ### Adicionado
 - Console interativo (REPL): executar `mede-cli` sem argumentos abre uma sessão
   interativa que reaproveita os mesmos comandos (`buildProgram` compartilhado

@@ -6,7 +6,7 @@
 
 Toda alteração documental é tratada como **change-set pendente**. Nada é modificado automaticamente.
 
-O projeto está em fase inicial de desenvolvimento (v0.1.x). Há estrutura de código funcional mas o produto não está completo.
+O projeto está na versão v1.0.0. Possui uma estrutura de código estável, completa e testada.
 
 ---
 
