@@ -1,90 +1,118 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { I18n, PACKAGE_LOCALES_DIR } from "../../shared/i18n.js";
 
-// The methodology prompts are *content*, not logic, so they live as versioned
-// Markdown assets under `prompts/` instead of inline string literals. This module
-// loads them at startup and re-exports the same constants the rest of the code
-// already imports, so consumers are unaffected.
-//
-// Layout:
-//   prompts/fragments/diff-rules.md   shared diff instructions
-//   prompts/templates/<phase>.md      per-phase document template
-//   prompts/system/<phase>.md         system prompt, with {{DIFF_RULES}} / {{TEMPLATE}} placeholders
-//   prompts/user/<phase>.md           user prompt (plain text)
-
-// Walks up from this module until it finds the shipped `prompts/` directory.
-// Works both in dev (src tree) and in the bundled dist artifact, since `prompts/`
-// is published at the package root.
-function findPromptsDir(): string {
-  let dir = path.dirname(fileURLToPath(import.meta.url));
-
-  for (let depth = 0; depth < 8; depth += 1) {
-    const candidate = path.join(dir, "prompts");
-    if (fs.existsSync(path.join(candidate, "fragments", "diff-rules.md"))) {
-      return candidate;
-    }
-
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      break;
-    }
-    dir = parent;
+function readPrompt(relativePath: string, lang: string): string {
+  // 1. First, check project-level .mede/prompts/ relative to process.cwd()
+  const projectPromptPath = path.join(process.cwd(), ".mede", "prompts", relativePath);
+  if (fs.existsSync(projectPromptPath)) {
+    return fs.readFileSync(projectPromptPath, "utf-8");
   }
 
-  throw new Error("MEDE-CLI: diretório de prompts não encontrado (assets de prompt ausentes).");
+  // 2. Otherwise, look inside package-level locales directory
+  if (lang) {
+    const cleanLang = lang.trim();
+    // Try locales/xx-yy/prompts/...
+    let langPath = path.join(PACKAGE_LOCALES_DIR, cleanLang, "prompts", relativePath);
+    if (fs.existsSync(langPath)) {
+      return fs.readFileSync(langPath, "utf-8");
+    }
+    // Try lowercase (e.g. locales/xx-yy/prompts/...)
+    langPath = path.join(PACKAGE_LOCALES_DIR, cleanLang.toLowerCase(), "prompts", relativePath);
+    if (fs.existsSync(langPath)) {
+      return fs.readFileSync(langPath, "utf-8");
+    }
+    // Try 2-char prefix (e.g. locales/xx/prompts/...)
+    const prefix = cleanLang.toLowerCase().slice(0, 2);
+    if (prefix !== "pt") {
+      langPath = path.join(PACKAGE_LOCALES_DIR, prefix, "prompts", relativePath);
+      if (fs.existsSync(langPath)) {
+        return fs.readFileSync(langPath, "utf-8");
+      }
+    }
+  }
+
+  // 3. Fallback to locales/pt-BR/prompts/...
+  const defaultPath = path.join(PACKAGE_LOCALES_DIR, "pt-BR", "prompts", relativePath);
+  if (fs.existsSync(defaultPath)) {
+    return fs.readFileSync(defaultPath, "utf-8");
+  }
+
+  throw new Error(`MEDE-CLI: Prompt padrão não encontrado para ${relativePath}`);
 }
 
-const PROMPTS_DIR = findPromptsDir();
+let DIFF_RULES = "";
 
-function readPrompt(relativePath: string): string {
-  return fs.readFileSync(path.join(PROMPTS_DIR, relativePath), "utf-8");
-}
+let SYSTEM_PROMPT_README = "";
+let SYSTEM_PROMPT_INITIAL_UNDERSTANDING = "";
+let SYSTEM_PROMPT_MEETING = "";
+let SYSTEM_PROMPT_ADR = "";
+let SYSTEM_PROMPT_ESM = "";
+let SYSTEM_PROMPT_DELIVERY_LOG = "";
+let SYSTEM_PROMPT_FUNCTIONAL_REQUIREMENTS = "";
+let SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS = "";
+let SYSTEM_PROMPT_DATA_MODEL = "";
+let SYSTEM_PROMPT_TIMELINE = "";
+let SYSTEM_PROMPT_SCOPE_AND_VISION = "";
+let SYSTEM_PROMPT_CURRENT_STATE = "";
 
-const DIFF_RULES = readPrompt("fragments/diff-rules.md");
+let USER_PROMPT_README = "";
+let USER_PROMPT_INITIAL_UNDERSTANDING = "";
+let USER_PROMPT_MEETING = "";
+let USER_PROMPT_ADR = "";
+let USER_PROMPT_ESM = "";
+let USER_PROMPT_DELIVERY_LOG = "";
+let USER_PROMPT_FUNCTIONAL_REQUIREMENTS = "";
+let USER_PROMPT_NON_FUNCTIONAL_REQUIREMENTS = "";
+let USER_PROMPT_DATA_MODEL = "";
+let USER_PROMPT_TIMELINE = "";
+let USER_PROMPT_SCOPE_AND_VISION = "";
+let USER_PROMPT_CURRENT_STATE = "";
 
-function loadSystemPrompt(base: string, hasTemplate: boolean): string {
-  let content = readPrompt(`system/${base}.md`).split("{{DIFF_RULES}}").join(DIFF_RULES);
+function loadSystemPrompt(base: string, hasTemplate: boolean, lang: string): string {
+  let content = readPrompt(`system/${base}.md`, lang).split("{{DIFF_RULES}}").join(DIFF_RULES);
 
   if (hasTemplate) {
-    content = content.split("{{TEMPLATE}}").join(readPrompt(`templates/${base}.md`));
+    content = content.split("{{TEMPLATE}}").join(readPrompt(`templates/${base}.md`, lang));
   }
 
   return content;
 }
 
-function loadUserPrompt(base: string): string {
-  return readPrompt(`user/${base}.md`);
+function loadUserPrompt(base: string, lang: string): string {
+  return readPrompt(`user/${base}.md`, lang);
 }
 
-const SYSTEM_PROMPT_README = loadSystemPrompt("readme", false);
-const SYSTEM_PROMPT_INITIAL_UNDERSTANDING = loadSystemPrompt("initial-understanding", true);
-const SYSTEM_PROMPT_MEETING = loadSystemPrompt("meeting", true);
-const SYSTEM_PROMPT_ADR = loadSystemPrompt("adr", true);
-const SYSTEM_PROMPT_ESM = loadSystemPrompt("esm", true);
-const SYSTEM_PROMPT_DELIVERY_LOG = loadSystemPrompt("delivery-log", true);
-const SYSTEM_PROMPT_FUNCTIONAL_REQUIREMENTS = loadSystemPrompt("functional-requirements", true);
-const SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS = loadSystemPrompt(
-  "non-functional-requirements",
-  true,
-);
-const SYSTEM_PROMPT_DATA_MODEL = loadSystemPrompt("data-model", true);
-const SYSTEM_PROMPT_TIMELINE = loadSystemPrompt("timeline", true);
-const SYSTEM_PROMPT_SCOPE_AND_VISION = loadSystemPrompt("scope-and-vision", true);
-const SYSTEM_PROMPT_CURRENT_STATE = loadSystemPrompt("current-state", true);
+// Reload prompts dynamically on language change
+I18n.onLanguageChange((lang) => {
+  DIFF_RULES = readPrompt("fragments/diff-rules.md", lang);
 
-const USER_PROMPT_README = loadUserPrompt("readme");
-const USER_PROMPT_INITIAL_UNDERSTANDING = loadUserPrompt("initial-understanding");
-const USER_PROMPT_MEETING = loadUserPrompt("meeting");
-const USER_PROMPT_ADR = loadUserPrompt("adr");
-const USER_PROMPT_ESM = loadUserPrompt("esm");
-const USER_PROMPT_DELIVERY_LOG = loadUserPrompt("delivery-log");
-const USER_PROMPT_FUNCTIONAL_REQUIREMENTS = loadUserPrompt("functional-requirements");
-const USER_PROMPT_NON_FUNCTIONAL_REQUIREMENTS = loadUserPrompt("non-functional-requirements");
-const USER_PROMPT_DATA_MODEL = loadUserPrompt("data-model");
-const USER_PROMPT_TIMELINE = loadUserPrompt("timeline");
-const USER_PROMPT_SCOPE_AND_VISION = loadUserPrompt("scope-and-vision");
-const USER_PROMPT_CURRENT_STATE = loadUserPrompt("current-state");
+  SYSTEM_PROMPT_README = loadSystemPrompt("readme", false, lang);
+  SYSTEM_PROMPT_INITIAL_UNDERSTANDING = loadSystemPrompt("initial-understanding", true, lang);
+  SYSTEM_PROMPT_MEETING = loadSystemPrompt("meeting", true, lang);
+  SYSTEM_PROMPT_ADR = loadSystemPrompt("adr", true, lang);
+  SYSTEM_PROMPT_ESM = loadSystemPrompt("esm", true, lang);
+  SYSTEM_PROMPT_DELIVERY_LOG = loadSystemPrompt("delivery-log", true, lang);
+  SYSTEM_PROMPT_FUNCTIONAL_REQUIREMENTS = loadSystemPrompt("functional-requirements", true, lang);
+  SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS = loadSystemPrompt("non-functional-requirements", true, lang);
+  SYSTEM_PROMPT_DATA_MODEL = loadSystemPrompt("data-model", true, lang);
+  SYSTEM_PROMPT_TIMELINE = loadSystemPrompt("timeline", true, lang);
+  SYSTEM_PROMPT_SCOPE_AND_VISION = loadSystemPrompt("scope-and-vision", true, lang);
+  SYSTEM_PROMPT_CURRENT_STATE = loadSystemPrompt("current-state", true, lang);
+
+  USER_PROMPT_README = loadUserPrompt("readme", lang);
+  USER_PROMPT_INITIAL_UNDERSTANDING = loadUserPrompt("initial-understanding", lang);
+  USER_PROMPT_MEETING = loadUserPrompt("meeting", lang);
+  USER_PROMPT_ADR = loadUserPrompt("adr", lang);
+  USER_PROMPT_ESM = loadUserPrompt("esm", lang);
+  USER_PROMPT_DELIVERY_LOG = loadUserPrompt("delivery-log", lang);
+  USER_PROMPT_FUNCTIONAL_REQUIREMENTS = loadUserPrompt("functional-requirements", lang);
+  USER_PROMPT_NON_FUNCTIONAL_REQUIREMENTS = loadUserPrompt("non-functional-requirements", lang);
+  USER_PROMPT_DATA_MODEL = loadUserPrompt("data-model", lang);
+  USER_PROMPT_TIMELINE = loadUserPrompt("timeline", lang);
+  USER_PROMPT_SCOPE_AND_VISION = loadUserPrompt("scope-and-vision", lang);
+  USER_PROMPT_CURRENT_STATE = loadUserPrompt("current-state", lang);
+});
 
 export {
   SYSTEM_PROMPT_README,

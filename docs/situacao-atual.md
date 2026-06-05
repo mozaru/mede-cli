@@ -73,30 +73,30 @@ Neste momento, o projeto já possui **base conceitual forte**, mas ainda não po
 | DOC-002  | Documento             | `readme.md`                                                          | Baseline documental            | Concluído      |
 | DOC-003  | Documento             | `visao-e-escopo.md`                                                  | Baseline documental            | Concluído      |
 | DOC-004  | Documento             | `situacao-atual.md`                                                  | Baseline documental            | Concluído      |
-| ARQ-001  | Arquitetura           | Definir camadas internas do MEDE-CLI                                 | Próxima etapa técnica          | Pendente       |
-| ARQ-002  | Arquitetura           | Definir engine de fases metodológicas                                | Próxima etapa técnica          | Pendente       |
-| ARQ-003  | Arquitetura           | Definir engine de change-sets                                        | Próxima etapa técnica          | Pendente       |
-| ARQ-004  | Arquitetura           | Definir filesystem applier para operações aprovadas                  | Próxima etapa técnica          | Pendente       |
-| ARQ-005  | Arquitetura           | Definir mecanismo de reconstrução de estado                          | Próxima etapa técnica          | Pendente       |
-| CLI-001  | Funcionalidade CLI    | Definir comando `status`                                             | UX operacional                 | Pendente       |
-| CLI-002  | Funcionalidade CLI    | Definir comando `changes`                                            | UX operacional                 | Pendente       |
-| CLI-003  | Funcionalidade CLI    | Definir comando `approve`                                            | UX operacional                 | Pendente       |
-| CLI-004  | Funcionalidade CLI    | Definir comando `reject`                                             | UX operacional                 | Pendente       |
-| CLI-005  | Funcionalidade CLI    | Definir comando `refine`                                             | UX operacional                 | Pendente       |
-| CLI-006  | Funcionalidade CLI    | Definir comportamento detalhado do `cycle`                           | UX operacional                 | Pendente       |
-| DB-001   | Persistência          | Modelar esquema SQLite de estado operacional                         | Estado local                   | Pendente       |
-| DB-002   | Persistência          | Modelar tabela de backlog indexado                                   | Estado local                   | Pendente       |
-| DB-003   | Persistência          | Modelar representação de current change e fila pendente              | Estado local                   | Pendente       |
-| LLM-001  | Integração            | Definir interface abstrata de provedores de LLM                      | Integração LLM                 | Pendente       |
-| LLM-002  | Integração            | Definir suporte inicial a OpenAI                                     | Integração LLM                 | Pendente       |
-| LLM-003  | Integração            | Definir suporte inicial a Ollama                                     | Integração LLM                 | Pendente       |
-| CFG-001  | Configuração          | Definir estrutura completa de `mede.config.json`                     | Configuração do projeto        | Pendente       |
-| CFG-002  | Configuração          | Definir sistema de prompts por fase metodológica                     | Configuração do projeto        | Pendente       |
-| DOC-005  | Documento             | Produzir `requisitos-funcionais.md`                                  | Documentação base              | Pendente       |
-| DOC-006  | Documento             | Produzir `requisitos-nao-funcionais.md`                              | Documentação base              | Pendente       |
-| DOC-007  | Documento             | Produzir `modelo-de-dados.md`                                        | Documentação base              | Pendente       |
-| OSS-001  | Publicação            | Definir estrutura inicial do repositório                             | Preparação open source         | Pendente       |
-| OSS-002  | Publicação            | Adicionar licença Apache 2.0 ao projeto                              | Preparação open source         | Pendente       |
+| ARQ-001  | Arquitetura           | Definir camadas internas do MEDE-CLI                                 | Próxima etapa técnica          | Concluído      |
+| ARQ-002  | Arquitetura           | Definir engine de fases metodológicas                                | Próxima etapa técnica          | Concluído      |
+| ARQ-003  | Arquitetura           | Definir engine de change-sets                                        | Próxima etapa técnica          | Concluído      |
+| ARQ-004  | Arquitetura           | Definir filesystem applier para operações aprovadas                  | Próxima etapa técnica          | Concluído      |
+| ARQ-005  | Arquitetura           | Definir mecanismo de reconstrução de estado                          | Próxima etapa técnica          | Concluído      |
+| CLI-001  | Funcionalidade CLI    | Definir comando `status`                                             | UX operacional                 | Concluído      |
+| CLI-002  | Funcionalidade CLI    | Definir comando `changes`                                            | UX operacional                 | Concluído      |
+| CLI-003  | Funcionalidade CLI    | Definir comando `approve`                                            | UX operacional                 | Concluído      |
+| CLI-004  | Funcionalidade CLI    | Definir comando `reject`                                             | UX operacional                 | Concluído      |
+| CLI-005  | Funcionalidade CLI    | Definir comando `refine`                                             | UX operacional                 | Concluído      |
+| CLI-006  | Funcionalidade CLI    | Definir comportamento detalhado do `cycle`                           | UX operacional                 | Concluído      |
+| DB-001   | Persistência          | Modelar esquema SQLite de estado operacional                         | Estado local                   | Concluído      |
+| DB-002   | Persistência          | Modelar tabela de backlog indexado                                   | Estado local                   | Concluído      |
+| DB-003   | Persistência          | Modelar representação de current change e fila pendente              | Estado local                   | Concluído      |
+| LLM-001  | Integração            | Definir interface abstrata de provedores de LLM                      | Integração LLM                 | Concluído      |
+| LLM-002  | Integração            | Definir suporte inicial a OpenAI                                     | Integração LLM                 | Concluído      |
+| LLM-003  | Integração            | Definir suporte inicial a Ollama                                     | Integração LLM                 | Concluído      |
+| CFG-001  | Configuração          | Definir estrutura completa de `mede.config.json`                     | Configuração do projeto        | Concluído      |
+| CFG-002  | Configuração          | Definir sistema de prompts por fase metodológica                     | Configuração do projeto        | Concluído      |
+| DOC-005  | Documento             | Produzir `requisitos-funcionais.md`                                  | Documentação base              | Concluído      |
+| DOC-006  | Documento             | Produzir `requisitos-nao-funcionais.md`                              | Documentação base              | Concluído      |
+| DOC-007  | Documento             | Produzir `modelo-de-dados.md`                                        | Documentação base              | Concluído      |
+| OSS-001  | Publicação            | Definir estrutura inicial do repositório                             | Preparação open source         | Concluído      |
+| OSS-002  | Publicação            | Adicionar licença Apache 2.0 ao projeto                              | Preparação open source         | Concluído      |
 
 ---
 

@@ -22,6 +22,7 @@ import { IStatusService } from "../../domain/interfaces/services/status-service-
 import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
 import { parseMedeConfig } from "../../shared/mede-config-schema.js";
 import { CycleResponseModel } from "../../domain/models/cycle.model.js";
+import { I18n } from "../../shared/i18n.js";
 
 export class CycleService implements ICycleService {
   private readonly uow: IUnitOfWork;
@@ -494,7 +495,11 @@ export class CycleService implements ICycleService {
     };
   }
 
-  public async cycle(prompt: string = "", files: Array<string> = []): Promise<string> {
+  public async cycle(
+    prompt: string = "",
+    files: Array<string> = [],
+    onProgress?: (msg: string) => void,
+  ): Promise<string> {
     this.docsService.reconstruct();
 
     const project = this.getCurrentProject();
@@ -523,6 +528,7 @@ export class CycleService implements ICycleService {
       });
     }
 
+    onProgress?.(`[LLM] Iniciando geração da primeira fase (${phase.name})...`);
     const changeSet = await this.phaseConversationService.sendMessage(
       project,
       config,
@@ -530,6 +536,7 @@ export class CycleService implements ICycleService {
       "",
       files,
     );
+    onProgress?.(`[LLM] Geração da fase ${phase.name} concluída com sucesso.`);
 
     if (changeSet === null) {
       this.phaseRepository.empty(phase.id);
@@ -541,7 +548,7 @@ export class CycleService implements ICycleService {
     return this.statusService.generate(project, cycle, refreshedPhase, changeSet);
   }
 
-  public async approve(all: boolean): Promise<string> {
+  public async approve(all: boolean, onProgress?: (msg: string) => void): Promise<string> {
     const project = this.getCurrentProject();
     this.assertNotNull(project, "Projeto não encontrado");
 
@@ -566,10 +573,12 @@ export class CycleService implements ICycleService {
       this.cycleRepository.approveAll(cycle.id);
 
       for (let i = cycle.currentPhaseIndex; i <= cycle.phaseCount; i += 1) {
-        if (changeSet !== null) {
+        if (changeSet !== null && phase.status === "REFINING") {
+          onProgress?.(`[Aplica] Aplicando alterações pendentes da fase ${phase.name}...`);
           this.phaseConversationService.applyAll(phase, changeSet);
         }
 
+        onProgress?.(`[Aprova] Aprovando fase ${phase.name}...`);
         this.phaseRepository.approve(phase.id);
 
         const nextResult = this.next(cycle);
@@ -577,6 +586,7 @@ export class CycleService implements ICycleService {
         phase = nextResult.phase;
 
         if (cycle.status === "OPEN") {
+          onProgress?.(`[LLM] Iniciando geração da fase ${phase.name}...`);
           changeSet = await this.phaseConversationService.sendMessage(
             project,
             config,
@@ -584,6 +594,7 @@ export class CycleService implements ICycleService {
             "",
             [],
           );
+          onProgress?.(`[LLM] Geração da fase ${phase.name} concluída com sucesso.`);
         } else {
           changeSet = null;
         }
@@ -597,6 +608,7 @@ export class CycleService implements ICycleService {
 
     this.assert(phase.status === "AWAITING_APPROVAL", "A fase não está aguardando aprovação");
 
+    onProgress?.(`[Aprova] Aprovando fase ${phase.name}...`);
     this.phaseRepository.approve(phase.id);
 
     const nextResult = this.next(cycle);
@@ -604,7 +616,9 @@ export class CycleService implements ICycleService {
     phase = nextResult.phase;
 
     if (cycle.status === "OPEN") {
+      onProgress?.(`[LLM] Iniciando geração da próxima fase (${phase.name})...`);
       changeSet = await this.phaseConversationService.sendMessage(project, config, phase, "", []);
+      onProgress?.(`[LLM] Geração da fase ${phase.name} concluída com sucesso.`);
     } else {
       changeSet = null;
     }
@@ -640,7 +654,7 @@ export class CycleService implements ICycleService {
       this.cycleRepository.rejectAll(cycle.id);
 
       for (let i = cycle.currentPhaseIndex; i <= cycle.phaseCount; i += 1) {
-        if (changeSet !== null) {
+        if (changeSet !== null && phase.status === "REFINING") {
           this.phaseConversationService.discardAll(phase, changeSet);
         }
 
@@ -745,7 +759,11 @@ export class CycleService implements ICycleService {
     return this.statusService.generate(project, cycle, phase, changeSet);
   }
 
-  public async refine(prompt: string = "", files: Array<string> = []): Promise<string> {
+  public async refine(
+    prompt: string = "",
+    files: Array<string> = [],
+    onProgress?: (msg: string) => void,
+  ): Promise<string> {
     const project = this.getCurrentProject();
     this.assertNotNull(project, "Projeto não encontrado");
 
@@ -761,6 +779,7 @@ export class CycleService implements ICycleService {
     this.assert(phase.status === "AWAITING_APPROVAL", "A fase não está aguardando aprovação");
 
     const config = this.parseConfig(configEntity.content);
+    onProgress?.(`[LLM] Solicitando refinamento para a fase ${phase.name}...`);
     const changeSet = await this.phaseConversationService.sendMessage(
       project,
       config,
@@ -768,6 +787,7 @@ export class CycleService implements ICycleService {
       prompt,
       files,
     );
+    onProgress?.(`[LLM] Refinamento da fase ${phase.name} concluído com sucesso.`);
 
     if (changeSet === null) {
       this.phaseRepository.empty(phase.id);
@@ -779,7 +799,7 @@ export class CycleService implements ICycleService {
     return this.statusService.generate(project, cycle, refreshedPhase, changeSet);
   }
 
-  public async retry(): Promise<string> {
+  public async retry(onProgress?: (msg: string) => void): Promise<string> {
     const project = this.getCurrentProject();
     this.assertNotNull(project, "Projeto não encontrado");
 
@@ -805,6 +825,7 @@ export class CycleService implements ICycleService {
 
     phase = this.phaseRepository.getById(phase.id) ?? phase;
 
+    onProgress?.(`[LLM] Repetindo geração para a fase ${phase.name}...`);
     const changeSet = await this.phaseConversationService.sendMessage(
       project,
       config,
@@ -812,6 +833,7 @@ export class CycleService implements ICycleService {
       "",
       [],
     );
+    onProgress?.(`[LLM] Geração da fase ${phase.name} concluída com sucesso.`);
 
     if (changeSet === null) {
       this.phaseRepository.empty(phase.id);
@@ -952,7 +974,9 @@ export class CycleService implements ICycleService {
   }
 
   private parseConfig(content: string): MedeConfigModelEntity {
-    return parseMedeConfig(content);
+    const config = parseMedeConfig(content);
+    I18n.setLanguage(config.language);
+    return config;
   }
 
   private formatDate(date: Date): string {
@@ -973,31 +997,31 @@ export class CycleService implements ICycleService {
 
   private assert(condition: boolean, message: string): void {
     if (!condition) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 
   private assertTrue(condition: boolean, message: string): void {
     if (!condition) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 
   private assertFalse(condition: boolean, message: string): void {
     if (condition) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 
   private assertNull(value: unknown, message: string): void {
     if (value !== null) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 
   private assertNotNull<T>(value: T | null, message: string): asserts value is T {
     if (value === null) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 }

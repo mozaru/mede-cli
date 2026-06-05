@@ -1,5 +1,5 @@
 import { getContainer } from "../container.js";
-import { emitResult } from "../output.js";
+import { emitResult, emitProgress } from "../output.js";
 import { ICycleService } from "../../domain/interfaces/services/cycle-service-interface.js";
 
 export class CycleHandler {
@@ -10,12 +10,12 @@ export class CycleHandler {
   }
 
   public async executeCycle(prompt: string, files: Array<string>): Promise<void> {
-    const resp = await this.cycleService.cycle(prompt, files);
+    const resp = await this.cycleService.cycle(prompt, files, (msg) => emitProgress(msg));
     emitResult(resp);
   }
 
   public async executeApprove(all: boolean): Promise<void> {
-    const resp = await this.cycleService.approve(all);
+    const resp = await this.cycleService.approve(all, (msg) => emitProgress(msg));
     emitResult(resp);
   }
 
@@ -30,12 +30,12 @@ export class CycleHandler {
   }
 
   public async executeRetry(): Promise<void> {
-    const resp = await this.cycleService.retry();
+    const resp = await this.cycleService.retry((msg) => emitProgress(msg));
     emitResult(resp);
   }
 
   public async executeRefine(prompt: string, files: Array<string>): Promise<void> {
-    const resp = await this.cycleService.refine(prompt, files);
+    const resp = await this.cycleService.refine(prompt, files, (msg) => emitProgress(msg));
     emitResult(resp);
   }
 

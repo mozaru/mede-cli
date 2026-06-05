@@ -3,9 +3,9 @@
   "language": "pt-BR",
   "docsRoot": "docs",
   "directories": {
-    "meetingMinutes": "atas",
-    "architecturalDecisions": "adr",
-    "systemMaintenanceSpecifications": "esm",
+    "meetingMinutes": "atas-de-reuniao",
+    "architecturalDecisions": "decisoes-arquiteturais",
+    "systemMaintenanceSpecifications": "especificacao-manutencao-sistema",
     "deliveryLog": "log-entregas"
   },
   "fileNames": {
@@ -19,7 +19,7 @@
     "timeline": "cronograma.md"
   },
   "prefixes": {
-    "meetingMinutes": "min",
+    "meetingMinutes": "ata",
     "architecturalDecisions": "adr",
     "systemMaintenanceSpecifications": "esm",
     "deliveryLog": "leg"
@@ -34,10 +34,17 @@
     "timeoutMs": 60000
   },
   "systemPrompts": {
-    "baselineGeneration": "",
-    "meetingRecord": "",
-    "historicalDerivations": "",
-    "livingDocsSync": "",
-    "finalSync": ""
+    "meeting": "",
+    "architecturalDecisions": "",
+    "systemMaintenanceSpecifications": "",
+    "deliveryLog": "",
+    "functionalRequirements": "",
+    "nonFunctionalRequirements": "",
+    "dataModel": "",
+    "timeline": "",
+    "scopeAndVision": "",
+    "readme": "",
+    "currentState": "",
+    "initialUnderstanding": ""
   }
 }

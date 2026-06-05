@@ -9,6 +9,7 @@ import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-e
 import { jsonToStr } from "../../shared/json.js";
 import { parseMedeConfig } from "../../shared/mede-config-schema.js";
 import { calculateHashFromContent } from "../../shared/crypto.js";
+import { I18n } from "../../shared/i18n.js";
 
 export class ConfigService {
   private readonly fileSystemRepository: IFileSystemRepository;
@@ -107,32 +108,32 @@ export class ConfigService {
         timeoutMs: 60000,
       },
       systemPrompts: {
-        readme: LlmPrompts.SYSTEM_PROMPT_README,
-        initialUnderstanding: LlmPrompts.SYSTEM_PROMPT_INITIAL_UNDERSTANDING,
-        meeting: LlmPrompts.SYSTEM_PROMPT_MEETING,
-        architecturalDecisions: LlmPrompts.SYSTEM_PROMPT_ADR,
-        systemMaintenanceSpecifications: LlmPrompts.SYSTEM_PROMPT_ESM,
-        deliveryLog: LlmPrompts.SYSTEM_PROMPT_DELIVERY_LOG,
-        functionalRequirements: LlmPrompts.SYSTEM_PROMPT_FUNCTIONAL_REQUIREMENTS,
-        nonFunctionalRequirements: LlmPrompts.SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS,
-        dataModel: LlmPrompts.SYSTEM_PROMPT_DATA_MODEL,
-        timeline: LlmPrompts.SYSTEM_PROMPT_TIMELINE,
-        scopeAndVision: LlmPrompts.SYSTEM_PROMPT_SCOPE_AND_VISION,
-        currentState: LlmPrompts.SYSTEM_PROMPT_CURRENT_STATE,
+        readme: "",
+        initialUnderstanding: "",
+        meeting: "",
+        architecturalDecisions: "",
+        systemMaintenanceSpecifications: "",
+        deliveryLog: "",
+        functionalRequirements: "",
+        nonFunctionalRequirements: "",
+        dataModel: "",
+        timeline: "",
+        scopeAndVision: "",
+        currentState: "",
       },
       prompts: {
-        readme: LlmPrompts.USER_PROMPT_README,
-        initialUnderstanding: LlmPrompts.USER_PROMPT_INITIAL_UNDERSTANDING,
-        meeting: LlmPrompts.USER_PROMPT_MEETING,
-        architecturalDecisions: LlmPrompts.USER_PROMPT_ADR,
-        systemMaintenanceSpecifications: LlmPrompts.USER_PROMPT_ESM,
-        deliveryLog: LlmPrompts.USER_PROMPT_DELIVERY_LOG,
-        functionalRequirements: LlmPrompts.USER_PROMPT_FUNCTIONAL_REQUIREMENTS,
-        nonFunctionalRequirements: LlmPrompts.USER_PROMPT_NON_FUNCTIONAL_REQUIREMENTS,
-        dataModel: LlmPrompts.USER_PROMPT_DATA_MODEL,
-        timeline: LlmPrompts.USER_PROMPT_TIMELINE,
-        scopeAndVision: LlmPrompts.USER_PROMPT_SCOPE_AND_VISION,
-        currentState: LlmPrompts.USER_PROMPT_CURRENT_STATE,
+        readme: "",
+        initialUnderstanding: "",
+        meeting: "",
+        architecturalDecisions: "",
+        systemMaintenanceSpecifications: "",
+        deliveryLog: "",
+        functionalRequirements: "",
+        nonFunctionalRequirements: "",
+        dataModel: "",
+        timeline: "",
+        scopeAndVision: "",
+        currentState: "",
       },
     };
   }
@@ -328,34 +329,38 @@ export class ConfigService {
   }
 
   private readConfigFile(filePath: string): MedeConfigModelEntity {
-    return parseMedeConfig(this.fileSystemRepository.readFile(filePath));
+    const config = parseMedeConfig(this.fileSystemRepository.readFile(filePath));
+    I18n.setLanguage(config.language);
+    return config;
   }
 
   private parseConfig(content: string): MedeConfigModelEntity {
-    return parseMedeConfig(content);
+    const config = parseMedeConfig(content);
+    I18n.setLanguage(config.language);
+    return config;
   }
 
   private assert(condition: boolean, message: string): void {
     if (!condition) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 
   private assertFalse(condition: boolean, message: string): void {
     if (condition) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 
   private assertNull(value: unknown, message: string): void {
     if (value !== null) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 
   private assertNotNull<T>(value: T | null, message: string): asserts value is T {
     if (value === null) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 }

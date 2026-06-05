@@ -78,7 +78,7 @@ export class PhaseRepository implements IPhaseRepository {
   public nonEmpty(id: number): boolean {
     this._uow.ensureTransactionForWrite();
     const sql =
-      "update phase set proposalState = @proposalState, finishedAt = @finishedAt  where id = @id";
+      "update phase set proposalState = @proposalState, status = @status, finishedAt = @finishedAt  where id = @id";
     const result = this._uow.connection.prepare(sql).run({
       id: id,
       proposalState: "NON_EMPTY",

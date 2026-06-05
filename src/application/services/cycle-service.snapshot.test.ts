@@ -237,7 +237,7 @@ describe("CycleService.retry", () => {
     await service.retry();
 
     expect(conversations.list(phase.id)).toHaveLength(0);
-    expect(uow.connection.prepare("select count(*) as count from changeSet where phaseId = ?").get(phase.id).count).toBe(0);
+    expect((uow.connection.prepare("select count(*) as count from changeSet where phaseId = ?").get(phase.id) as { count: number }).count).toBe(0);
     expect(changeChunks.list(changeSetId)).toHaveLength(0);
   });
 });

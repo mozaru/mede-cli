@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import * as Prompts from "./llm-prompts-provider.js";
+import { I18n } from "../../shared/i18n.js";
+import fs from "node:fs";
+import path from "node:path";
 
 const systemPrompts = [
   Prompts.SYSTEM_PROMPT_README,
@@ -54,6 +57,42 @@ describe("llm prompt assets loader", () => {
     // system prompt after substitution.
     for (const prompt of systemPrompts) {
       expect(prompt.toLowerCase()).toContain("diff");
+    }
+  });
+
+  it("dynamically switches prompts when language changes", () => {
+    I18n.setLanguage("en-US");
+    expect(Prompts.SYSTEM_PROMPT_README).toBeDefined();
+    expect(Prompts.SYSTEM_PROMPT_README.length).toBeGreaterThan(0);
+    I18n.setLanguage("pt-BR");
+  });
+
+  it("overrides specific prompts when files exist in .mede/prompts/ on a file-by-file basis", () => {
+    const localPromptsDir = path.join(process.cwd(), ".mede", "prompts", "system");
+    fs.mkdirSync(localPromptsDir, { recursive: true });
+    
+    const readmeOverridePath = path.join(localPromptsDir, "readme.md");
+    fs.writeFileSync(readmeOverridePath, "OVERRIDDEN README {{DIFF_RULES}}", "utf-8");
+    
+    try {
+      // Trigger a language change to force prompt reload
+      I18n.setLanguage("pt-BR");
+      I18n.setLanguage("en-US");
+      expect(Prompts.SYSTEM_PROMPT_README).toContain("OVERRIDDEN README");
+      
+      // Other system prompts (like meeting) should still load from package assets (fallback)
+      expect(Prompts.SYSTEM_PROMPT_MEETING).not.toContain("OVERRIDDEN README");
+    } finally {
+      // Cleanup
+      try {
+        fs.unlinkSync(readmeOverridePath);
+        fs.rmdirSync(localPromptsDir);
+        fs.rmdirSync(path.join(process.cwd(), ".mede", "prompts"));
+        fs.rmdirSync(path.join(process.cwd(), ".mede"));
+      } catch {
+        // Ignore cleanup failures
+      }
+      I18n.setLanguage("pt-BR");
     }
   });
 });

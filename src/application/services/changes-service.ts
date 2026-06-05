@@ -8,6 +8,7 @@ import type { ProjectEntity } from "../../domain/entities/project-entity.js";
 import type { ProjectConfigEntity } from "../../domain/entities/project-config-entity.js";
 import { IPhaseConversationService } from "../../domain/interfaces/services/phase-conversation-service-interface.js";
 import { IStatusService } from "../../domain/interfaces/services/status-service-interface.js";
+import { I18n } from "../../shared/i18n.js";
 
 export class ChangesService {
   private readonly projectRepository: IProjectRepository;
@@ -188,22 +189,36 @@ export class ChangesService {
       get?: (projectId: number) => ProjectConfigEntity | null;
     };
 
+    let configEntity: ProjectConfigEntity | null = null;
     if (typeof repository.get === "function") {
-      return repository.get(projectId);
+      configEntity = repository.get(projectId);
+    } else {
+      configEntity = this.projectConfigRepository.getCurrent(projectId);
     }
 
-    return this.projectConfigRepository.getCurrent(projectId);
+    if (configEntity) {
+       try {
+         const parsed = JSON.parse(configEntity.content);
+         if (parsed.language) {
+           I18n.setLanguage(parsed.language);
+         }
+       } catch {
+         // Ignore json parse error
+       }
+     }
+
+    return configEntity;
   }
 
   private assert(condition: boolean, message: string): void {
     if (!condition) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 
   private assertNotNull<T>(value: T | null, message: string): asserts value is T {
     if (value === null) {
-      throw new Error(message);
+      throw new Error(I18n.t(message));
     }
   }
 }

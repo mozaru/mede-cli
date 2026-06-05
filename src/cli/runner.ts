@@ -25,6 +25,20 @@ function resolveVersion(): string {
   }
 }
 
+function resolveBuildTime(): string {
+  const time = process.env.BUILD_TIME;
+  if (time) {
+    return time;
+  }
+  const date = new Date();
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${yyyy}.${mm}${dd}.${hh}${min}`;
+}
+
 function collectRepeatedOption(value: string, previous: string[] = []): string[] {
   return [...previous, value];
 }
@@ -34,7 +48,10 @@ function collectRepeatedOption(value: string, previous: string[] = []): string[]
 export function buildProgram(): Command {
   const program = new Command();
 
-  program.name("mede-cli").description("MEDE CLI").version(resolveVersion());
+  program
+    .name("mede-cli")
+    .description(`MEDE CLI\nVersão: ${resolveVersion()}\nBuild: ${resolveBuildTime()}`)
+    .version(`${resolveVersion()} (Build: ${resolveBuildTime()})`);
 
   // Global flag: emit machine-readable JSON instead of human text. Place it
   // before the subcommand (e.g. `mede-cli --json status`). The preAction hook
@@ -233,7 +250,6 @@ export function buildProgram(): Command {
   const llm = program //mede-cli llm
     .command("llm")
     .description("Inspeciona a configuração de LLM atual")
-    .option("-p, --prompt <text>", "Prompt para o teste da LLM")
     .action(() => {
       const handler = new LlmHandler();
       handler.execute();

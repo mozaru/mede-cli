@@ -7,6 +7,7 @@ import type { ReplaceTextOptionsEntity } from "../../domain/entities/replace-tex
 import type { InsertTextOptionsEntity } from "../../domain/entities/insert-text-options-entity.js";
 import type { RemoveTextOptionsEntity } from "../../domain/entities/remove-text-options-entity.js";
 import { assertNoNullByte, assertPathWithin } from "../../shared/path-safety.js";
+import { I18n } from "../../shared/i18n.js";
 
 export class FileSystemRepository implements IFileSystemRepository {
   // When non-empty, every mutating operation (write/create/delete/move/rename)
@@ -39,62 +40,66 @@ export class FileSystemRepository implements IFileSystemRepository {
 
     if (escapesAll) {
       throw new Error(
-        `Unsafe write path: "${targetPath}" is outside the allowed project directory.`,
+        I18n.t('Unsafe write path: "{0}" is outside the allowed project directory.', targetPath),
       );
     }
   }
   public exists(targetPath: string): boolean {
-    return fs.existsSync(targetPath);
+    return fs.existsSync(path.normalize(targetPath));
   }
 
   public isFile(targetPath: string): boolean {
-    if (!this.exists(targetPath)) {
+    const normalized = path.normalize(targetPath);
+    if (!this.exists(normalized)) {
       return false;
     }
 
-    return fs.statSync(targetPath).isFile();
+    return fs.statSync(normalized).isFile();
   }
 
   public isDirectory(targetPath: string): boolean {
-    if (!this.exists(targetPath)) {
+    const normalized = path.normalize(targetPath);
+    if (!this.exists(normalized)) {
       return false;
     }
 
-    return fs.statSync(targetPath).isDirectory();
+    return fs.statSync(normalized).isDirectory();
   }
 
   public ensureDirectory(targetPath: string): void {
-    fs.mkdirSync(targetPath, { recursive: true });
+    fs.mkdirSync(path.normalize(targetPath), { recursive: true });
   }
 
   public ensureFile(targetPath: string): void {
-    this.guardWritePath(targetPath);
-    const directoryPath = path.dirname(targetPath);
+    const normalized = path.normalize(targetPath);
+    this.guardWritePath(normalized);
+    const directoryPath = path.dirname(normalized);
     this.ensureDirectory(directoryPath);
 
-    if (!this.exists(targetPath)) {
-      fs.writeFileSync(targetPath, "", "utf-8");
+    if (!this.exists(normalized)) {
+      fs.writeFileSync(normalized, "", "utf-8");
     }
   }
 
   public listFiles(targetPath: string, options: ListFilesOptionsEntity): string[] {
-    if (!this.exists(targetPath)) {
+    const normalized = path.normalize(targetPath);
+    if (!this.exists(normalized)) {
       return [];
     }
 
-    if (this.isFile(targetPath)) {
-      if (this.matchesExtensions(targetPath, options.extensions)) {
-        return [targetPath];
+    if (this.isFile(normalized)) {
+      if (this.matchesExtensions(normalized, options.extensions)) {
+        return [normalized];
       }
 
       return [];
     }
 
     const results: string[] = [];
-    const entries = fs.readdirSync(targetPath, { withFileTypes: true });
+    const entries = fs.readdirSync(normalized, { withFileTypes: true });
 
     for (const entry of entries) {
-      const fullPath = path.join(targetPath, entry.name);
+      const fullPath = path.join(normalized, entry.name);
 
       if (entry.isFile()) {
         if (this.matchesExtensions(fullPath, options.extensions)) {
@@ -112,110 +117,122 @@ export class FileSystemRepository implements IFileSystemRepository {
   }
 
   public readFile(targetPath: string): string {
-    this.assertFileExists(targetPath);
-    return fs.readFileSync(targetPath, "utf-8");
+    const normalized = path.normalize(targetPath);
+    this.assertFileExists(normalized);
+    return fs.readFileSync(normalized, "utf-8");
   }
 
   public readJsonFile(targetPath: string): unknown {
-    const content = this.readFile(targetPath);
+    const normalized = path.normalize(targetPath);
+    const content = this.readFile(normalized);
 
     try {
       return JSON.parse(content);
     } catch {
-      throw new Error(`Invalid JSON file: ${targetPath}`);
+      throw new Error(I18n.t("Invalid JSON file: {0}", normalized));
     }
   }
 
   public writeFile(targetPath: string, content: string): void {
-    this.guardWritePath(targetPath);
-    const directoryPath = path.dirname(targetPath);
+    const normalized = path.normalize(targetPath);
+    this.guardWritePath(normalized);
+    const directoryPath = path.dirname(normalized);
     this.ensureDirectory(directoryPath);
-    fs.writeFileSync(targetPath, content, "utf-8");
+    fs.writeFileSync(normalized, content, "utf-8");
   }
 
   public writeJsonFile(targetPath: string, content: unknown): void {
+    const normalized = path.normalize(targetPath);
     const jsonText = JSON.stringify(content, null, 2);
-    this.writeFile(targetPath, jsonText);
+    this.writeFile(normalized, jsonText);
   }
 
   public createFile(targetPath: string, content: string, overwrite: boolean): void {
-    this.guardWritePath(targetPath);
-    const directoryPath = path.dirname(targetPath);
+    const normalized = path.normalize(targetPath);
+    this.guardWritePath(normalized);
+    const directoryPath = path.dirname(normalized);
     this.ensureDirectory(directoryPath);
 
-    if (this.exists(targetPath) && !overwrite) {
-      throw new Error(`File already exists: ${targetPath}`);
+    if (this.exists(normalized) && !overwrite) {
+      throw new Error(I18n.t("File already exists: {0}", normalized));
     }
 
-    fs.writeFileSync(targetPath, content, "utf-8");
+    fs.writeFileSync(normalized, content, "utf-8");
   }
 
   public deleteFile(targetPath: string): void {
-    this.guardWritePath(targetPath);
-    if (!this.exists(targetPath)) {
+    const normalized = path.normalize(targetPath);
+    this.guardWritePath(normalized);
+    if (!this.exists(normalized)) {
       return;
     }
 
-    if (!this.isFile(targetPath)) {
-      throw new Error(`Path is not a file: ${targetPath}`);
+    if (!this.isFile(normalized)) {
+      throw new Error(I18n.t("Path is not a file: {0}", normalized));
     }
 
-    fs.unlinkSync(targetPath);
+    fs.unlinkSync(normalized);
   }
 
   public moveFile(sourcePath: string, targetPath: string): void {
-    this.guardWritePath(sourcePath);
-    this.guardWritePath(targetPath);
-    this.assertFileExists(sourcePath);
+    const normalizedSource = path.normalize(sourcePath);
+    const normalizedTarget = path.normalize(targetPath);
+    this.guardWritePath(normalizedSource);
+    this.guardWritePath(normalizedTarget);
+    this.assertFileExists(normalizedSource);
 
-    const directoryPath = path.dirname(targetPath);
+    const directoryPath = path.dirname(normalizedTarget);
     this.ensureDirectory(directoryPath);
 
-    fs.renameSync(sourcePath, targetPath);
+    fs.renameSync(normalizedSource, normalizedTarget);
   }
 
   public renameFile(sourcePath: string, newFileName: string): string {
-    this.assertFileExists(sourcePath);
+    const normalizedSource = path.normalize(sourcePath);
+    this.assertFileExists(normalizedSource);
 
-    const targetPath = path.join(path.dirname(sourcePath), newFileName);
+    const targetPath = path.join(path.dirname(normalizedSource), newFileName);
     this.guardWritePath(targetPath);
-    fs.renameSync(sourcePath, targetPath);
+    fs.renameSync(normalizedSource, targetPath);
 
     return targetPath;
   }
 
   public renameDirectory(sourcePath: string, newFileName: string): string {
-    if (!this.exists(sourcePath)) {
-      throw new Error(`Directory not found: ${sourcePath}`);
+    const normalizedSource = path.normalize(sourcePath);
+    if (!this.exists(normalizedSource)) {
+      throw new Error(I18n.t("Directory not found: {0}", normalizedSource));
     }
 
-    if (!this.isDirectory(sourcePath)) {
-      throw new Error(`Path is not a directory: ${sourcePath}`);
+    if (!this.isDirectory(normalizedSource)) {
+      throw new Error(I18n.t("Path is not a directory: {0}", normalizedSource));
     }
 
-    const targetPath = path.join(path.dirname(sourcePath), newFileName);
-    fs.renameSync(sourcePath, targetPath);
+    const targetPath = path.join(path.dirname(normalizedSource), newFileName);
+    fs.renameSync(normalizedSource, targetPath);
 
     return targetPath;
   }
 
   public replaceText(targetPath: string, options: ReplaceTextOptionsEntity): void {
-    const content = this.readFile(targetPath);
+    const normalized = path.normalize(targetPath);
+    const content = this.readFile(normalized);
 
     if (options.all) {
       const escapedSearch = this.escapeRegExp(options.searchValue);
       const regex = new RegExp(escapedSearch, "g");
       const updatedContent = content.replace(regex, options.replaceValue);
-      this.writeFile(targetPath, updatedContent);
+      this.writeFile(normalized, updatedContent);
       return;
     }
 
     const updatedContent = content.replace(options.searchValue, options.replaceValue);
-    this.writeFile(targetPath, updatedContent);
+    this.writeFile(normalized, updatedContent);
   }
 
   public insertText(targetPath: string, options: InsertTextOptionsEntity): void {
-    const content = this.readFile(targetPath);
+    const normalized = path.normalize(targetPath);
+    const content = this.readFile(normalized);
 
     if (options.createAnchorText.trim() === "") {
       let updatedContent = content;
@@ -226,14 +243,14 @@ export class FileSystemRepository implements IFileSystemRepository {
         updatedContent = content + options.textToInsert;
       }
 
-      this.writeFile(targetPath, updatedContent);
+      this.writeFile(normalized, updatedContent);
       return;
     }
 
     const anchorIndex = content.indexOf(options.createAnchorText);
 
     if (anchorIndex < 0) {
-      throw new Error(`Anchor text not found in file: ${targetPath}`);
+      throw new Error(I18n.t("Anchor text not found in file: {0}", normalized));
     }
 
     let insertionIndex = anchorIndex;
@@ -245,21 +262,22 @@ export class FileSystemRepository implements IFileSystemRepository {
     const updatedContent =
       content.slice(0, insertionIndex) + options.textToInsert + content.slice(insertionIndex);
 
-    this.writeFile(targetPath, updatedContent);
+    this.writeFile(normalized, updatedContent);
   }
 
   public removeText(targetPath: string, options: RemoveTextOptionsEntity): void {
-    const content = this.readFile(targetPath);
+    const normalized = path.normalize(targetPath);
+    const content = this.readFile(normalized);
 
     const startIndex = content.indexOf(options.startMarker);
     if (startIndex < 0) {
-      throw new Error(`Start marker not found in file: ${targetPath}`);
+      throw new Error(I18n.t("Start marker not found in file: {0}", normalized));
     }
 
     const endSearchStart = startIndex + options.startMarker.length;
     const endIndex = content.indexOf(options.endMarker, endSearchStart);
     if (endIndex < 0) {
-      throw new Error(`End marker not found in file: ${targetPath}`);
+      throw new Error(I18n.t("End marker not found in file: {0}", normalized));
     }
 
     const removeStart = options.includeMarkers
@@ -270,19 +288,19 @@ export class FileSystemRepository implements IFileSystemRepository {
 
     const updatedContent = content.slice(0, removeStart) + content.slice(removeEnd);
 
-    this.writeFile(targetPath, updatedContent);
+    this.writeFile(normalized, updatedContent);
   }
 
   public combinePath(...parts: string[]): string {
-    return path.join(...parts);
+    return path.normalize(path.join(...parts));
   }
 
   public basename(filePath: string): string {
-    return path.basename(filePath);
+    return path.basename(path.normalize(filePath));
   }
 
   public dirname(filePath: string): string {
-    return path.dirname(filePath);
+    return path.dirname(path.normalize(filePath));
   }
 
   private matchesExtensions(filePath: string, extensions: string[]): boolean {
@@ -307,11 +325,11 @@ export class FileSystemRepository implements IFileSystemRepository {
 
   private assertFileExists(targetPath: string): void {
     if (!this.exists(targetPath)) {
-      throw new Error(`File not found: ${targetPath}`);
+      throw new Error(I18n.t("File not found: {0}", targetPath));
     }
 
     if (!this.isFile(targetPath)) {
-      throw new Error(`Path is not a file: ${targetPath}`);
+      throw new Error(I18n.t("Path is not a file: {0}", targetPath));
     }
   }
 

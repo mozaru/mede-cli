@@ -1,0 +1,3 @@
+- never generate an incomplete hunk header;
+- never omit the trailing @@;
+- the generated diff must be compatible with standard unified git diff parsers.
