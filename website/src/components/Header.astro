@@ -1,0 +1,55 @@
+---
+import { getLangFromUrl, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+const pathname = Astro.url.pathname;
+const segments = pathname.split('/').filter(Boolean);
+let currentPathWithoutLang = '/' + segments.filter(seg => seg !== 'en' && seg !== 'pt-BR').join('/');
+if (currentPathWithoutLang.endsWith('/') && currentPathWithoutLang.length > 1) {
+  currentPathWithoutLang = currentPathWithoutLang.slice(0, -1);
+}
+
+const targetLang = lang === 'pt-BR' ? 'en' : 'pt-BR';
+const switchUrl = localizePath(currentPathWithoutLang, targetLang);
+const targetLabel = targetLang === 'pt-BR' ? 'PT-BR 🇧🇷' : 'EN 🇬🇧';
+---
+
+<header>
+  <div class="container nav-wrapper">
+    <a href={localizePath('/', lang)} class="logo-link">
+      <img src="/11Tech_Completo.svg" alt="11Tech Logo" height="32" style="display: block; object-fit: contain;" />
+      <span style="font-weight: 300; font-size: 0.9rem; opacity: 0.6; border-left: 1px solid hsl(var(--color-border)); padding-left: 0.75rem; color: hsl(var(--color-text-muted));">MEDE</span>
+    </a>
+    <nav>
+      <ul class="nav-links">
+        <li>
+          <a href={localizePath('/', lang)} class:list={['nav-link', { active: currentPathWithoutLang === '/' }]}>
+            {t('nav.home')}
+          </a>
+        </li>
+        <li>
+          <a href={localizePath('/metodologia', lang)} class:list={['nav-link', { active: currentPathWithoutLang.startsWith('/metodologia') }]}>
+            {t('nav.methodology')}
+          </a>
+        </li>
+        <li>
+          <a href={localizePath('/cli', lang)} class:list={['nav-link', { active: currentPathWithoutLang.startsWith('/cli') }]}>
+            {t('nav.cli')}
+          </a>
+        </li>
+        <li>
+          <a href={localizePath('/guia-rapido', lang)} class:list={['nav-link', { active: currentPathWithoutLang.startsWith('/guia-rapido') }]} class="btn btn-accent" style="padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.85rem; color: #061129;">
+            {t('nav.quickstart')}
+          </a>
+        </li>
+        <li>
+          <a href={switchUrl} class="lang-selector">
+            {targetLabel}
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,49 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import CliSidebar from '../../../components/CliSidebar.astro';
+---
+
+<Layout title="Installation & Requirements - MEDE-CLI">
+  <div class="docs-layout">
+    <CliSidebar />
+    <article class="docs-content prose">
+      <h1>Installation & Requirements</h1>
+      
+      <p>
+        <strong>MEDE-CLI</strong> is distributed as an executable npm package. It runs locally on your development machine, interacting with your Git repository and the markdown documentation files in your project.
+      </p>
+
+      <h2>Environment Prerequisites</h2>
+      
+      <ul>
+        <li><strong>Node.js:</strong> LTS version recommended, Node.js version <code>&gt;= 20</code> is required.</li>
+        <li><strong>Git:</strong> Your local project must be an active Git repository for version control and causal diff tracking.</li>
+        <li><strong>LLM Provider:</strong> An active API key/account (or a local Ollama instance) configured.</li>
+      </ul>
+
+      <h2>How to Install</h2>
+
+      <h3>1. Global Installation (Recommended)</h3>
+      <p>Install the package globally to make the <code>mede</code> or <code>mede-cli</code> command available anywhere on your machine:</p>
+      <pre><code>npm install -g mede-cli</code></pre>
+      
+      <p>Once installed, verify it works by running:</p>
+      <pre><code>mede --version</code></pre>
+
+      <h3>2. Direct Execution with NPX (No Install)</h3>
+      <p>If you prefer to run commands without installing them globally, use <code>npx</code>:</p>
+      <pre><code>npx mede-cli status</code></pre>
+
+      <h3>3. Project Development Dependency</h3>
+      <p>If you want to lock the MEDE-CLI version to a specific project:</p>
+      <pre><code>npm install --save-dev mede-cli</code></pre>
+      <p>Then run it via package.json scripts or npx:</p>
+      <pre><code>npx mede status</code></pre>
+
+      <h2>Next Steps</h2>
+      <p>
+        Now that the CLI is installed, the next step is to create the <code>mede.config.json</code> configuration file in the root of your project. Learn how in the next chapter.
+      </p>
+    </article>
+  </div>
+</Layout>

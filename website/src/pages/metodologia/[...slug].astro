@@ -1,0 +1,33 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import MethodologySidebar from '../../components/MethodologySidebar.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('metodologia');
+  
+  // Filtrar apenas para a pasta pt-BR/ (Astro normaliza IDs para minúsculo pt-br/)
+  const ptEntries = entries.filter(entry => entry.id.toLowerCase().startsWith('pt-br/'));
+  
+  return ptEntries.map(entry => {
+    // Remove o prefixo do id para gerar o slug da URL
+    const slug = entry.id.replace(/^(pt-br|pt-BR)\//i, '');
+    return {
+      params: { slug },
+      props: { entry },
+    };
+  });
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+
+<Layout title={`${entry.data.title} - Metodologia MEDE`}>
+  <div class="docs-layout">
+    <MethodologySidebar />
+    <article class="docs-content prose">
+      <Content />
+    </article>
+  </div>
+</Layout>

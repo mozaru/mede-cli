@@ -1,0 +1,63 @@
+---
+import { getCollection } from 'astro:content';
+import { getLangFromUrl, localizePath } from '../i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const pathname = Astro.url.pathname;
+
+const allEntries = await getCollection('metodologia');
+const prefixLower = lang === 'pt-BR' ? 'pt-br/' : 'en/';
+
+const menuItems = allEntries
+  .filter(e => e.id.toLowerCase().startsWith(prefixLower))
+  .sort((a, b) => {
+    const orderDiff = (a.data.order || 0) - (b.data.order || 0);
+    if (orderDiff !== 0) return orderDiff;
+    return a.id.localeCompare(b.id);
+  })
+  .map(e => {
+    const cleanSlug = e.id.replace(new RegExp(`^${prefixLower}`, 'i'), '');
+    return {
+      path: `/metodologia/${cleanSlug}`,
+      label: e.data.title
+    };
+  });
+
+const activeItem = menuItems.find(item => {
+  const localized = localizePath(item.path, lang);
+  return pathname === localized || pathname === `${localized}/`;
+});
+
+const activePath = activeItem?.path || '';
+---
+
+<aside class="docs-sidebar">
+  <div class="sidebar-section">
+    <h3 class="sidebar-title">{lang === 'pt-BR' ? 'Conceito MEDE' : 'MEDE Methodology'}</h3>
+    <ul class="sidebar-menu">
+      {menuItems.map((item, idx) => (
+        <li class="sidebar-item">
+          <a 
+            href={localizePath(item.path, lang)} 
+            class:list={['sidebar-link', { active: activePath === item.path }]}
+          >
+            <span style="margin-right: 0.5rem; opacity: 0.5;">{idx + 1}.</span>
+            {item.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+  
+  <div style="margin-top: 3rem; padding: 1rem; background-color: rgba(6, 17, 41, 0.02); border-radius: 8px; border: 1px solid hsl(var(--color-border));">
+    <p style="font-size: 0.8rem; color: hsl(var(--color-text-muted)); margin-bottom: 0.5rem; font-weight: 600; text-transform: uppercase;">
+      {lang === 'pt-BR' ? 'Mão na Massa' : 'Practice First'}
+    </p>
+    <p style="font-size: 0.85rem; margin-bottom: 0.75rem;">
+      {lang === 'pt-BR' ? 'Aprenda a rodar a ferramenta CLI no seu projeto local.' : 'Learn how to run the CLI tool in your local project.'}
+    </p>
+    <a href={localizePath('/cli', lang)} style="font-size: 0.85rem; font-weight: 700; color: hsl(var(--color-primary)); display: inline-flex; align-items: center; gap: 0.25rem;">
+      {lang === 'pt-BR' ? 'Ver Guia da CLI' : 'View CLI Guide'} &rarr;
+    </a>
+  </div>
+</aside>

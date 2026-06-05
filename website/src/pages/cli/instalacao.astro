@@ -1,0 +1,49 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CliSidebar from '../../components/CliSidebar.astro';
+---
+
+<Layout title="Instalação & Requisitos - MEDE-CLI">
+  <div class="docs-layout">
+    <CliSidebar />
+    <article class="docs-content prose">
+      <h1>Instalação & Requisitos</h1>
+      
+      <p>
+        O <strong>MEDE-CLI</strong> é distribuído como um pacote npm executável. Ele roda localmente na sua máquina de desenvolvimento, interagindo com o seu repositório Git e os arquivos markdown de documentação do seu projeto.
+      </p>
+
+      <h2>Requisitos de Ambiente</h2>
+      
+      <ul>
+        <li><strong>Node.js:</strong> Versão estável (LTS) recomendada, sendo obrigatório a versão <code>&gt;= 20</code>.</li>
+        <li><strong>Git:</strong> O repositório local do seu projeto deve ser um repositório Git ativo para controle de versão e diffs causais.</li>
+        <li><strong>Provedor de LLM:</strong> Uma conta ou chave de API ativa (ou instância Ollama local) configurada.</li>
+      </ul>
+
+      <h2>Como Instalar</h2>
+
+      <h3>1. Instalação Global (Recomendado)</h3>
+      <p>Instale o pacote globalmente na sua máquina para ter o comando <code>mede</code> ou <code>mede-cli</code> disponível em qualquer diretório:</p>
+      <pre><code>npm install -g mede-cli</code></pre>
+      
+      <p>Depois de instalado, verifique se o comando está funcionando:</p>
+      <pre><code>mede --version</code></pre>
+
+      <h3>2. Uso Direto com NPX (Sem Instalação)</h3>
+      <p>Se você preferir executar o comando diretamente sem poluir o seu ambiente global, pode usar o <code>npx</code>:</p>
+      <pre><code>npx mede-cli status</code></pre>
+
+      <h3>3. Instalação como Dependência de Desenvolvimento</h3>
+      <p>Se quiser trancar a versão do MEDE-CLI no seu projeto de desenvolvimento:</p>
+      <pre><code>npm install --save-dev mede-cli</code></pre>
+      <p>Depois chame via scripts do package.json ou npx:</p>
+      <pre><code>npx mede status</code></pre>
+
+      <h2>Próximos Passos</h2>
+      <p>
+        Com a CLI instalada, o próximo passo é criar o arquivo de configuração <code>mede.config.json</code> na raiz do seu projeto. Veja como fazer isso no próximo capítulo.
+      </p>
+    </article>
+  </div>
+</Layout>

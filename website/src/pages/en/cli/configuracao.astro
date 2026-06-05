@@ -1,0 +1,77 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import CliSidebar from '../../../components/CliSidebar.astro';
+---
+
+<Layout title="Configuration - MEDE-CLI">
+  <div class="docs-layout">
+    <CliSidebar />
+    <article class="docs-content prose">
+      <h1>Configuring the Project</h1>
+      
+      <p>
+        The behavior of MEDE-CLI in your local repository is governed by the <code>mede.config.json</code> file, which must reside in the root directory of your project.
+      </p>
+
+      <h2>Automatic Initialization</h2>
+      <p>To generate a default configuration file automatically, run:</p>
+      <pre><code>mede config init</code></pre>
+      
+      <p>This will create the <code>mede.config.json</code> file with basic configurations and suggest default folders and file names for your live documentation.</p>
+
+      <h2>`mede.config.json` Structure</h2>
+      <p>Here is a complete example with explanations of the fields:</p>
+
+      <pre><code class="language-json" is:raw>{
+  "language": "en",
+  "docsRoot": "docs",
+  "directories": {
+    "meetingMinutes": "meeting-minutes",
+    "architecturalDecisions": "architectural-decisions",
+    "systemMaintenanceSpecifications": "maintenance-specifications",
+    "deliveryLog": "delivery-log"
+  },
+  "fileNames": {
+    "initialUnderstanding": "initial-understanding.md",
+    "readme": "readme.md",
+    "currentState": "current-state.md",
+    "scopeAndVision": "scope-and-vision.md",
+    "functionalRequirements": "functional-requirements.md",
+    "nonFunctionalRequirements": "non-functional-requirements.md",
+    "dataModel": "data-model.md",
+    "timeline": "timeline.md"
+  },
+  "prefixes": {
+    "meetingMinutes": "min",
+    "architecturalDecisions": "adr",
+    "systemMaintenanceSpecifications": "esm",
+    "deliveryLog": "leg"
+  },
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "endpoint": "https://api.openai.com/v1",
+    "apiKeyEnv": "OPENAI_API_KEY",
+    "temperature": 0.2,
+    "maxTokens": 4096,
+    "timeoutMs": 60000
+  }
+}</code></pre>
+
+      <h2>Core Fields</h2>
+      
+      <ul>
+        <li><strong><code>language</code>:</strong> Defines the language in which documentation is generated (e.g., <code>en</code> or <code>pt-BR</code>).</li>
+        <li><strong><code>docsRoot</code>:</strong> Root directory of your documentation (usually <code>docs</code> or <code>.</code> if you keep it in the root).</li>
+        <li><strong><code>directories</code>:</strong> Maps the physical directories where immutable historical logs are stored (minutes, ADRs, ESMs, delivery logs).</li>
+        <li><strong><code>fileNames</code>:</strong> Defines the exact filenames of the live documents that represent your project's architectural truth.</li>
+        <li><strong><code>llm</code>:</strong> Configures the artificial intelligence profile, including provider, model name, timeout values, and API key environment variable (read more in LLM Integration).</li>
+      </ul>
+
+      <h2>Applying Configuration Changes</h2>
+      <p>If you manually change any filename or directory in <code>mede.config.json</code>, run the following command to physically sync the filesystem:</p>
+      <pre><code>mede config apply</code></pre>
+      <p>This command will detect the differences and safely rename the folders and files in your repository.</p>
+    </article>
+  </div>
+</Layout>

@@ -1,0 +1,101 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="11Tech MEDE - Structured Document Evolution Methodology">
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <h1 class="hero-title">
+          Structured & Smart <span class="hero-gradient-text">Document</span> Evolution
+        </h1>
+        <p class="hero-subtitle">
+          Operationalize software engineering documentation through supervised causal cycles, assisted by LLMs, with mandatory human review.
+        </p>
+        <div class="hero-buttons">
+          <a href="/en/guia-rapido" class="btn btn-accent">Get Started</a>
+          <a href="/en/metodologia" class="btn btn-outline">The Methodology</a>
+        </div>
+      </div>
+      
+      <div>
+        <!-- Terminal Simulator -->
+        <div class="terminal">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">bash - mede status</span>
+          </div>
+          <div class="terminal-body">
+            <div class="terminal-line"><span class="terminal-prompt">$</span> npm install -g mede-cli</div>
+            <div class="terminal-line">added 76 packages in 2s</div>
+            <div class="terminal-line"><span class="terminal-prompt">$</span> mede init</div>
+            <div class="terminal-line terminal-output-success">✔ Project initialized in ./.mede/</div>
+            <div class="terminal-line terminal-output-success">✔ Directories and live files created successfully!</div>
+            <div class="terminal-line"><span class="terminal-prompt">$</span> mede status</div>
+            <div class="terminal-line">========================================</div>
+            <div class="terminal-line">PROJECT STATUS (MEDE)</div>
+            <div class="terminal-line">========================================</div>
+            <div class="terminal-line">Status: <span class="terminal-output-warning">Active Cycle (Phase: GENERATE_MEETING)</span></div>
+            <div class="terminal-line">Language: en</div>
+            <div class="terminal-line">Pending actions: <span class="terminal-output-warning">Awaiting approval or refinement</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section style="padding: 5rem 0; background-color: hsl(var(--color-card));">
+    <div class="container">
+      <div style="text-align: center; max-width: 48rem; margin: 0 auto 4rem auto;">
+        <h2 style="font-size: 2.25rem; margin-bottom: 1rem;">Develop Software Governed by Knowledge</h2>
+        <p style="color: hsl(var(--color-text-muted)); font-size: 1.1rem;">
+          The MEDE methodology ensures that live technical documentation evolves in perfect sync with your software architecture business logic.
+        </p>
+      </div>
+      
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🤝</div>
+          <h3 class="card-title">Human-in-the-Loop</h3>
+          <p class="card-text">
+            Nothing is automatically written to production code or main documents. Every AI suggestion is reviewed, refined, and approved by the software engineer.
+          </p>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon">🔗</div>
+          <h3 class="card-title">Causal Traceability</h3>
+          <p class="card-text">
+            Connect Meeting Minutes, Architectural Decisions (ADR), Maintenance Specifications (ESM), and Delivery Logs in traceable, auditable causal cycles.
+          </p>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon">🤖</div>
+          <h3 class="card-title">LLM Assistance</h3>
+          <p class="card-text">
+            Connect with providers like OpenAI, Anthropic, Gemini, and local Ollama to analyze your repository context and suggest rich document updates.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action Section -->
+  <section style="padding: 5rem 0; background: linear-gradient(135deg, hsl(var(--color-dark-bg)) 0%, hsl(220, 60%, 15%) 100%); color: #fff; text-align: center;">
+    <div class="container" style="max-width: 45rem;">
+      <h2 style="font-size: 2.25rem; color: #fff; margin-bottom: 1rem;">Ready to elevate your engineering standard?</h2>
+      <p style="opacity: 0.8; font-size: 1.1rem; margin-bottom: 2.5rem;">
+        Install our open-source CLI tool and start automating your project documentation traceability today.
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/en/guia-rapido" class="btn btn-accent">Try it for Free</a>
+        <a href="/en/metodologia" class="btn btn-outline" style="border-color: rgba(255,255,255,0.2); color: #fff;">Learn more about the Methodology</a>
+      </div>
+    </div>
+  </section>
+</Layout>

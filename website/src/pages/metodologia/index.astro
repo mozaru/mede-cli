@@ -1,0 +1,18 @@
+---
+import { getCollection } from 'astro:content';
+
+const entries = await getCollection('metodologia');
+const ptEntries = entries
+  .filter(entry => entry.id.toLowerCase().startsWith('pt-br/'))
+  .sort((a, b) => {
+    const orderDiff = (a.data.order || 0) - (b.data.order || 0);
+    if (orderDiff !== 0) return orderDiff;
+    return a.id.localeCompare(b.id);
+  });
+
+const firstSlug = ptEntries.length > 0 
+  ? ptEntries[0].id.replace(/^(pt-br|pt-BR)\//i, '')
+  : '00-prefacio/prefacio';
+
+return Astro.redirect(`/metodologia/${firstSlug}`);
+---

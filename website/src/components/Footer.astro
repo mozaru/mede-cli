@@ -1,0 +1,40 @@
+---
+import { getLangFromUrl, useTranslations, localizePath } from '../i18n/utils';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<footer>
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <h3>11<span style="color: hsl(var(--color-accent));">Tech</span> MEDE</h3>
+      <p class="footer-text">{t('footer.description')}</p>
+    </div>
+    
+    <div class="footer-links">
+      <h4>{t('footer.links')}</h4>
+      <ul>
+        <li><a href={localizePath('/', lang)}>{t('nav.home')}</a></li>
+        <li><a href={localizePath('/metodologia', lang)}>{t('nav.methodology')}</a></li>
+        <li><a href={localizePath('/cli', lang)}>{t('nav.cli')}</a></li>
+        <li><a href={localizePath('/guia-rapido', lang)}>{t('nav.quickstart')}</a></li>
+      </ul>
+    </div>
+    
+    <div class="footer-links">
+      <h4>{t('footer.contact')}</h4>
+      <p class="footer-text" style="line-height: 1.8;">
+        Rua Teresa 45 Sala 1, Alto da Serra<br />
+        Petrópolis - RJ, CEP 25625-022<br />
+        <strong>Email:</strong> contato@11tech.com.br<br />
+        <strong>Tel:</strong> (24) 2235 6889
+      </p>
+    </div>
+  </div>
+  
+  <div class="container footer-bottom">
+    <div>&copy; {new Date().getFullYear()} 11Tech. {t('footer.rights')}</div>
+    <div>Metodologia de Evolução Documental Estruturada</div>
+  </div>
+</footer>

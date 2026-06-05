@@ -1,0 +1,69 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CliSidebar from '../../components/CliSidebar.astro';
+---
+
+<Layout title="Referência de Comandos - MEDE-CLI">
+  <div class="docs-layout">
+    <CliSidebar />
+    <article class="docs-content prose">
+      <h1>Referência de Comandos</h1>
+      
+      <p>
+        O MEDE-CLI é operado por comandos específicos. Toda modificação documental passa por um ciclo transacional de proposta ➡️ aprovação/refinamento ➡️ aplicação.
+      </p>
+
+      <h2>1. Comandos de Ciclo</h2>
+
+      <h3><code>mede cycle [-p prompt] [-f file]</code></h3>
+      <p>Inicia um novo ciclo de evolução documental ou avança a fase atual. Se for o primeiro ciclo do projeto, gera a Ata de Reunião com base nas informações fornecidas.</p>
+      <ul>
+        <li><code>-p, --prompt</code>: Contexto textual adicional fornecido diretamente na linha de comando.</li>
+        <li><code>-f, --file</code>: Caminho para um arquivo contendo o contexto textual (útil para atas brutas ou logs de reuniões).</li>
+      </ul>
+
+      <h3><code>mede status</code></h3>
+      <p>Inspeciona e imprime o estado operacional atual do ciclo. Mostra a fase corrente, o idioma ativo, quais arquivos foram modificados e as ações disponíveis no terminal.</p>
+
+      <h3><code>mede approve [-a]</code></h3>
+      <p>Aprova a proposta gerada pela LLM na fase atual e avança o ciclo para a próxima etapa.</p>
+      <ul>
+        <li><code>-a, --auto</code>: Auto-aprova todas as fases restantes do ciclo de forma contínua.</li>
+      </ul>
+
+      <h3><code>mede reject [-a]</code></h3>
+      <p>Rejeita a proposta gerada pela LLM na fase atual.</p>
+      <ul>
+        <li><strong>Comportamento especial na Ata:</strong> Rejeitar a primeira fase (Ata) cancela o ciclo inteiro. Nas demais fases, o rejeitar apenas pula a fase, mas permite que o ciclo continue.</li>
+      </ul>
+
+      <h3><code>mede refine [-p prompt] [-f file]</code></h3>
+      <p>Solicita que a LLM refaça a proposta da fase atual, incorporando as observações ou correções textuais fornecidas.</p>
+
+      <h3><code>mede commit</code></h3>
+      <p>Finaliza o ciclo atual. Confirma e consolida todas as alterações propostas no disco e apaga os snapshots temporários.</p>
+
+      <h3><code>mede rollback</code></h3>
+      <p>Cancela o ciclo atual por completo e restaura todos os documentos vivos para o estado em que estavam antes do início do ciclo, apagando qualquer arquivo novo criado no processo.</p>
+
+      <h2>2. Comandos de Trechos (Diffs)</h2>
+
+      <h3><code>mede pending</code></h3>
+      <p>Lista todos os trechos-diff (change-chunks) gerados que estão aguardando ação (status <code>PENDING</code>).</p>
+
+      <h3><code>mede apply [-a]</code></h3>
+      <p>Aplica o trecho-diff pendente atual no documento vivo real.</p>
+
+      <h3><code>mede discard [-a]</code></h3>
+      <p>Descarta o trecho-diff pendente atual, marcando-o como descartado sem aplicar as mudanças.</p>
+
+      <h2>3. Utilitários</h2>
+
+      <h3><code>mede diff &lt;arquivo&gt;</code></h3>
+      <p>Mostra as diferenças visuais (diff formatado em vermelho/verde) entre o snapshot original e as mudanças sugeridas para o arquivo especificado.</p>
+
+      <h3><code>mede files</code></h3>
+      <p>Lista todos os arquivos que foram modificados ou criados durante o ciclo atual.</p>
+    </article>
+  </div>
+</Layout>

@@ -1,0 +1,69 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Quick Start - MEDE-CLI">
+  <div style="padding: 4rem 0; background: radial-gradient(circle at 10% 20%, hsl(200, 80%, 95%) 0%, hsl(var(--color-bg)) 80%); border-bottom: 1px solid hsl(var(--color-border));">
+    <div class="container" style="max-width: 800px;">
+      <h1 style="font-size: 3rem; margin-bottom: 1rem; letter-spacing: -0.02em;">Quick Start Guide</h1>
+      <p style="font-size: 1.2rem; color: hsl(var(--color-text-muted));">
+        Learn how to install, configure, and execute your first causal structured documentation cycle in just 5 minutes.
+      </p>
+    </div>
+  </div>
+
+  <div class="container" style="max-width: 800px; padding-top: 4rem; padding-bottom: 6rem;">
+    <div class="prose">
+      <h2>Step 1: Install the CLI</h2>
+      <p>Install MEDE-CLI globally on your development machine using npm:</p>
+      <pre><code>npm install -g mede-cli</code></pre>
+
+      <h2>Step 2: Initialize Configuration</h2>
+      <p>Navigate to the root directory of your Git repository and initialize the default config file:</p>
+      <pre><code>mede config init</code></pre>
+      <p>Open the newly created <code>mede.config.json</code> in your code editor and configure your preferred LLM provider (it defaults to OpenAI configuration).</p>
+
+      <h2>Step 3: Setup Credentials</h2>
+      <p>Set the API key in the environment variable corresponding to your provider. For example, if using OpenAI:</p>
+      <pre><code># Linux/macOS
+export OPENAI_API_KEY="your-key-here"
+
+# Windows (PowerShell)
+$env:OPENAI_API_KEY="your-key-here"</code></pre>
+      <p>To test if the AI provider is responding correctly:</p>
+      <pre><code>mede llm test -p "Hello"</code></pre>
+
+      <h2>Step 4: Initialize Documentation</h2>
+      <p>Create the physical folder structure and markdown files required by the MEDE methodology. This command will create the <code>docs/</code> folder (or whichever path you configured) with empty live Markdown files (like <code>readme.md</code>, <code>current-state.md</code>, etc.):</p>
+      <pre><code>mede init</code></pre>
+
+      <h2>Step 5: Run the First Cycle</h2>
+      <p>Every document evolution starts with the context of a decision, meeting, or project kickoff. Let's start Cycle 1 by providing the initial Meeting Minutes:</p>
+      <pre><code>mede cycle -p "Project Kickoff: decided to use Node.js and SQLite database with JWT authentication. Delivery schedule is set to 3 weeks."</code></pre>
+      
+      <p>MEDE-CLI will do the following:</p>
+      <ol>
+        <li>Saves a temporary backup snapshot of the current state of your documents.</li>
+        <li>Creates the historical minutes file (e.g., <code>min-20260605-001.md</code>).</li>
+        <li>Calls the LLM to propose updates to the live <code>readme.md</code> document based on this meeting context.</li>
+      </ol>
+
+      <h2>Step 6: Review and Apply Changes</h2>
+      <p>Verify the current cycle status to inspect the AI proposals:</p>
+      <pre><code>mede status</code></pre>
+      
+      <p>Visualize the proposed changes for the file:</p>
+      <pre><code>mede diff docs/readme.md</code></pre>
+
+      <p>Approve the current phase to generate change chunks and apply them:</p>
+      <pre><code>mede approve
+mede apply</code></pre>
+
+      <h2>Step 7: Commit the Cycle</h2>
+      <p>If all proposals match your expectations, finalize the changes and close the cycle:</p>
+      <pre><code>mede commit</code></pre>
+      
+      <p>Success! The changes are now consolidated into your live document files, and backup snapshots have been cleaned up. You can commit the modified Markdown files to Git normally.</p>
+    </div>
+  </div>
+</Layout>

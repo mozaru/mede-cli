@@ -1,0 +1,101 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="11Tech MEDE - Metodologia de Evolução Documental Estruturada">
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <h1 class="hero-title">
+          Evolução Documental <span class="hero-gradient-text">Estruturada</span> e Inteligente
+        </h1>
+        <p class="hero-subtitle">
+          Operacionalize a documentação de engenharia de software por ciclos causais supervisionados, assistidos por LLM, com revisão humana obrigatória.
+        </p>
+        <div class="hero-buttons">
+          <a href="/guia-rapido" class="btn btn-accent">Primeiros Passos</a>
+          <a href="/metodologia" class="btn btn-outline">A Metodologia</a>
+        </div>
+      </div>
+      
+      <div>
+        <!-- Terminal Simulator -->
+        <div class="terminal">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">bash - mede status</span>
+          </div>
+          <div class="terminal-body">
+            <div class="terminal-line"><span class="terminal-prompt">$</span> npm install -g mede-cli</div>
+            <div class="terminal-line">added 76 packages in 2s</div>
+            <div class="terminal-line"><span class="terminal-prompt">$</span> mede init</div>
+            <div class="terminal-line terminal-output-success">✔ Projeto inicializado em ./.mede/</div>
+            <div class="terminal-line terminal-output-success">✔ Diretórios e arquivos vivos criados com sucesso!</div>
+            <div class="terminal-line"><span class="terminal-prompt">$</span> mede status</div>
+            <div class="terminal-line">========================================</div>
+            <div class="terminal-line">ESTADO DO PROJETO (MEDE)</div>
+            <div class="terminal-line">========================================</div>
+            <div class="terminal-line">Status: <span class="terminal-output-warning">Ciclo Ativo (Fase: GENERATE_MEETING)</span></div>
+            <div class="terminal-line">Idioma: pt-BR</div>
+            <div class="terminal-line">Ações pendentes: <span class="terminal-output-warning">Aguardando aprovação ou refino</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section style="padding: 5rem 0; background-color: hsl(var(--color-card));">
+    <div class="container">
+      <div style="text-align: center; max-width: 48rem; margin: 0 auto 4rem auto;">
+        <h2 style="font-size: 2.25rem; margin-bottom: 1rem;">Desenvolva Software Governado pelo Conhecimento</h2>
+        <p style="color: hsl(var(--color-text-muted)); font-size: 1.1rem;">
+          A metodologia MEDE garante que a documentação técnica viva evolua em perfeita sincronia com a lógica de negócio de sua arquitetura de software.
+        </p>
+      </div>
+      
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">🤝</div>
+          <h3 class="card-title">Human-in-the-Loop</h3>
+          <p class="card-text">
+            Nada é escrito de forma automatizada no código de produção ou documentos principais. Toda sugestão da IA é revisada, refinada e aprovada pelo engenheiro de software.
+          </p>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon">🔗</div>
+          <h3 class="card-title">Rastreabilidade Causal</h3>
+          <p class="card-text">
+            Conecte Atas de Reunião, Decisões de Arquitetura (ADR), Especificações de Manutenção (ESM) e Logs de Entrega em ciclos causais rastreáveis e auditáveis.
+          </p>
+        </div>
+        
+        <div class="card">
+          <div class="card-icon">🤖</div>
+          <h3 class="card-title">Assistência por LLM</h3>
+          <p class="card-text">
+            Conecte-se com provedores como OpenAI, Anthropic, Gemini e Ollama local para analisar o contexto do seu repositório e sugerir atualizações documentais ricas.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action Section -->
+  <section style="padding: 5rem 0; background: linear-gradient(135deg, hsl(var(--color-dark-bg)) 0%, hsl(220, 60%, 15%) 100%); color: #fff; text-align: center;">
+    <div class="container" style="max-width: 45rem;">
+      <h2 style="font-size: 2.25rem; color: #fff; margin-bottom: 1rem;">Pronto para elevar o nível da sua engenharia?</h2>
+      <p style="opacity: 0.8; font-size: 1.1rem; margin-bottom: 2.5rem;">
+        Instale a ferramenta CLI de código aberto e comece a automatizar a rastreabilidade documental do seu projeto hoje mesmo.
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/guia-rapido" class="btn btn-accent">Experimente Grátis</a>
+        <a href="/metodologia" class="btn btn-outline" style="border-color: rgba(255,255,255,0.2); color: #fff;">Saber mais sobre a Metodologia</a>
+      </div>
+    </div>
+  </section>
+</Layout>

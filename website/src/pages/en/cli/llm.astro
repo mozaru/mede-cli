@@ -1,0 +1,52 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import CliSidebar from '../../../components/CliSidebar.astro';
+---
+
+<Layout title="LLM Integration - MEDE-CLI">
+  <div class="docs-layout">
+    <CliSidebar />
+    <article class="docs-content prose">
+      <h1>LLM Integration</h1>
+      
+      <p>
+        MEDE-CLI requires a connection to an LLM Provider to analyze repository context and suggest document changes. It supports both commercial cloud APIs and local AI engines.
+      </p>
+
+      <h2>Supported Providers</h2>
+      
+      <ul>
+        <li><strong>OpenAI:</strong> Models like <code>gpt-4o</code>, <code>gpt-4-turbo</code>, etc.</li>
+        <li><strong>Anthropic:</strong> Models like <code>claude-3-5-sonnet</code>.</li>
+        <li><strong>Google Gemini:</strong> Models like <code>gemini-2.5-pro</code>, <code>gemini-2.5-flash</code>.</li>
+        <li><strong>Ollama:</strong> For running models locally on your hardware (e.g., <code>llama3</code>, <code>mistral</code>, <code>qwen2.5</code>).</li>
+        <li><strong>Azure OpenAI:</strong> For enterprise cloud architectures on Microsoft Azure.</li>
+      </ul>
+
+      <h2>Authentication Methods</h2>
+      <p>MEDE-CLI supports three secure authentication modes:</p>
+
+      <h3>1. API Key (Default)</h3>
+      <p>Configure the API key in the appropriate environment variable (indicated by the <code>apiKeyEnv</code> field in configuration). Example on Linux/macOS:</p>
+      <pre><code>export OPENAI_API_KEY="your-api-key-here"</code></pre>
+      <p>On Windows (PowerShell):</p>
+      <pre><code>$env:OPENAI_API_KEY="your-api-key-here"</code></pre>
+
+      <h3>2. Interactive OAuth Flow</h3>
+      <p>For providers like OpenRouter, Azure, and Google Cloud, MEDE-CLI can initiate an interactive login flow. Execute the following command to log in via browser or device code:</p>
+      <pre><code>mede llm login</code></pre>
+      <p>Tokens are safely stored locally in your machine's secure keychain folder (<code>~/.mede/keys.json</code>).</p>
+      <p>To log out and wipe stored keys:</p>
+      <pre><code>mede llm logout</code></pre>
+
+      <h3>3. Application Default Credentials (ADC)</h3>
+      <p>Ideal for Google Cloud / Vertex AI enterprise environments. MEDE-CLI directly picks up active credentials configured by the Google Cloud SDK (<code>gcloud auth application-default</code>) without storing API keys locally.</p>
+
+      <h2>Testing Connectivity</h2>
+      <p>To verify that your AI provider is properly configured and responding to requests, run our built-in test utility:</p>
+      <pre><code>mede llm test -p "Say hello in a short sentence"</code></pre>
+      
+      <p>If the connection is valid, the LLM's response will print in the console, indicating the CLI is ready to run methodological cycles.</p>
+    </article>
+  </div>
+</Layout>
