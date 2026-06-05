@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/cli/index.mjs",
   "bin": {
-    "mede-cli": "./dist/cli/index.mjs"
+    "mede-cli": "dist/cli/index.mjs",
+    "mede": "dist/cli/index.mjs"
   },
   "files": [
     "dist",
