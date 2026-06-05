@@ -6,7 +6,7 @@ import {
   LlmRole,
   LlmTextGenerationResult,
 } from "./llm-provider.interface.js";
-import { ILlmAuthStrategy, createLlmAuthStrategy } from "./llm-auth.js";
+import { ILlmAuthStrategy, createLlmAuthStrategy, LlmAuthDeps } from "./llm-auth.js";
 
 type OpenAiRequestRole = "developer" | "system" | "user" | "assistant";
 
@@ -48,11 +48,16 @@ export class OpenAiLlmProvider implements ILlmProvider {
   private extraInfo: string = "";
   private readonly authStrategy: ILlmAuthStrategy;
 
-  constructor(config: MedeConfigModelEntity) {
+  constructor(config: MedeConfigModelEntity, deps?: LlmAuthDeps) {
     this.config = config;
-    this.authStrategy = createLlmAuthStrategy(config, "OpenAI", (apiKey) => ({
-      Authorization: `Bearer ${apiKey}`,
-    }));
+    this.authStrategy = createLlmAuthStrategy(
+      config,
+      "OpenAI",
+      (apiKey) => ({
+        Authorization: `Bearer ${apiKey}`,
+      }),
+      deps,
+    );
   }
 
   public setSystemPrompt(prompt: string): void {

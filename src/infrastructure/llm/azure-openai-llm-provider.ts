@@ -6,7 +6,7 @@ import {
   LlmRole,
   LlmTextGenerationResult,
 } from "./llm-provider.interface.js";
-import { ILlmAuthStrategy, createLlmAuthStrategy } from "./llm-auth.js";
+import { ILlmAuthStrategy, createLlmAuthStrategy, LlmAuthDeps } from "./llm-auth.js";
 
 interface AzureChatCompletionChoice {
   index: number;
@@ -41,11 +41,16 @@ export class AzureOpenAiLlmProvider implements ILlmProvider {
   private extraInfo: string = "";
   private readonly authStrategy: ILlmAuthStrategy;
 
-  constructor(config: MedeConfigModelEntity) {
+  constructor(config: MedeConfigModelEntity, deps?: LlmAuthDeps) {
     this.config = config;
-    this.authStrategy = createLlmAuthStrategy(config, "Azure OpenAI", (apiKey) => ({
-      "api-key": apiKey,
-    }));
+    this.authStrategy = createLlmAuthStrategy(
+      config,
+      "Azure OpenAI",
+      (apiKey) => ({
+        "api-key": apiKey,
+      }),
+      deps,
+    );
   }
 
   public setSystemPrompt(prompt: string): void {
