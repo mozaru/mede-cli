@@ -13,4 +13,6 @@ export interface IPhaseRepository {
   skip(id: number): boolean;
   awaitingApproval(id: number): boolean;
   reset(id: number): boolean;
+  updateOutputFile(id: number, newPath: string): boolean;
+  updateInputFilePath(cycleId: number, oldPath: string, newPath: string): number;
 }

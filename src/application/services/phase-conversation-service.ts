@@ -303,13 +303,21 @@ export class PhaseConversationService implements IPhaseConversationService {
 
     llm.setUserPrompt(prompt);
 
-    const response = await withRetry(() => llm.generateText(), {
-      onRetry: (error, attempt, delayMs) =>
-        logger.warn(
-          `LLM falhou (tentativa ${attempt}); novo retry em ${delayMs}ms: ` +
-            `${error instanceof Error ? error.message : String(error)}`,
-        ),
-    });
+    // Format validation is included in the retry so that a malformed diff from
+    // the LLM triggers a new generation attempt, not just an immediate failure.
+    const { rawText, chunks } = await withRetry(
+      async () => {
+        const r = await llm.generateText();
+        return { rawText: r.rawText, chunks: validateDiffChunks(Diff.parseDiff(r.rawText)) };
+      },
+      {
+        onRetry: (error, attempt, delayMs) =>
+          logger.warn(
+            `LLM falhou (tentativa ${attempt}); novo retry em ${delayMs}ms: ` +
+              `${error instanceof Error ? error.message : String(error)}`,
+          ),
+      },
+    );
 
     const userMessage = new PhaseConversationEntity();
     userMessage.id = 0;
@@ -324,7 +332,7 @@ export class PhaseConversationService implements IPhaseConversationService {
     assistantMessage.phaseId = phase.id;
     assistantMessage.createdAt = this.getCurrentDateTime();
     assistantMessage.actor = "assistant";
-    assistantMessage.content = response.rawText;
+    assistantMessage.content = rawText;
     this.phaseConversationRepository.insert(assistantMessage);
 
     let cycleArtifact = this.cycleArtifactRepository.getFromPath(phase.cycleId, phase.outputFile);
@@ -347,7 +355,6 @@ export class PhaseConversationService implements IPhaseConversationService {
 
       cycleArtifact = this.cycleArtifactRepository.insert(artifact);
     }
-    const chunks = validateDiffChunks(Diff.parseDiff(response.rawText));
     const changeSet = new ChangeSetEntity();
     changeSet.id = 0;
     changeSet.phaseId = phase.id;
@@ -375,7 +382,8 @@ export class PhaseConversationService implements IPhaseConversationService {
       this.changeChunkRepository.insert(changeChunk);
     }
 
-    return insertedChangeSet;
+    await this.maybeFinalizeSlug(config, phase, cycleArtifact, insertedChangeSet, chunks);
+    return this.changeSetRepository.getById(insertedChangeSet.id) ?? insertedChangeSet;
   }
 
   public async sendMessageWithoutPrompt(
@@ -413,7 +421,15 @@ export class PhaseConversationService implements IPhaseConversationService {
     }
 
     this.cycleArtifactRepository.updateContent(doc.id, newContent);
-    this.fileSystemRepository.writeFile(changeSet.fileName, newContent);
+
+    // Don't create an empty HISTORICAL artifact on disk when the LLM produced no
+    // changes (e.g. an ESM/ADR that genuinely has nothing to record this cycle).
+    const isNewHistorical =
+      doc.canonicalType === "HISTORICAL" && doc.backupContent.trim() === "";
+    if (newContent.trim() !== "" || !isNewHistorical) {
+      this.fileSystemRepository.writeFile(changeSet.fileName, newContent);
+    }
+
     this.changeSetRepository.updateChunkIndex(
       changeSet.id,
       changeSet.changeChunkCount,
@@ -524,6 +540,84 @@ export class PhaseConversationService implements IPhaseConversationService {
     }
 
     return this.changeSetRepository.getCurrent(phase.id);
+  }
+
+  private applyChunksInMemory(baseContent: string, chunks: Diff.ChunkModel[]): string {
+    let content = baseContent;
+    let offset = 0;
+    for (const chunk of chunks) {
+      const result = this.applyDiff(content, { ...chunk, offset });
+      offset += result.addedCount - result.removedCount;
+      content = result.newContent;
+    }
+    return content;
+  }
+
+  private normalizeSlug(raw: string): string {
+    return raw
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40)
+      .replace(/-+$/, "");
+  }
+
+  private buildSluggedPath(currentPath: string, slug: string): string {
+    const dir = this.fileSystemRepository.dirname(currentPath);
+    const base = this.fileSystemRepository.basename(currentPath);
+    const withoutExt = base.endsWith(".md") ? base.slice(0, -3) : base;
+    return this.fileSystemRepository.combinePath(dir, `${withoutExt}-${slug}.md`);
+  }
+
+  private async generateSlug(config: MedeConfigModelEntity, content: string): Promise<string> {
+    const DEFAULT_PROMPT =
+      "Retorne APENAS uma descrição curta em kebab-case (máximo 40 caracteres, sem acentos, somente letras minúsculas e hífens) que resume o documento abaixo. Não inclua mais nada além da descrição.";
+    const systemPrompt =
+      config.shortDescriptionSlug?.prompt && config.shortDescriptionSlug.prompt.trim() !== ""
+        ? config.shortDescriptionSlug.prompt
+        : DEFAULT_PROMPT;
+    const llm = LlmProviderFactory.create(config);
+    llm.setSystemPrompt(systemPrompt);
+    llm.setUserPrompt(content);
+    const result = await llm.generateText();
+    return this.normalizeSlug(result.rawText.trim());
+  }
+
+  private async maybeFinalizeSlug(
+    config: MedeConfigModelEntity,
+    phase: PhaseEntity,
+    cycleArtifact: CycleArtifactEntity,
+    insertedChangeSet: ChangeSetEntity,
+    chunks: Diff.ChunkModel[],
+  ): Promise<void> {
+    const slugEnabled = config.shortDescriptionSlug?.enabled ?? true;
+    if (!slugEnabled || cycleArtifact.canonicalType !== "HISTORICAL" || chunks.length === 0) {
+      return;
+    }
+    const appliedContent = this.applyChunksInMemory(cycleArtifact.currentContent, chunks);
+    if (appliedContent.trim() === "") {
+      return;
+    }
+    let slug: string;
+    try {
+      slug = await this.generateSlug(config, appliedContent);
+    } catch (err) {
+      logger.warn(
+        `Falha ao gerar slug para ${cycleArtifact.artifactPath}: ${err instanceof Error ? err.message : String(err)}. Usando nome provisório.`,
+      );
+      return;
+    }
+    if (!slug) {
+      return;
+    }
+    const oldPath = cycleArtifact.artifactPath;
+    const newPath = this.buildSluggedPath(oldPath, slug);
+    this.phaseRepository.updateOutputFile(phase.id, newPath);
+    this.cycleArtifactRepository.updateArtifactPath(cycleArtifact.id, newPath);
+    this.changeSetRepository.updateFileName(insertedChangeSet.id, newPath);
+    this.phaseRepository.updateInputFilePath(phase.cycleId, oldPath, newPath);
   }
 
   private getConfigOrDefault(value: string | undefined, fallback: string): string {

@@ -20,6 +20,7 @@ import { IProjectReconstructionService } from "../../domain/interfaces/services/
 import { IPhaseConversationService } from "../../domain/interfaces/services/phase-conversation-service-interface.js";
 import { IStatusService } from "../../domain/interfaces/services/status-service-interface.js";
 import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
+import { ListFilesOptionsEntity } from "../../domain/entities/list-files-options-entity.js";
 import { parseMedeConfig } from "../../shared/mede-config-schema.js";
 import { CycleResponseModel } from "../../domain/models/cycle.model.js";
 import { I18n } from "../../shared/i18n.js";
@@ -289,28 +290,40 @@ export class CycleService implements ICycleService {
     const dt = new Date();
     const dtStr = this.formatDate(dt);
 
+    const ataDir = this.fileSystemRepository.combinePath(
+      config.docsRoot,
+      config.directories.meetingMinutes,
+    );
+    const ataOpts = new ListFilesOptionsEntity();
+    ataOpts.extensions = [".md"];
+    const ataPrefix = config.prefixes.meetingMinutes + "-";
+    const existingAtas = this.fileSystemRepository
+      .listFiles(ataDir, ataOpts)
+      .filter((f) => this.fileSystemRepository.basename(f).startsWith(ataPrefix));
+    const cycleNum = (existingAtas.length + 1).toString().padStart(3, "0");
+
     const ataFileName = this.fileSystemRepository.combinePath(
       config.docsRoot,
       config.directories.meetingMinutes,
-      `${config.prefixes.meetingMinutes}-${dtStr}.md`,
+      `${config.prefixes.meetingMinutes}-${dtStr}-${cycleNum}.md`,
     );
 
     const adrFileName = this.fileSystemRepository.combinePath(
       config.docsRoot,
       config.directories.architecturalDecisions,
-      `${config.prefixes.architecturalDecisions}-${dtStr}.md`,
+      `${config.prefixes.architecturalDecisions}-${dtStr}-${cycleNum}.md`,
     );
 
     const esmFileName = this.fileSystemRepository.combinePath(
       config.docsRoot,
       config.directories.systemMaintenanceSpecifications,
-      `${config.prefixes.systemMaintenanceSpecifications}-${dtStr}.md`,
+      `${config.prefixes.systemMaintenanceSpecifications}-${dtStr}-${cycleNum}.md`,
     );
 
     const legFileName = this.fileSystemRepository.combinePath(
       config.docsRoot,
       config.directories.deliveryLog,
-      `${config.prefixes.deliveryLog}-${dtStr}.md`,
+      `${config.prefixes.deliveryLog}-${dtStr}-${cycleNum}.md`,
     );
 
     const rmFileName = this.fileSystemRepository.combinePath(
@@ -983,8 +996,7 @@ export class CycleService implements ICycleService {
     const year = `${date.getFullYear()}`;
     const month = `${date.getMonth() + 1}`.padStart(2, "0");
     const day = `${date.getDate()}`.padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return `${year}${month}${day}`;
   }
 
   private getCurrentDateTime(): string {

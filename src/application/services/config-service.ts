@@ -135,6 +135,10 @@ export class ConfigService {
         scopeAndVision: "",
         currentState: "",
       },
+      shortDescriptionSlug: {
+        enabled: true,
+        prompt: "",
+      },
     };
   }
 

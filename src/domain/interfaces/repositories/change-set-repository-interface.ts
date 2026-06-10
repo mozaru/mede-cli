@@ -8,5 +8,6 @@ export interface IChangeSetRepository {
   getCurrent(phaseId: number): ChangeSetEntity | null;
   updateComplete(id: number): boolean;
   updateChunkIndex(id: number, currentChangeChunkIndex: number, currentOffset: number): boolean;
+  updateFileName(id: number, newFileName: string): boolean;
   deleteFromPhase(phaseId: number): boolean;
 }

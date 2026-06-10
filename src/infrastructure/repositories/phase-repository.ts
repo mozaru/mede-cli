@@ -140,4 +140,20 @@ export class PhaseRepository implements IPhaseRepository {
     });
     return result.changes > 0;
   }
+  public updateOutputFile(id: number, newPath: string): boolean {
+    this._uow.ensureTransactionForWrite();
+    const result = this._uow.connection
+      .prepare("update phase set outputFile = @newPath where id = @id")
+      .run({ id, newPath });
+    return result.changes > 0;
+  }
+  public updateInputFilePath(cycleId: number, oldPath: string, newPath: string): number {
+    this._uow.ensureTransactionForWrite();
+    const result = this._uow.connection
+      .prepare(
+        "update phase set inputFiles = replace(inputFiles, @oldPath, @newPath) where cycleId = @cycleId and instr(inputFiles, @oldPath) > 0",
+      )
+      .run({ cycleId, oldPath, newPath });
+    return result.changes;
+  }
 }

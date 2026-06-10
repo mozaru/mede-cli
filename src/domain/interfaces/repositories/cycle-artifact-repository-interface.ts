@@ -7,5 +7,6 @@ export interface ICycleArtifactRepository {
   getFromPath(cycleId: number, artifactPath: string): CycleArtifactEntity | null;
   deleteFromCycle(cycleId: number): boolean;
   updateContent(id: number, currentContent: string): boolean;
+  updateArtifactPath(id: number, newPath: string): boolean;
   existAnyByCycle(cycleId: number): boolean;
 }

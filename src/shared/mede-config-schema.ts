@@ -93,6 +93,14 @@ const promptsSchema = z
   })
   .partial();
 
+const shortDescriptionSlugSchema = z
+  .object({
+    enabled: z.boolean(),
+    prompt: z.string(),
+  })
+  .partial()
+  .optional();
+
 export const medeConfigSchema = z.object({
   configVersion: z.number().optional(),
   language: z.string(),
@@ -103,6 +111,7 @@ export const medeConfigSchema = z.object({
   llm: llmSchema,
   systemPrompts: promptsSchema.optional(),
   prompts: promptsSchema.optional(),
+  shortDescriptionSlug: shortDescriptionSlugSchema,
 });
 
 // Parses and validates raw mede.config.json content. Throws an Error whose

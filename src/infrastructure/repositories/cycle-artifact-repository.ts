@@ -80,4 +80,13 @@ export class CycleArtifactRepository implements ICycleArtifactRepository {
       }) as number) > 0
     );
   }
+  public updateArtifactPath(id: number, newPath: string): boolean {
+    this._uow.ensureTransactionForWrite();
+    const result = this._uow.connection
+      .prepare(
+        "update cycleArtifact set artifactPath = @newPath, updatedAt = @updatedAt where id = @id",
+      )
+      .run({ id, newPath, updatedAt: new Date().toISOString() });
+    return result.changes > 0;
+  }
 }

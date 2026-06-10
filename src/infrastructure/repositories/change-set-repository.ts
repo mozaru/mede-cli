@@ -86,6 +86,15 @@ export class ChangeSetRepository implements IChangeSetRepository {
     });
     return result.changes > 0;
   }
+  public updateFileName(id: number, newFileName: string): boolean {
+    this._uow.ensureTransactionForWrite();
+    const result = this._uow.connection
+      .prepare(
+        "update changeSet set fileName = @newFileName, updatedAt = @updatedAt where id = @id",
+      )
+      .run({ id, newFileName, updatedAt: new Date().toISOString() });
+    return result.changes > 0;
+  }
   public deleteFromPhase(phaseId: number): boolean {
     this._uow.ensureTransactionForWrite();
     const sql = "delete from changeSet where phaseId = @phaseId";

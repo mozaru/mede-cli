@@ -176,7 +176,8 @@ describe("PhaseConversationService.sendMessage with a fake LLM", () => {
     const changeSet = await service.sendMessage(project, config, phase, "", []);
 
     expect(changeSet).not.toBeNull();
-    expect(generateText).toHaveBeenCalledTimes(2);
+    // call 1: 503 (retried), call 2: successful diff, call 3: slug generation for the non-empty HISTORICAL artifact
+    expect(generateText).toHaveBeenCalledTimes(3);
   });
 
   it("rejects a malformed diff returned by the LLM", async () => {
