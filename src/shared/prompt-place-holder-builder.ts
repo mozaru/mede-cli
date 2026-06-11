@@ -172,6 +172,26 @@ export class PromptPlaceholderBuilder {
     return this.buildCurrentStateTable(items);
   }
 
+  public buildEntreguesTableFromProject(projectId: number): string {
+    const items = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    return this.buildEntreguesTable(items);
+  }
+
+  public buildPendentesTableFromProject(projectId: number): string {
+    const items = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    return this.buildPendentesTable(items);
+  }
+
+  public buildNovosCicloTableFromProject(
+    projectId: number,
+    previousCurrentStateFilePath: string,
+  ): string {
+    const currentItems = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
+    const comparisons = this.compareAllWithPrevious(currentItems, previousState);
+    return this.buildNovosCicloTable(comparisons);
+  }
+
   private buildInterventionTable(items: BacklogEntity[]): string {
     const rows = items
       .filter((item) => this.normalizeText(item.documentType) === "ESM")
