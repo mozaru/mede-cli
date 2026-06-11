@@ -90,6 +90,7 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     changeChunkRepository,
     phaseRepository,
     backlogRepository,
+    cycleRepository,
   );
 
   const cycleService = new CycleService(

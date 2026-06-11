@@ -5,6 +5,7 @@ import { CycleArtifactEntity } from "../../domain/entities/cycle-artifact-entity
 import { PhaseConversationEntity } from "../../domain/entities/phase-conversation-entity.js";
 import { PhaseAttachmentEntity } from "../../domain/entities/phase-attachment-entity.js";
 import { ChunkModelEntity } from "../../domain/entities/chunk-model-entity.js";
+import { ListFilesOptionsEntity } from "../../domain/entities/list-files-options-entity.js";
 
 import type { IFileSystemRepository } from "../../domain/interfaces/repositories/file-system-repository-interface.js";
 import type { IPhaseConversationRepository } from "../../domain/interfaces/repositories/phase-conversation-repository-interface.js";
@@ -13,6 +14,7 @@ import type { ICycleArtifactRepository } from "../../domain/interfaces/repositor
 import type { IChangeSetRepository } from "../../domain/interfaces/repositories/change-set-repository-interface.js";
 import type { IChangeChunkRepository } from "../../domain/interfaces/repositories/change-chunk-repository-interface.js";
 import type { IPhaseRepository } from "../../domain/interfaces/repositories/phase-repository-interface.js";
+import type { ICycleRepository } from "../../domain/interfaces/repositories/cycle-repository-interface.js";
 
 import { FileSystemRepository } from "../../infrastructure/repositories/file-system-repository.js";
 import { LlmProviderFactory } from "../../infrastructure/llm/llm-provider-factory.js";
@@ -27,6 +29,12 @@ import { IPhaseConversationService } from "../../domain/interfaces/services/phas
 import { PromptPlaceholderBuilder } from "../../shared/prompt-place-holder-builder.js";
 import { IBacklogRepository } from "../../domain/interfaces/repositories/backlog-repository-interface.js";
 import { ProjectEntity } from "../../domain/entities/project-entity.js";
+import { compressDocument } from "../../shared/placeholder-block-extractor.js";
+import {
+  buildCompressionMap,
+  transformDiffCoordinates,
+} from "../../shared/diff-coordinate-transformer.js";
+import { buildDeterministicChunks } from "../../shared/deterministic-chunk-builder.js";
 
 export class PhaseConversationService implements IPhaseConversationService {
   private readonly fileSystemRepository: IFileSystemRepository;
@@ -36,6 +44,7 @@ export class PhaseConversationService implements IPhaseConversationService {
   private readonly changeSetRepository: IChangeSetRepository;
   private readonly changeChunkRepository: IChangeChunkRepository;
   private readonly phaseRepository: IPhaseRepository;
+  private readonly cycleRepository: ICycleRepository | null;
   private readonly applyDiff: Diff.ApplyFunction;
   private readonly promptPlaceholderBuilder: PromptPlaceholderBuilder;
 
@@ -47,6 +56,7 @@ export class PhaseConversationService implements IPhaseConversationService {
     changeChunkRepository: IChangeChunkRepository,
     phaseRepository: IPhaseRepository,
     backlogRepository: IBacklogRepository,
+    cycleRepository: ICycleRepository | null = null,
     fileSystemRepository: IFileSystemRepository | null = null,
     applyDiff: Diff.ApplyFunction | null = null,
   ) {
@@ -56,6 +66,7 @@ export class PhaseConversationService implements IPhaseConversationService {
     this.changeSetRepository = changeSetRepository;
     this.changeChunkRepository = changeChunkRepository;
     this.phaseRepository = phaseRepository;
+    this.cycleRepository = cycleRepository;
 
     this.fileSystemRepository = fileSystemRepository ?? new FileSystemRepository();
     this.applyDiff = applyDiff ?? Diff.applyDiff;
@@ -220,9 +231,17 @@ export class PhaseConversationService implements IPhaseConversationService {
       config.docsRoot,
       config.fileNames.currentState,
     );
+
+    const cycleNumber = this.computeCycleNumber(config);
+    const cycle = this.cycleRepository?.getById(phase.cycleId) ?? null;
+    const referenceDate = cycle?.startedAt
+      ? cycle.startedAt.split("T")[0]
+      : new Date().toISOString().split("T")[0];
+
     const placeholders = this.promptPlaceholderBuilder.buildAll(
       project.id,
       previousCurrentStateFilePath,
+      { config, cycleNumber, referenceDate },
     );
 
     const systemPrompt = this.promptPlaceholderBuilder.replacePlaceholders(
@@ -276,13 +295,7 @@ export class PhaseConversationService implements IPhaseConversationService {
       phase.cycleId,
       phase.outputFile,
     );
-    if (cycleArtifactOutput != null) {
-      llm.addOutputDoc(
-        cycleArtifactOutput.id,
-        cycleArtifactOutput.artifactPath,
-        cycleArtifactOutput.currentContent,
-      );
-    } else {
+    if (cycleArtifactOutput == null) {
       cycleArtifactOutput = this.cycleArtifactRepository.insert({
         id: 0,
         artifactPath: phase.outputFile,
@@ -294,12 +307,17 @@ export class PhaseConversationService implements IPhaseConversationService {
         startedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
-      llm.addOutputDoc(
-        cycleArtifactOutput.id,
-        cycleArtifactOutput.artifactPath,
-        cycleArtifactOutput.currentContent,
-      );
     }
+
+    const originalContent = cycleArtifactOutput.currentContent;
+    const { compressedContent, blocks } = compressDocument(originalContent);
+    const compressionMap = buildCompressionMap(blocks);
+
+    llm.addOutputDoc(
+      cycleArtifactOutput.id,
+      cycleArtifactOutput.artifactPath,
+      compressedContent,
+    );
 
     llm.setUserPrompt(prompt);
 
@@ -355,6 +373,26 @@ export class PhaseConversationService implements IPhaseConversationService {
 
       cycleArtifact = this.cycleArtifactRepository.insert(artifact);
     }
+    // Transform diff coordinates from compressed-doc space to original-doc space
+    const transformedChunks = transformDiffCoordinates(chunks, compressionMap);
+
+    // Apply transformed chunks in memory to obtain the document after LLM edits
+    const docAfterLlm = this.applyChunksInMemory(originalContent, transformedChunks);
+
+    // Generate deterministic chunks for each BEGIN-END block present in docAfterLlm
+    const deterministicChunks = buildDeterministicChunks(
+      docAfterLlm,
+      {
+        projectId: project.id,
+        config,
+        cycleNumber,
+        referenceDate,
+        previousCurrentStateFilePath,
+        startChunkIndex: transformedChunks.length + 1,
+      },
+      this.promptPlaceholderBuilder,
+    );
+
     const changeSet = new ChangeSetEntity();
     changeSet.id = 0;
     changeSet.phaseId = phase.id;
@@ -362,12 +400,12 @@ export class PhaseConversationService implements IPhaseConversationService {
     changeSet.fileName = cycleArtifact.artifactPath;
     changeSet.completed = false;
     changeSet.currentChangeChunkIndex = 1;
-    changeSet.changeChunkCount = chunks.length;
+    changeSet.changeChunkCount = transformedChunks.length + deterministicChunks.length;
     changeSet.startedAt = this.getCurrentDateTime();
     changeSet.updatedAt = this.getCurrentDateTime();
     const insertedChangeSet = this.changeSetRepository.insert(changeSet);
 
-    for (const chunk of chunks) {
+    for (const chunk of transformedChunks) {
       const changeChunk = new ChangeChunkEntity();
       changeChunk.id = 0;
       changeChunk.phaseId = phase.id;
@@ -382,7 +420,15 @@ export class PhaseConversationService implements IPhaseConversationService {
       this.changeChunkRepository.insert(changeChunk);
     }
 
-    await this.maybeFinalizeSlug(config, phase, cycleArtifact, insertedChangeSet, chunks);
+    for (const det of deterministicChunks) {
+      det.phaseId = phase.id;
+      det.changeSetId = insertedChangeSet.id;
+      det.startedAt = this.getCurrentDateTime();
+      det.updatedAt = this.getCurrentDateTime();
+      this.changeChunkRepository.insert(det);
+    }
+
+    await this.maybeFinalizeSlug(config, phase, cycleArtifact, insertedChangeSet, transformedChunks);
     return this.changeSetRepository.getById(insertedChangeSet.id) ?? insertedChangeSet;
   }
 
@@ -540,6 +586,29 @@ export class PhaseConversationService implements IPhaseConversationService {
     }
 
     return this.changeSetRepository.getCurrent(phase.id);
+  }
+
+  private computeCycleNumber(config: MedeConfigModelEntity): number {
+    try {
+      const ataDir = this.fileSystemRepository.combinePath(
+        config.docsRoot,
+        config.directories?.meetingMinutes ?? "atas-de-reuniao",
+      );
+      if (!this.fileSystemRepository.exists(ataDir)) return 1;
+
+      const opts = new ListFilesOptionsEntity();
+      opts.recursive = false;
+      opts.extensions = [".md"];
+
+      const ataPrefix = config.prefixes?.meetingMinutes ?? "ata";
+      const existingAtas = this.fileSystemRepository
+        .listFiles(ataDir, opts)
+        .filter((f) => this.fileSystemRepository.basename(f).startsWith(ataPrefix));
+
+      return existingAtas.length + 1;
+    } catch {
+      return 1;
+    }
   }
 
   private applyChunksInMemory(baseContent: string, chunks: Diff.ChunkModel[]): string {
