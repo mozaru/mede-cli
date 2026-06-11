@@ -1,12 +1,11 @@
 
-# Registro de Entrega — Ciclo <NNN>
+# Registro de Entrega — Ciclo <!-- BEGIN-CICLO_CORRENTE --><!-- END-CICLO_CORRENTE -->
 
-**<NOME DO SISTEMA OU PROJETO>**
+**<!-- BEGIN-NOME_PROJETO --><!-- END-NOME_PROJETO -->**
 
-Cliente: <NOME DO CLIENTE, SE HOUVER EVIDÊNCIA>  
-Fornecedor: <NOME DO FORNECEDOR, SE HOUVER EVIDÊNCIA>  
-Data de referência: **<AAAA-MM-DD>**  
-Ciclo: **<NNN — ex: 001, 002, 003>**  
+Cliente: <!-- BEGIN-CLIENTE --><!-- END-CLIENTE -->  
+Fornecedor: <!-- BEGIN-FORNECEDOR --><!-- END-FORNECEDOR -->  
+Data de referência: **<!-- BEGIN-DATA_REFERENCIA --><!-- END-DATA_REFERENCIA -->**  
 Tipo: **<normal | complemento de entrega>**
 
 ---
@@ -23,7 +22,9 @@ Descrever:
 
 ## Entregas
 
-(inserir aqui todos os itens da tabela de backlog — um item por linha — usando os dados fornecidos na seção "Dados de backlog desta fase")
+<!-- BEGIN-TABELA_ENTREGUES -->
+(dados gerados pela aplicação)
+<!-- END-TABELA_ENTREGUES -->
 
 ---
 
@@ -40,18 +41,9 @@ Descrever de forma analítica:
 
 ## Novos
 
-Listar, quando existirem:
-- novos itens surgidos no ciclo;
-- itens formalizados recentemente;
-- itens que passaram a existir no backlog operacional;
-- itens ainda pendentes, em progresso ou aguardando formalização.
-
-Preferir tabela com colunas equivalentes a:
-
-| ID | Tipo | Nome | Origem | Status |
-|----|------|------|--------|--------|
-
-Se não houver novos itens, registrar explicitamente tabela vazia ou informar que não houve novos itens no período.
+<!-- BEGIN-TABELA_NOVOS_CICLO -->
+(dados gerados pela aplicação)
+<!-- END-TABELA_NOVOS_CICLO -->
 
 ---
 
@@ -63,4 +55,8 @@ Listar os principais documentos que sustentam este registro, com base no context
 
 ## Estatística
 
-(inserir aqui os dados exatos da tabela de estatística fornecida na seção "Dados de estatística desta fase")
+<!-- BEGIN-TOTAL_ENTREGUES --><!-- END-TOTAL_ENTREGUES --> itens entregues no total  
+<!-- BEGIN-TOTAL_PENDENTES --><!-- END-TOTAL_PENDENTES --> itens pendentes  
+<!-- BEGIN-TOTAL_ENTREGUES_CICLO --><!-- END-TOTAL_ENTREGUES_CICLO --> entregues neste ciclo  
+<!-- BEGIN-NOVOS_CICLO --><!-- END-NOVOS_CICLO --> novos itens neste ciclo  
+Percentual de entrega: <!-- BEGIN-PERCENTUAL_ENTREGA --><!-- END-PERCENTUAL_ENTREGA -->

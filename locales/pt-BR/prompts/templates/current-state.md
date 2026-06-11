@@ -47,7 +47,9 @@ Descrever:
 
 ## 3. Tabela Consolidada de Todos os Itens do Projeto
 
-##TABELA_SITUACAO_ATUAL##
+<!-- BEGIN-TABELA_SITUACAO_ATUAL -->
+(dados gerados pela aplicação)
+<!-- END-TABELA_SITUACAO_ATUAL -->
 
 ---
 

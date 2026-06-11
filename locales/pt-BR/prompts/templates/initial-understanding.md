@@ -157,8 +157,9 @@ Observação:
 * evitar inventar numeração ou granularidade artificial;
 * itens COR, AJU e EVO tendem a surgir nos documentos evolutivos posteriores.
 
-| ID | Natureza | Tipo | Descrição | Tags | Origem | Status Inicial |
-| -- | -------- | ---- | --------- | ---- | ------ | -------------- |
+<!-- BEGIN-TABELA_BACKLOG_INICIAL -->
+(dados gerados pela aplicação)
+<!-- END-TABELA_BACKLOG_INICIAL -->
 
 ## 10. Planejamento Inicial das Entregas
 

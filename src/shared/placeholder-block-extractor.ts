@@ -1,5 +1,7 @@
 const BEGIN_RE = /^<!-- BEGIN-([A-Z0-9_]+) -->$/;
 const END_RE = /^<!-- END-([A-Z0-9_]+) -->$/;
+// Matches inline blocks: <!-- BEGIN-X -->CONTENT<!-- END-X --> on a single line
+const INLINE_RE = /<!-- BEGIN-([A-Z0-9_]+) -->(.*?)<!-- END-\1 -->/g;
 
 export interface PlaceholderBlock {
   name: string;
@@ -20,7 +22,23 @@ export function extractPlaceholderBlocks(content: string): PlaceholderBlock[] {
   const openStack: { name: string; startLine: number }[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = lines[i].replace(/\r$/, "");
+
+    // Check for inline blocks first: <!-- BEGIN-X -->CONTENT<!-- END-X --> on one line
+    let inlineMatch: RegExpExecArray | null;
+    INLINE_RE.lastIndex = 0;
+    let hasInline = false;
+    while ((inlineMatch = INLINE_RE.exec(line)) !== null) {
+      hasInline = true;
+      blocks.push({
+        name: inlineMatch[1],
+        startLine: i,
+        endLine: i,
+        innerContent: inlineMatch[2],
+        innerLineCount: 0,
+      });
+    }
+    if (hasInline) continue;
 
     const beginMatch = BEGIN_RE.exec(line);
     if (beginMatch) {
@@ -67,12 +85,22 @@ export function compressDocument(content: string): CompressionResult {
   }
 
   const lines = content.split("\n");
+  const inlineRe = (name: string) =>
+    new RegExp(`<!-- BEGIN-${name} -->.*?<!-- END-${name} -->`, "g");
 
   // Process blocks from bottom to top to preserve line positions
   for (let i = blocks.length - 1; i >= 0; i--) {
     const block = blocks[i];
-    // Replace inner lines (startLine+1 .. endLine-1) with a single placeholder line
-    lines.splice(block.startLine + 1, block.innerLineCount, `##${block.name}##`);
+    if (block.innerLineCount === 0 && block.startLine === block.endLine) {
+      // Inline block: replace content within the line
+      lines[block.startLine] = lines[block.startLine].replace(
+        inlineRe(block.name),
+        `<!-- BEGIN-${block.name} -->##${block.name}##<!-- END-${block.name} -->`,
+      );
+    } else {
+      // Multi-line block: replace inner lines with a single placeholder line
+      lines.splice(block.startLine + 1, block.innerLineCount, `##${block.name}##`);
+    }
   }
 
   return { compressedContent: lines.join("\n"), blocks };

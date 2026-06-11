@@ -29,6 +29,11 @@ Produzir exclusivamente um diff no formato unified git diff, propondo a criaçã
 - nos valores atuais dos contadores operacionais do projeto.
 {{DIFF_RULES}}
 
+Regra obrigatória sobre blocos estruturados:
+Os blocos delimitados por `<!-- BEGIN-NOME -->` e `<!-- END-NOME -->` são gerados deterministicamente pela aplicação.
+Nunca gere conteúdo entre esses marcadores.
+No diff de saída, preserve os marcadores exatamente como estão — a aplicação substituirá o conteúdo.
+
 Modelo estrutural obrigatório do documento:
 {{TEMPLATE}}
 

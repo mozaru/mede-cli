@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as Prompts from "./llm-prompts-provider.js";
-import { I18n } from "../../shared/i18n.js";
+import { I18n, PACKAGE_LOCALES_DIR } from "../../shared/i18n.js";
+import { extractPlaceholderBlocks } from "../../shared/placeholder-block-extractor.js";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -72,6 +73,63 @@ describe("llm prompt assets loader", () => {
     I18n.setLanguage("en-US");
     expect(Prompts.SYSTEM_PROMPT_README).toBeDefined();
     expect(Prompts.SYSTEM_PROMPT_README.length).toBeGreaterThan(0);
+  });
+
+  describe("BEGIN-END placeholder blocks in templates (T08)", () => {
+    function readTemplate(name: string): string {
+      return fs.readFileSync(
+        path.join(PACKAGE_LOCALES_DIR, "pt-BR", "prompts", "templates", name),
+        "utf-8",
+      );
+    }
+
+    it("delivery-log template contains the expected BEGIN-END blocks", () => {
+      const content = readTemplate("delivery-log.md");
+      const blocks = extractPlaceholderBlocks(content);
+      const names = blocks.map((b) => b.name);
+
+      expect(names).toContain("CICLO_CORRENTE");
+      expect(names).toContain("NOME_PROJETO");
+      expect(names).toContain("CLIENTE");
+      expect(names).toContain("FORNECEDOR");
+      expect(names).toContain("DATA_REFERENCIA");
+      expect(names).toContain("TABELA_ENTREGUES");
+      expect(names).toContain("TABELA_NOVOS_CICLO");
+      expect(names).toContain("TOTAL_ENTREGUES");
+      expect(names).toContain("TOTAL_PENDENTES");
+      expect(names).toContain("TOTAL_ENTREGUES_CICLO");
+      expect(names).toContain("NOVOS_CICLO");
+      expect(names).toContain("PERCENTUAL_ENTREGA");
+    });
+
+    it("current-state template contains the TABELA_SITUACAO_ATUAL BEGIN-END block", () => {
+      const content = readTemplate("current-state.md");
+      const blocks = extractPlaceholderBlocks(content);
+      const names = blocks.map((b) => b.name);
+
+      expect(names).toContain("TABELA_SITUACAO_ATUAL");
+      // old-style ##placeholder## should not appear outside of a BEGIN-END block
+      expect(content).not.toContain("##TABELA_SITUACAO_ATUAL##");
+    });
+
+    it("initial-understanding template contains the TABELA_BACKLOG_INICIAL BEGIN-END block", () => {
+      const content = readTemplate("initial-understanding.md");
+      const blocks = extractPlaceholderBlocks(content);
+      const names = blocks.map((b) => b.name);
+
+      expect(names).toContain("TABELA_BACKLOG_INICIAL");
+    });
+
+    it("system prompts that contain BEGIN-END blocks include the structured-block preservation rule", () => {
+      for (const prompt of [
+        Prompts.SYSTEM_PROMPT_DELIVERY_LOG,
+        Prompts.SYSTEM_PROMPT_CURRENT_STATE,
+        Prompts.SYSTEM_PROMPT_INITIAL_UNDERSTANDING,
+      ]) {
+        expect(prompt).toContain("BEGIN-NOME");
+        expect(prompt).toContain("END-NOME");
+      }
+    });
   });
 
   describe("Resolution hierarchy: .mede/prompts -> locales/<lang> -> fallback pt-BR", () => {
