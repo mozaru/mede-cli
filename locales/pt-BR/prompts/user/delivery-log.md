@@ -14,7 +14,7 @@ Ao produzir a proposta, avalie principalmente:
 - quais itens foram absorvidos de ESM ou backlog anterior;
 - quais itens surgiram recentemente;
 - quais documentos sustentam a leitura da entrega;
-- qual interpretação consolidada melhor descreve a semana ou ciclo;
+- qual interpretação consolidada melhor descreve o ciclo;
 - quais estatísticas resumem corretamente o estado da entrega.
 
 Use o modelo estrutural padrão do Delivery Log.

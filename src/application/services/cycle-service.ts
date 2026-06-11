@@ -374,7 +374,7 @@ export class CycleService implements ICycleService {
         insertedCycle.id,
         "GENERATE_MEETING",
         1,
-        [],
+        [csFileName],
         ataFileName,
         "HISTORICAL",
         "meeting",

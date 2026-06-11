@@ -38,9 +38,13 @@ function cleanHunkLines(lines: string[]): string[] {
   return validLines;
 }
 
+const HUNK_HEADER_RE = /@@ -\d+(,\d+)? \+\d+(,\d+)? @@/;
+
 function parseDiff(value: string): Array<ChunkModel> {
   const resp: Array<ChunkModel> = [];
-  const parts = value.split(/(?=@@.*@@\n)/);
+
+  // Split on lines that start with "@@" (handles both "@@...@@\n" and bare "@@\n")
+  const parts = value.split(/(?=^@@)/m);
   let currentIndex = 0;
 
   for (const part of parts) {
@@ -48,17 +52,56 @@ function parseDiff(value: string): Array<ChunkModel> {
     if (!trimmedPart.startsWith("@@")) continue;
 
     const lines = trimmedPart.split(/\r?\n/);
-    const location = lines[0];
+    let location = lines[0].trim();
     const rawContentLines = lines.slice(1);
     const cleanContentLines = cleanHunkLines(rawContentLines);
     const content = cleanContentLines.join("\n");
 
-    resp.push({
-      index: ++currentIndex,
-      offset: 0,
-      location,
-      content,
-    });
+    // Normalize bare "@@" (LLM omitted the range, e.g. just "@@" on its own line).
+    // Only do this for exactly "@@" — headers like "@@ BAD @@" are kept as-is so that
+    // validateDiffChunks can detect them as malformed and trigger a retry.
+    if (!HUNK_HEADER_RE.test(location) && location === "@@") {
+      const addedCount = cleanContentLines.filter((l) => l.startsWith("+")).length;
+      location = `@@ -0,0 +1,${addedCount} @@`;
+    }
+
+    if (content.trim()) {
+      resp.push({ index: ++currentIndex, offset: 0, location, content });
+    }
+  }
+
+  // Fallback: no @@ headers at all — try to extract content from --- / +++ blocks
+  // (handles diffs where the LLM emitted --- / +++ but forgot the @@ hunk header entirely)
+  if (resp.length === 0) {
+    const lines = value.split(/\r?\n/);
+    const rawContentLines: string[] = [];
+    let inContent = false;
+
+    for (const line of lines) {
+      if (
+        line === "---" ||
+        line.startsWith("--- ") ||
+        line === "+++" ||
+        line.startsWith("+++ ")
+      ) {
+        inContent = true;
+        continue;
+      }
+      if (inContent) {
+        rawContentLines.push(line);
+      }
+    }
+
+    const cleanedLines = cleanHunkLines(rawContentLines);
+    if (cleanedLines.length > 0) {
+      const addedCount = cleanedLines.filter((l) => l.startsWith("+")).length;
+      resp.push({
+        index: 1,
+        offset: 0,
+        location: `@@ -0,0 +1,${addedCount} @@`,
+        content: cleanedLines.join("\n"),
+      });
+    }
   }
 
   return resp;

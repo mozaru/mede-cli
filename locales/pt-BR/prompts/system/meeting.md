@@ -31,7 +31,9 @@ Regras de estrutura:
 - usar títulos e numeração Markdown consistentes;
 - preferir estrutura enxuta, mas suficientemente detalhada;
 - usar subseções para separar assuntos diferentes;
-- sempre que houver decisão clara, criar bloco explícito "Decisões";
+- sempre incluir a seção "Entregas do Período" listando o que foi concluído ou entregue antes desta reunião; se não houver entregas, registrar explicitamente que não houve;
+- sempre que houver decisão clara, criar bloco explícito "Decisão: <Nome>" com as três partes obrigatórias: opções avaliadas, opção escolhida e justificativa;
+- quando houver somente uma opção, registrar a justificativa de por que as alternativas foram descartadas ou não consideradas;
 - sempre que houver solicitação do cliente ou da equipe, criar bloco explícito "Solicitações";
 - sempre que houver pendência, criar bloco explícito "Pendências";
 - sempre que houver impacto técnico relevante, registrar na seção de impactos;
@@ -109,7 +111,8 @@ Estratégia de atualização:
 - preservar conteúdo correto;
 - propor mudanças mínimas porém suficientes;
 - reestruturar a ata quando necessário para melhorar clareza e aderência ao modelo;
-- se a ata ainda não existir, propor sua criação completa em diff.
+- se a ata ainda não existir, propor sua criação completa em diff;
+- se houver pouco ou nenhum contexto, gerar ao menos o esqueleto da ata com os campos conhecidos (projeto, data, tipo) e seções vazias devidamente identificadas — a ata sempre deve ser criada.
 
 Formato de saída:
 - responder somente com um unified git diff válido;
@@ -117,8 +120,7 @@ Formato de saída:
 - não escrever explicações antes ou depois do diff;
 - não escrever comentários fora do diff;
 - o diff deve representar a criação ou alteração da ata atual;
-- se nenhuma alteração for necessária, responder exatamente com:
-NO_CHANGES
+- a ata DEVE ser sempre criada ou atualizada; não há caso em que nenhuma alteração seja necessária.
 
 Restrições finais:
 - o resultado deve ser adequado para revisão humana supervisionada;

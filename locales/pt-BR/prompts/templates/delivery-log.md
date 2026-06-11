@@ -1,12 +1,12 @@
 
-# Registro de Entrega — <SEMANA OU CICLO>
+# Registro de Entrega — Ciclo <NNN>
 
 **<NOME DO SISTEMA OU PROJETO>**
 
 Cliente: <NOME DO CLIENTE, SE HOUVER EVIDÊNCIA>  
 Fornecedor: <NOME DO FORNECEDOR, SE HOUVER EVIDÊNCIA>  
 Data de referência: **<AAAA-MM-DD>**  
-Semana: **<NN OU RÓTULO DO CICLO>**  
+Ciclo: **<NNN — ex: 001, 002, 003>**  
 Tipo: **<normal | complemento de entrega>**
 
 ---
@@ -15,7 +15,7 @@ Tipo: **<normal | complemento de entrega>**
 
 Descrever:
 - qual entrega este registro consolida;
-- qual era o foco principal da semana/ciclo;
+- qual era o foco principal do ciclo;
 - que contexto operacional, contratual ou evolutivo motivou a entrega;
 - se houve fechamento de backlog anterior, absorção de ESM, complemento de entrega ou estabilização operacional.
 
@@ -23,7 +23,7 @@ Descrever:
 
 ## Entregas
 
-##TABELA_BACKLOG_RECENTE##
+(inserir aqui todos os itens da tabela de backlog — um item por linha — usando os dados fornecidos na seção "Dados de backlog desta fase")
 
 ---
 
@@ -34,7 +34,7 @@ Descrever de forma analítica:
 - o que foi concluído integralmente;
 - o que foi concluído parcialmente;
 - o que foi absorvido de ESM, ata, backlog inicial ou evolução;
-- qual a leitura consolidada da semana/ciclo.
+- qual a leitura consolidada do ciclo.
 
 ---
 
@@ -63,4 +63,4 @@ Listar os principais documentos que sustentam este registro, com base no context
 
 ## Estatística
 
-##TABELA_ESTATISTICA_ENTREGA##
+(inserir aqui os dados exatos da tabela de estatística fornecida na seção "Dados de estatística desta fase")

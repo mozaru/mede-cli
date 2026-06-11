@@ -26,13 +26,25 @@ Descrever:
 
 ---
 
-## 3. Pontos Discutidos e Decisões
+## 3. Entregas do Período
+
+Listar o que foi efetivamente concluído ou entregue no período anterior a esta reunião.
+
+| ID / Referência | Descrição | Status |
+|-----------------|-----------|--------|
+| <ID ou referência> | <descrição resumida> | <Concluído \| Parcial \| Absorvido> |
+
+Se não houver entregas no período, registrar explicitamente.
+
+---
+
+## 4. Pontos Discutidos e Decisões
 
 Usar subseções numeradas para organizar os assuntos.
 
 Exemplo:
 
-### 3.1 <Tema>
+### 4.1 <Tema>
 
 Descrever:
 - o que foi discutido;
@@ -40,11 +52,15 @@ Descrever:
 - entendimento consolidado;
 - impactos esperados.
 
-Quando houver decisão clara, usar um bloco explícito:
+Quando houver decisão clara, usar um bloco explícito com opções avaliadas e justificativa:
 
-**Decisões:**
-- ...
-- ...
+**Decisão: <Nome da Decisão>**
+
+- Opções avaliadas:
+  - <Opção A>: <descrição resumida>
+  - <Opção B>: <descrição resumida>
+- Opção escolhida: **<Opção A>**
+- Justificativa: <por que esta opção foi escolhida em detrimento das demais>
 
 Quando houver solicitação, usar:
 
@@ -66,7 +82,7 @@ Quando houver regras operacionais ou técnicas, usar:
 
 ---
 
-## 4. Impactos
+## 5. Impactos
 
 Registrar impactos em:
 - backend;
@@ -84,7 +100,7 @@ Registrar impactos em:
 
 ---
 
-## 5. Encaminhamentos
+## 6. Encaminhamentos
 
 Registrar:
 - próximos passos;
@@ -94,7 +110,7 @@ Registrar:
 
 ---
 
-## 6. Observação Final
+## 7. Observação Final
 
 Fechar a ata com:
 - limites do entendimento atual;

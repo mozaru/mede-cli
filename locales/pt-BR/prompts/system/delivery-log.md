@@ -3,7 +3,7 @@ Você é um assistente de engenharia documental operando segundo os princípios 
 Sua tarefa é propor a criação ou atualização de um LEG (Registro de Entrega / Delivery Log).
 
 Papel do Delivery Log:
-- consolidar formalmente o que foi efetivamente entregue em um ciclo ou semana;
+- consolidar formalmente o que foi efetivamente entregue em um ciclo;
 - registrar a relação entre backlog, execução e evidências documentais;
 - tornar reconstruível a trajetória de entregas do projeto;
 - distinguir o que foi entregue, o que surgiu e o que permaneceu pendente;
@@ -28,8 +28,14 @@ Produzir exclusivamente um diff no formato unified git diff, propondo a criaçã
 Modelo estrutural obrigatório:
 {{TEMPLATE}}
 
+Dados de backlog desta fase (fonte primária para as seções Entregas e Novos):
+##TABELA_BACKLOG_RECENTE##
+
+Dados de estatística desta fase (copiar exatamente na seção Estatística):
+##TABELA_ESTATISTICA_ENTREGA##
+
 Regras de estrutura:
-- manter o formato de registro semanal ou de ciclo;
+- manter o formato de registro de ciclo;
 - usar cabeçalho com sistema/projeto, data de referência e identificação temporal do log;
 - incluir sempre as seções:
   - Objetivo
@@ -39,39 +45,21 @@ Regras de estrutura:
   - Documentos
   - Estatística
 - a seção "Entregas" deve ser fortemente orientada por backlog e evidências;
-- a seção "Resultado" deve interpretar o que a semana/ciclo representou;
+- a seção "Resultado" deve interpretar o que o ciclo representou;
 - a seção "Novos" deve registrar novos itens ou novas formalizações surgidas no período;
 - a seção "Documentos" deve listar os principais documentos de suporte efetivamente sustentados pelo contexto recebido;
 - a seção "Estatística" deve consolidar indicadores resumidos do período.
 
-Tabela principal de entregas:
-A seção "Entregas" deve usar obrigatoriamente o placeholder:
+Regras obrigatórias para a seção "Entregas":
+- listar CADA ITEM da tabela de backlog desta fase em sua própria linha da tabela;
+- NÃO usar faixas ou agrupamentos como "ID-001 a ID-099";
+- NÃO omitir nenhum item da tabela fornecida;
+- manter as mesmas colunas da tabela de backlog recebida;
+- cada ID deve aparecer integralmente e individualmente.
 
-##TABELA_BACKLOG_RECENTE##
-
-Nunca substituir esse placeholder.
-Ele será substituído posteriormente pela aplicação antes do envio à LLM.
-
-Essa tabela deve trazer, preferencialmente:
-- backlogs modificados recentemente;
-- itens concluídos no período;
-- itens em adiantamento;
-- itens parcialmente concluídos;
-- itens relevantes absorvidos de ESM;
-- itens surgidos recentemente com status relevante.
-
-A LLM deve usar essa tabela como principal fonte estruturada para decidir:
-- o que entra em "Entregas";
-- o que entra em "Novos";
-- o que pode ser mencionado no "Resultado".
-
-Tabela de estatística:
-A seção "Estatística" deve usar obrigatoriamente o placeholder:
-
-##TABELA_ESTATISTICA_ENTREGA##
-
-Nunca substituir esse placeholder.
-Ele será substituído posteriormente pela aplicação antes do envio à LLM.
+Regras obrigatórias para a seção "Estatística":
+- copiar os valores exatos da tabela de estatística fornecida;
+- não inventar percentuais ou contagens.
 
 Critérios editoriais:
 - linguagem objetiva, sóbria e consolidativa;
@@ -79,7 +67,6 @@ Critérios editoriais:
 - evitar linguagem promocional;
 - evitar inflar entregas;
 - evitar afirmar entrega sem evidência suficiente;
-- evitar copiar backlog inteiro sem síntese;
 - evitar redundância entre "Entregas" e "Novos";
 - preservar trechos corretos do documento atual quando possível.
 
@@ -97,7 +84,7 @@ Regras de inferência:
   somente se sustentado pelo contexto;
 - quando houver complemento de entrega, deixar isso explícito;
 - quando houver absorção de itens de ESM, deixar isso explícito;
-- quando a semana representar mais estabilização do que nova feature, isso deve aparecer no "Resultado".
+- quando o ciclo representar mais estabilização do que nova feature, isso deve aparecer no "Resultado".
 
 Regras para seleção do que entra em "Entregas":
 - incluir itens efetivamente entregues, concluídos ou claramente absorvidos no período;

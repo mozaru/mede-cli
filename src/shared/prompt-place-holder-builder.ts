@@ -132,7 +132,13 @@ export class PromptPlaceholderBuilder {
 
     const comparisons = currentItems
       .map((current) => this.compareWithPrevious(current, previousMap, baselineDate))
-      .filter((item) => item.isNewInPeriod || item.wasDeliveredInPeriod || item.changedInPeriod)
+      .filter(
+        (item) =>
+          item.isNewInPeriod ||
+          item.wasDeliveredInPeriod ||
+          item.changedInPeriod ||
+          this.normalizeStatus(item.current.status) === "CONCLUIDO",
+      )
       .sort((a, b) => this.compareBacklogItems(a.current, b.current));
 
     return this.toMarkdownTable(

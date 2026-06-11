@@ -32,18 +32,16 @@ export class PhaseRepository implements IPhaseRepository {
     this._uow.ensureConnection();
     const sql =
       "select tp.id,tp.name,tp.`index`,tp.inputFiles,tp.outputFile,tp.docTypeOutput,tp.promptName,tp.status,tp.proposalState,tp.startedAt,tp.finishedAt,Cycle6.id as cycleId from phase tp left join Cycle Cycle6 on (tp.cycleId = Cycle6.id)  where tp.cycleId = @cycleId";
-    return this._uow.connection.prepare(sql).all({
-      cycleId: cycleId,
-    }) as PhaseEntity[];
+    return (
+      this._uow.connection.prepare(sql).all({ cycleId: cycleId }) as PhaseEntity[]
+    ).map((r) => this.deserializeInputFiles(r));
   }
   public getById(id: number): PhaseEntity | null {
     this._uow.ensureConnection();
     const sql =
       "select tp.id,tp.name,tp.`index`,tp.inputFiles,tp.outputFile,tp.docTypeOutput,tp.promptName,tp.status,tp.proposalState,tp.startedAt,tp.finishedAt,Cycle6.id as cycleId from phase tp left join Cycle Cycle6 on (tp.cycleId = Cycle6.id)  where tp.id = @id";
-    const row = this._uow.connection.prepare(sql).get({
-      id: id,
-    }) as PhaseEntity | undefined;
-    return row ?? null;
+    const row = this._uow.connection.prepare(sql).get({ id: id }) as PhaseEntity | undefined;
+    return row ? this.deserializeInputFiles(row) : null;
   }
   public getByIndex(cycleId: number, index: number): PhaseEntity | null {
     this._uow.ensureConnection();
@@ -53,7 +51,18 @@ export class PhaseRepository implements IPhaseRepository {
       cycleId: cycleId,
       index: index,
     }) as PhaseEntity | undefined;
-    return row ?? null;
+    return row ? this.deserializeInputFiles(row) : null;
+  }
+
+  private deserializeInputFiles(row: PhaseEntity): PhaseEntity {
+    const raw = row.inputFiles as unknown;
+    if (typeof raw === "string") {
+      const s = (raw as string).trim();
+      row.inputFiles = s ? s.split(", ") : [];
+    } else if (!Array.isArray(raw)) {
+      row.inputFiles = [];
+    }
+    return row;
   }
   public deleteFromCycle(cycleId: number): boolean {
     this._uow.ensureTransactionForWrite();
