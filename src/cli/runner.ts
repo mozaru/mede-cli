@@ -10,6 +10,7 @@ import { FilesHandler } from "./commands/files-handler.js";
 import { InitHandler } from "./commands/init-handler.js";
 import { LlmHandler } from "./commands/llm-handler.js";
 import { StatusHandler } from "./commands/status-handler.js";
+import { ValidateHandler } from "./commands/validate-handler.js";
 
 // Single source of truth for the version: read package.json at runtime. Using a
 // URL relative to this module keeps it working both in dev (tsx) and in the
@@ -245,6 +246,17 @@ export function buildProgram(): Command {
     .action((options: { all?: boolean }) => {
       const handler = new ChangesHandler();
       handler.executeDiscard(options.all ?? false);
+    });
+
+  program //mede-cli validate
+    .command("validate")
+    .description(
+      "Verifica consistência causal do backlog (replay de LEGs vs situacao-atual.md)",
+    )
+    .option("--strict", "Falha com erro se houver inconsistência")
+    .action((options: { strict?: boolean }) => {
+      const handler = new ValidateHandler();
+      handler.execute(options.strict ?? false);
     });
 
   const llm = program //mede-cli llm

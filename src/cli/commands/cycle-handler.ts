@@ -1,6 +1,7 @@
 import { getContainer } from "../container.js";
 import { emitResult, emitProgress } from "../output.js";
 import { ICycleService } from "../../domain/interfaces/services/cycle-service-interface.js";
+import { ValidateHandler } from "./validate-handler.js";
 
 export class CycleHandler {
   private readonly cycleService: ICycleService;
@@ -42,6 +43,11 @@ export class CycleHandler {
   public executeCommit(): void {
     const resp = this.cycleService.commit();
     emitResult(resp);
+    try {
+      new ValidateHandler().execute(false);
+    } catch {
+      // Non-blocking post-commit validation
+    }
   }
   public executeRollback(): void {
     const resp = this.cycleService.rollback();
