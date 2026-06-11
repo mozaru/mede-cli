@@ -200,6 +200,22 @@ describe("CycleService.begin — cycle number derivation and filename convention
     expect(legPhase?.outputFile).toMatch(/leg-\d{8}-002\.md$/);
   });
 
+  it("creates EXTRACT_BACKLOG as the first phase (index 1) of each cycle", () => {
+    const { cycle } = service.begin(project.id);
+    const allPhases = phases.list(cycle.id);
+
+    const extractPhase = allPhases.find((p) => p.name === "EXTRACT_BACKLOG");
+    expect(extractPhase).toBeDefined();
+    expect(extractPhase?.index).toBe(1);
+    expect(extractPhase?.promptName).toBe("extractBacklog");
+  });
+
+  it("total phase count per cycle is 12", () => {
+    const { cycle } = service.begin(project.id);
+    const allPhases = phases.list(cycle.id);
+    expect(allPhases).toHaveLength(12);
+  });
+
   it("recovers the correct cycle number after .mede is deleted and recreated", () => {
     // Simulate two previous cycles existing on disk (DB was lost)
     writeAta("ata-20260101-001.md");

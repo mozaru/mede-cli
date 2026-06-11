@@ -18,6 +18,7 @@ const systemPrompts = [
   Prompts.SYSTEM_PROMPT_TIMELINE,
   Prompts.SYSTEM_PROMPT_SCOPE_AND_VISION,
   Prompts.SYSTEM_PROMPT_CURRENT_STATE,
+  Prompts.SYSTEM_PROMPT_EXTRACT_BACKLOG,
 ];
 
 const userPrompts = [
@@ -33,6 +34,7 @@ const userPrompts = [
   Prompts.USER_PROMPT_TIMELINE,
   Prompts.USER_PROMPT_SCOPE_AND_VISION,
   Prompts.USER_PROMPT_CURRENT_STATE,
+  Prompts.USER_PROMPT_EXTRACT_BACKLOG,
 ];
 
 describe("llm prompt assets loader", () => {
@@ -46,9 +48,9 @@ describe("llm prompt assets loader", () => {
     I18n.setLanguage(originalLanguage);
   });
 
-  it("loads all 12 system and 12 user prompts as non-empty strings", () => {
-    expect(systemPrompts).toHaveLength(12);
-    expect(userPrompts).toHaveLength(12);
+  it("loads all 13 system and 13 user prompts as non-empty strings", () => {
+    expect(systemPrompts).toHaveLength(13);
+    expect(userPrompts).toHaveLength(13);
 
     for (const prompt of [...systemPrompts, ...userPrompts]) {
       expect(typeof prompt).toBe("string");
@@ -63,10 +65,13 @@ describe("llm prompt assets loader", () => {
     }
   });
 
-  it("injects the shared diff rules into every system prompt", () => {
-    for (const prompt of systemPrompts) {
+  it("injects the shared diff rules into every system prompt (except JSON-only phases)", () => {
+    const diffBasedPrompts = systemPrompts.filter((p) => p !== Prompts.SYSTEM_PROMPT_EXTRACT_BACKLOG);
+    for (const prompt of diffBasedPrompts) {
       expect(prompt.toLowerCase()).toContain("diff");
     }
+    // EXTRACT_BACKLOG is JSON-only — it has no diff rules by design
+    expect(Prompts.SYSTEM_PROMPT_EXTRACT_BACKLOG.toLowerCase()).not.toContain("{{diff_rules}}");
   });
 
   it("dynamically switches prompts when language changes", () => {

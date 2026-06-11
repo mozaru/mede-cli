@@ -6,4 +6,5 @@ export interface IBacklogRepository {
   getById(id: number): BacklogEntity | null;
   delete(id: number): boolean;
   deleteFromProject(projectId: number): boolean;
+  updateStatus(id: number, newStatus: string): boolean;
 }

@@ -14,6 +14,7 @@ import { PhaseRepository } from "../infrastructure/repositories/phase-repository
 import { ProjectConfigRepository } from "../infrastructure/repositories/project-config-repository.js";
 import { ProjectRepository } from "../infrastructure/repositories/project-repository.js";
 
+import { BacklogSyncService } from "../application/services/backlog-sync-service.js";
 import { ChangesService } from "../application/services/changes-service.js";
 import { ConfigService } from "../application/services/config-service.js";
 import { CycleService } from "../application/services/cycle-service.js";
@@ -82,6 +83,11 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     phaseRepository,
   );
 
+  const backlogSyncService = new BacklogSyncService(
+    backlogRepository,
+    backlogInterventionCountersRepository,
+  );
+
   const phaseConversationService = new PhaseConversationService(
     phaseConversationRepository,
     phaseAttachmentRepository,
@@ -91,6 +97,9 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     phaseRepository,
     backlogRepository,
     cycleRepository,
+    null,
+    null,
+    backlogSyncService,
   );
 
   const cycleService = new CycleService(

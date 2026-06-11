@@ -81,15 +81,20 @@ describe("Slug e2e — shortDescriptionSlug.enabled = true", () => {
   beforeEach(() => {
     generateText.mockReset();
     setupProject(true);
-    // call 1: ATA diff content; call 2: slug generation
+    // call 1: EXTRACT_BACKLOG (JSON mode, no changes); call 2: ATA diff content; call 3: slug
     generateText
+      .mockResolvedValueOnce({ rawText: '{"statusChanges":[],"newItems":[]}' })
       .mockResolvedValueOnce({ rawText: ATA_DIFF })
       .mockResolvedValue({ rawText: SLUG_RESPONSE });
   });
 
   it("writes the ATA file with the slug appended to the filename", async () => {
-    await new CycleHandler().executeCycle("", []);
-    new ChangesHandler().executeApply(true);
+    // EXTRACT_BACKLOG with valid JSON creates a table diff → phase is REFINING.
+    // Apply the diff first, then approve to advance to the ATA phase.
+    await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG → REFINING
+    new ChangesHandler().executeApply(true);          // apply EXTRACT_BACKLOG chunks → AWAITING_APPROVAL
+    await new CycleHandler().executeApprove(false);  // approve phase 1, call 2: ATA → REFINING
+    new ChangesHandler().executeApply(true);          // apply ATA chunks (call 3: slug)
 
     const files = listAtaFiles();
     expect(files.length).toBeGreaterThan(0);
@@ -102,6 +107,8 @@ describe("Slug e2e — shortDescriptionSlug.enabled = true", () => {
   it("does NOT write a provisional file without the slug", async () => {
     await new CycleHandler().executeCycle("", []);
     new ChangesHandler().executeApply(true);
+    await new CycleHandler().executeApprove(false);
+    new ChangesHandler().executeApply(true);
 
     const files = listAtaFiles();
     // All ATA files must contain the slug — no bare provisional name
@@ -111,10 +118,16 @@ describe("Slug e2e — shortDescriptionSlug.enabled = true", () => {
     expect(provisionalFiles).toHaveLength(0);
   });
 
-  it("makes exactly 2 LLM calls: one for content, one for slug", async () => {
-    await new CycleHandler().executeCycle("", []);
+  it("makes exactly 3 LLM calls: one for EXTRACT_BACKLOG, one for ATA content, one for slug", async () => {
+    await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
+    new ChangesHandler().executeApply(true);
 
-    expect(generateText).toHaveBeenCalledTimes(2);
+    expect(generateText).toHaveBeenCalledTimes(1);
+
+    await new CycleHandler().executeApprove(false);  // call 2: ATA content
+    new ChangesHandler().executeApply(true);          // call 3: slug generation
+
+    expect(generateText).toHaveBeenCalledTimes(3);
   });
 });
 
@@ -122,13 +135,17 @@ describe("Slug e2e — shortDescriptionSlug.enabled = false", () => {
   beforeEach(() => {
     generateText.mockReset();
     setupProject(false);
-    // Only the content call — slug is disabled
-    generateText.mockResolvedValue({ rawText: ATA_DIFF });
+    // call 1: EXTRACT_BACKLOG (JSON mode); call 2: ATA content (no slug call)
+    generateText
+      .mockResolvedValueOnce({ rawText: '{"statusChanges":[],"newItems":[]}' })
+      .mockResolvedValue({ rawText: ATA_DIFF });
   });
 
   it("writes the ATA file with the provisional filename (no slug)", async () => {
-    await new CycleHandler().executeCycle("", []);
-    new ChangesHandler().executeApply(true);
+    await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG → REFINING
+    new ChangesHandler().executeApply(true);          // apply EXTRACT_BACKLOG chunks → AWAITING_APPROVAL
+    await new CycleHandler().executeApprove(false);  // approve phase 1, call 2: ATA → REFINING
+    new ChangesHandler().executeApply(true);          // apply ATA chunks (no slug)
 
     const files = listAtaFiles();
     expect(files.length).toBeGreaterThan(0);
@@ -139,9 +156,11 @@ describe("Slug e2e — shortDescriptionSlug.enabled = false", () => {
     expect(ataFile).toMatch(/^ata-\d{8}-001\.md$/);
   });
 
-  it("makes exactly 1 LLM call (no slug call)", async () => {
-    await new CycleHandler().executeCycle("", []);
+  it("makes exactly 2 LLM calls: one for EXTRACT_BACKLOG, one for ATA content", async () => {
+    await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
+    new ChangesHandler().executeApply(true);
+    await new CycleHandler().executeApprove(false);  // call 2: ATA content
 
-    expect(generateText).toHaveBeenCalledTimes(1);
+    expect(generateText).toHaveBeenCalledTimes(2);
   });
 });

@@ -137,12 +137,12 @@ afterEach(() => {
 });
 
 describe("CycleService.begin", () => {
-  it("opens a cycle with the 11 sequential phases and snapshots living docs", () => {
+  it("opens a cycle with the 12 sequential phases and snapshots living docs", () => {
     const { cycle } = service.begin(project.id);
 
     expect(cycle.status).toBe("OPEN");
-    expect(cycle.phaseCount).toBe(11);
-    expect(phases.list(cycle.id)).toHaveLength(11);
+    expect(cycle.phaseCount).toBe(12);
+    expect(phases.list(cycle.id)).toHaveLength(12);
 
     // The readme snapshot must capture the on-disk content at cycle start.
     const readmeArtifact = artifacts.list(cycle.id).find((a) => a.canonicalName === "readme");

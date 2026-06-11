@@ -151,57 +151,63 @@ beforeEach(() => {
   generateText.mockReset();
   lastDocState.path = "";
 
-  // Mock implementation generating realistic diff insertions from template files
+  // Mock implementation generating realistic diff insertions from template files.
+  // EXTRACT_BACKLOG phase does not call addOutputDoc, so lastDocState.path stays
+  // empty — return valid JSON so the phase completes cleanly (no changes).
   generateText.mockImplementation(async () => {
-    if (lastDocState.path) {
-      let templateName = "";
-      const basename = path.basename(lastDocState.path);
+    // EXTRACT_BACKLOG does not call addOutputDoc so lastDocState.path stays "".
+    // Return valid empty JSON so the phase completes without crashing.
+    if (!lastDocState.path) {
+      return { rawText: '{"statusChanges":[],"newItems":[]}' };
+    }
 
-      switch (basename) {
-        case "entendimento-inicial.md":
-          templateName = "initial-understanding.md";
-          break;
-        case "visao-e-escopo.md":
-          templateName = "scope-and-vision.md";
-          break;
-        case "requisitos-funcionais.md":
-          templateName = "functional-requirements.md";
-          break;
-        case "requisitos-nao-funcionais.md":
-          templateName = "non-functional-requirements.md";
-          break;
-        case "modelo-de-dados.md":
-          templateName = "data-model.md";
-          break;
-        case "cronograma.md":
-          templateName = "timeline.md";
-          break;
-        case "situacao-atual.md":
-          templateName = "current-state.md";
-          break;
-        default:
-          if (basename.startsWith("ata")) {
-            templateName = "meeting.md";
-          } else if (basename.startsWith("adr")) {
-            templateName = "adr.md";
-          } else if (basename.startsWith("esm")) {
-            templateName = "esm.md";
-          } else if (basename.startsWith("leg")) {
-            templateName = "delivery-log.md";
-          }
-      }
+    let templateName = "";
+    const basename = path.basename(lastDocState.path);
 
-      if (templateName) {
-        const templatePath = path.join(previousCwd, "locales", "pt-BR", "prompts", "templates", templateName);
-        if (fs.existsSync(templatePath)) {
-          const templateContent = fs.readFileSync(templatePath, "utf-8");
-          const lines = templateContent.split(/\r?\n/);
-          const diffLines = [
-            `@@ -0,0 +1,${lines.length} @@`,
-            ...lines.map((line) => `+${line}`),
-          ];
-          return { rawText: diffLines.join("\n") };
+    switch (basename) {
+      case "entendimento-inicial.md":
+        templateName = "initial-understanding.md";
+        break;
+      case "visao-e-escopo.md":
+        templateName = "scope-and-vision.md";
+        break;
+      case "requisitos-funcionais.md":
+        templateName = "functional-requirements.md";
+        break;
+      case "requisitos-nao-funcionais.md":
+        templateName = "non-functional-requirements.md";
+        break;
+      case "modelo-de-dados.md":
+        templateName = "data-model.md";
+        break;
+      case "cronograma.md":
+        templateName = "timeline.md";
+        break;
+      case "situacao-atual.md":
+        templateName = "current-state.md";
+        break;
+      default:
+        if (basename.startsWith("ata")) {
+          templateName = "meeting.md";
+        } else if (basename.startsWith("adr")) {
+          templateName = "adr.md";
+        } else if (basename.startsWith("esm")) {
+          templateName = "esm.md";
+        } else if (basename.startsWith("leg")) {
+          templateName = "delivery-log.md";
         }
+    }
+
+    if (templateName) {
+      const templatePath = path.join(previousCwd, "locales", "pt-BR", "prompts", "templates", templateName);
+      if (fs.existsSync(templatePath)) {
+        const templateContent = fs.readFileSync(templatePath, "utf-8");
+        const lines = templateContent.split(/\r?\n/);
+        const diffLines = [
+          `@@ -0,0 +1,${lines.length} @@`,
+          ...lines.map((line) => `+${line}`),
+        ];
+        return { rawText: diffLines.join("\n") };
       }
     }
 
@@ -265,9 +271,10 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     new CycleHandler().executeCommit();
     expect(currentCycle()).toBeNull(); // Cycle completed
 
-    // 5. Run a full causal cycle (which generates all the documents)
+    // 5. Run a full causal cycle (which generates all the documents).
+    // Phase 1 is EXTRACT_BACKLOG (JSON mode, AWAITING_APPROVAL when no changes).
+    // approve-all handles empty phases correctly: skips applyAll and advances.
     await new CycleHandler().executeCycle("Criar a especificação completa", []);
-    new ChangesHandler().executeApply(true);
     await new CycleHandler().executeApprove(true);
     new CycleHandler().executeCommit();
 
@@ -324,9 +331,10 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
 
     expect(currentCycle()).toBeNull();
 
-    // 4. Run a full causal cycle (which generates all the documents)
+    // 4. Run a full causal cycle (which generates all the documents).
+    // Phase 1 is EXTRACT_BACKLOG (JSON mode, no changes → AWAITING_APPROVAL).
+    // approve-all handles empty phases: skips applyAll and advances automatically.
     await new CycleHandler().executeCycle("Criar a especificação completa", []);
-    new ChangesHandler().executeApply(true);
     await new CycleHandler().executeApprove(true);
     new CycleHandler().executeCommit();
 
@@ -360,22 +368,28 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     new CycleHandler().executeCommit();
 
     // --- Subcenário A: Ciclo com Refinamento e Commit ---
-    // Start a new causal cycle
+    // Reset lastDocState.path so the EXTRACT_BACKLOG mock correctly returns JSON.
+    lastDocState.path = "";
     await new CycleHandler().executeCycle("Adicionar nova funcionalidade", []);
     let cycle = currentCycle();
     expect(cycle).not.toBeNull();
     expect(cycle!.status).toBe("OPEN");
 
-    // Apply the pending chunks to transition the phase to AWAITING_APPROVAL
+    // EXTRACT_BACKLOG produces a table diff → phase is REFINING.
+    // Apply its chunks, approve to advance to phase 2 (ATA).
+    new ChangesHandler().executeApply(true);
+    await new CycleHandler().executeApprove(false);
+
+    // Apply the pending ATA chunks to transition to AWAITING_APPROVAL
     new ChangesHandler().executeApply(true);
 
-    // Request refinement
+    // Request refinement on the ATA phase
     await new CycleHandler().executeRefine("Refinar a proposta detalhando o modelo de dados", []);
-    
-    // Apply and approve all
+
+    // Apply refined chunks and approve all remaining phases
     new ChangesHandler().executeApply(true);
     await new CycleHandler().executeApprove(true);
-    
+
     // Commit the cycle
     new CycleHandler().executeCommit();
     expect(currentCycle()).toBeNull(); // Committed and closed
@@ -386,7 +400,7 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     assertDocumentQuality(config.fileNames.currentState, "current-state.md");
 
     // --- Subcenário B: Ciclo com Reset e Rollback ---
-    // Start a third cycle
+    lastDocState.path = "";
     await new CycleHandler().executeCycle("Outra funcionalidade", []);
     expect(currentCycle()).not.toBeNull();
 

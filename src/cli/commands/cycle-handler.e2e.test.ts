@@ -101,19 +101,22 @@ describe("CLI cycle flow (end-to-end through CycleHandler)", () => {
     expect(cycle).not.toBeNull();
     expect(cycle!.status).toBe("OPEN");
     expect(cycle!.currentPhaseIndex).toBe(1);
-    expect(cycle!.phaseCount).toBe(11);
+    expect(cycle!.phaseCount).toBe(12);
   });
 
   it("apply then approve advances to the next phase", async () => {
     await new CycleHandler().executeCycle("", []);
-    // Applying the pending chunks moves the phase to AWAITING_APPROVAL, which is
-    // the precondition for a single-phase approve (the documented happy path).
-    new ChangesHandler().executeApply(true);
-    await new CycleHandler().executeApprove(false);
+    // Phase 1 is EXTRACT_BACKLOG — it runs in JSON mode and, when there are no
+    // backlog changes, produces no ChangeSet (status is already AWAITING_APPROVAL).
+    // Approve it directly to advance to phase 2 (GENERATE_MEETING), which produces
+    // a diff-based ChangeSet that can be applied and approved.
+    await new CycleHandler().executeApprove(false);  // phase 1 → APPROVED, triggers phase 2
+    new ChangesHandler().executeApply(true);          // apply phase 2 chunks
+    await new CycleHandler().executeApprove(false);  // phase 2 → APPROVED, triggers phase 3
 
     const cycle = currentCycle();
     expect(cycle!.status).toBe("OPEN");
-    expect(cycle!.currentPhaseIndex).toBe(2);
+    expect(cycle!.currentPhaseIndex).toBe(3);
   });
 
   it("reject-all then commit closes the cycle", async () => {

@@ -29,7 +29,11 @@ import { IPhaseConversationService } from "../../domain/interfaces/services/phas
 import { PromptPlaceholderBuilder } from "../../shared/prompt-place-holder-builder.js";
 import { IBacklogRepository } from "../../domain/interfaces/repositories/backlog-repository-interface.js";
 import { ProjectEntity } from "../../domain/entities/project-entity.js";
-import { compressDocument } from "../../shared/placeholder-block-extractor.js";
+import { compressDocument, extractPlaceholderBlocks } from "../../shared/placeholder-block-extractor.js";
+import {
+  ExtractBacklogResponseSchema,
+  BacklogSyncService,
+} from "./backlog-sync-service.js";
 import {
   buildCompressionMap,
   transformDiffCoordinates,
@@ -45,6 +49,7 @@ export class PhaseConversationService implements IPhaseConversationService {
   private readonly changeChunkRepository: IChangeChunkRepository;
   private readonly phaseRepository: IPhaseRepository;
   private readonly cycleRepository: ICycleRepository | null;
+  private readonly backlogSyncService: BacklogSyncService | null;
   private readonly applyDiff: Diff.ApplyFunction;
   private readonly promptPlaceholderBuilder: PromptPlaceholderBuilder;
 
@@ -59,6 +64,7 @@ export class PhaseConversationService implements IPhaseConversationService {
     cycleRepository: ICycleRepository | null = null,
     fileSystemRepository: IFileSystemRepository | null = null,
     applyDiff: Diff.ApplyFunction | null = null,
+    backlogSyncService: BacklogSyncService | null = null,
   ) {
     this.phaseConversationRepository = phaseConversationRepository;
     this.phaseAttachmentRepository = phaseAttachmentRepository;
@@ -67,6 +73,7 @@ export class PhaseConversationService implements IPhaseConversationService {
     this.changeChunkRepository = changeChunkRepository;
     this.phaseRepository = phaseRepository;
     this.cycleRepository = cycleRepository;
+    this.backlogSyncService = backlogSyncService;
 
     this.fileSystemRepository = fileSystemRepository ?? new FileSystemRepository();
     this.applyDiff = applyDiff ?? Diff.applyDiff;
@@ -148,6 +155,9 @@ export class PhaseConversationService implements IPhaseConversationService {
           LlmPrompts.SYSTEM_PROMPT_INITIAL_UNDERSTANDING,
         );
 
+      case "extractBacklog":
+        return LlmPrompts.SYSTEM_PROMPT_EXTRACT_BACKLOG;
+
       default:
         return "";
     }
@@ -215,6 +225,9 @@ export class PhaseConversationService implements IPhaseConversationService {
           LlmPrompts.USER_PROMPT_INITIAL_UNDERSTANDING,
         );
 
+      case "extractBacklog":
+        return LlmPrompts.USER_PROMPT_EXTRACT_BACKLOG;
+
       default:
         return "";
     }
@@ -227,6 +240,10 @@ export class PhaseConversationService implements IPhaseConversationService {
     customPrompt: string = "",
     attachments: string[] = [],
   ): Promise<ChangeSetEntity | null> {
+    if (phase.promptName === "extractBacklog") {
+      return this.sendExtractBacklogMessage(project, config, phase, customPrompt, attachments);
+    }
+
     const previousCurrentStateFilePath = this.fileSystemRepository.combinePath(
       config.docsRoot,
       config.fileNames.currentState,
@@ -440,6 +457,161 @@ export class PhaseConversationService implements IPhaseConversationService {
     return await this.sendMessage(project, config, phase, "", []);
   }
 
+  private async sendExtractBacklogMessage(
+    project: ProjectEntity,
+    config: MedeConfigModelEntity,
+    phase: PhaseEntity,
+    customPrompt: string,
+    attachments: string[],
+  ): Promise<ChangeSetEntity | null> {
+    const previousCurrentStateFilePath = this.fileSystemRepository.combinePath(
+      config.docsRoot,
+      config.fileNames.currentState,
+    );
+
+    const cycleNumber = this.computeCycleNumber(config);
+    const cycle = this.cycleRepository?.getById(phase.cycleId) ?? null;
+    const referenceDate = cycle?.startedAt
+      ? cycle.startedAt.split("T")[0]
+      : new Date().toISOString().split("T")[0];
+
+    const placeholders = this.promptPlaceholderBuilder.buildAll(
+      project.id,
+      previousCurrentStateFilePath,
+      { config, cycleNumber, referenceDate },
+    );
+
+    const systemPrompt = this.promptPlaceholderBuilder.replacePlaceholders(
+      this.getSystemPrompt(config, phase.promptName),
+      placeholders,
+    );
+    const prompt = this.promptPlaceholderBuilder.replacePlaceholders(
+      this.isEmpty(customPrompt) ? this.getPrompt(config, phase.promptName) : customPrompt,
+      placeholders,
+    );
+
+    for (const filePath of attachments) {
+      const content = this.fileSystemRepository.readFile(filePath);
+      const attachment = new PhaseAttachmentEntity();
+      attachment.id = 0;
+      attachment.phaseId = phase.id;
+      attachment.createdAt = this.getCurrentDateTime();
+      attachment.actor = "user";
+      attachment.filePath = filePath;
+      attachment.fileName = filePath;
+      attachment.content = content;
+      attachment.contentText = content;
+      this.phaseAttachmentRepository.insert(attachment);
+    }
+
+    const llm = LlmProviderFactory.create(config);
+    llm.setSystemPrompt(systemPrompt);
+    for (const message of this.phaseConversationRepository.list(phase.id))
+      llm.addMessage(message.actor as LlmRole, message.content);
+    for (const attachment of this.phaseAttachmentRepository.list(phase.id))
+      llm.addAttachment(attachment.fileName, attachment.contentText);
+    llm.setUserPrompt(prompt);
+
+    const r = await llm.generateText();
+    const rawText = r.rawText.trim();
+
+    const userMessage = new PhaseConversationEntity();
+    userMessage.id = 0;
+    userMessage.phaseId = phase.id;
+    userMessage.createdAt = this.getCurrentDateTime();
+    userMessage.actor = "user";
+    userMessage.content = prompt;
+    this.phaseConversationRepository.insert(userMessage);
+
+    const assistantMessage = new PhaseConversationEntity();
+    assistantMessage.id = 0;
+    assistantMessage.phaseId = phase.id;
+    assistantMessage.createdAt = this.getCurrentDateTime();
+    assistantMessage.actor = "assistant";
+    assistantMessage.content = rawText;
+    this.phaseConversationRepository.insert(assistantMessage);
+
+    let parsed: ReturnType<typeof ExtractBacklogResponseSchema.parse>;
+    try {
+      parsed = ExtractBacklogResponseSchema.parse(JSON.parse(rawText));
+    } catch (e) {
+      logger.warn(`[EXTRACT_BACKLOG] JSON inválido do LLM: ${e instanceof Error ? e.message : String(e)}`);
+      return null;
+    }
+
+    // Store raw JSON + metadata for later SQLite application in applyAll
+    this.cycleArtifactRepository.insert({
+      id: 0,
+      cycleId: phase.cycleId,
+      canonicalName: "extractBacklogRaw",
+      canonicalType: "info",
+      artifactPath: "",
+      backupContent: "",
+      currentContent: JSON.stringify({ projectId: project.id, cycleNumber, referenceDate, response: parsed }),
+      startedAt: this.getCurrentDateTime(),
+      updatedAt: this.getCurrentDateTime(),
+    });
+
+    // Get current cycleArtifact for situacao-atual.md
+    let cycleArtifact = this.cycleArtifactRepository.getFromPath(phase.cycleId, phase.outputFile);
+    if (cycleArtifact === null) {
+      const backupContent = this.fileSystemRepository.exists(phase.outputFile)
+        ? this.fileSystemRepository.readFile(phase.outputFile)
+        : "";
+      cycleArtifact = this.cycleArtifactRepository.insert({
+        id: 0,
+        cycleId: phase.cycleId,
+        backupContent,
+        currentContent: backupContent,
+        canonicalName: "currentState",
+        canonicalType: "LIVE",
+        artifactPath: phase.outputFile,
+        startedAt: this.getCurrentDateTime(),
+        updatedAt: this.getCurrentDateTime(),
+      });
+    }
+
+    // Find the TABELA_SITUACAO_ATUAL block and generate a diff preview
+    const docContent = cycleArtifact.currentContent;
+    const blocks = extractPlaceholderBlocks(docContent);
+    const tableBlock = blocks.find((b) => b.name === "TABELA_SITUACAO_ATUAL");
+    const oldTableContent = tableBlock?.innerContent ?? "";
+    const newTableContent = this.promptPlaceholderBuilder.buildCurrentStateTableFromProject(project.id);
+    const diffChunks = Diff.generateDiff(oldTableContent, newTableContent);
+
+    if (diffChunks.length === 0) {
+      return null;
+    }
+
+    const changeSet = new ChangeSetEntity();
+    changeSet.id = 0;
+    changeSet.phaseId = phase.id;
+    changeSet.cycleArtifactId = cycleArtifact.id;
+    changeSet.fileName = cycleArtifact.artifactPath;
+    changeSet.completed = false;
+    changeSet.currentChangeChunkIndex = 1;
+    changeSet.changeChunkCount = diffChunks.length;
+    changeSet.startedAt = this.getCurrentDateTime();
+    changeSet.updatedAt = this.getCurrentDateTime();
+    const insertedChangeSet = this.changeSetRepository.insert(changeSet);
+
+    for (const chunk of diffChunks) {
+      const changeChunk = new ChangeChunkEntity();
+      changeChunk.id = 0;
+      changeChunk.phaseId = phase.id;
+      changeChunk.changeSetId = insertedChangeSet.id;
+      changeChunk.index = chunk.index;
+      changeChunk.status = "AWAITING_APPROVAL";
+      changeChunk.blockLocation = chunk.location;
+      changeChunk.changeContent = chunk.content;
+      changeChunk.startedAt = this.getCurrentDateTime();
+      changeChunk.updatedAt = this.getCurrentDateTime();
+      this.changeChunkRepository.insert(changeChunk);
+    }
+
+    return this.changeSetRepository.getById(insertedChangeSet.id) ?? insertedChangeSet;
+  }
+
   public applyAll(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity {
     this.assert(phase.status === "REFINING", "A fase não está em refinamento");
     const doc = this.cycleArtifactRepository.getById(changeSet.cycleArtifactId);
@@ -483,6 +655,33 @@ export class PhaseConversationService implements IPhaseConversationService {
     );
     this.changeSetRepository.updateComplete(changeSet.id);
     this.phaseRepository.awaitingApproval(phase.id);
+
+    // For EXTRACT_BACKLOG: apply the extracted JSON to SQLite after writing the file.
+    // The raw artifact stores {projectId, cycleNumber, referenceDate, response} as JSON.
+    if (phase.promptName === "extractBacklog" && this.backlogSyncService) {
+      const rawArtifact = this.cycleArtifactRepository
+        .list(phase.cycleId)
+        .find((a) => a.canonicalName === "extractBacklogRaw");
+      if (rawArtifact) {
+        try {
+          const meta = JSON.parse(rawArtifact.currentContent) as {
+            projectId: number;
+            cycleNumber: number;
+            referenceDate: string;
+            response: unknown;
+          };
+          const parsed = ExtractBacklogResponseSchema.parse(meta.response);
+          this.backlogSyncService.applyExtraction(
+            meta.projectId,
+            meta.cycleNumber,
+            meta.referenceDate,
+            parsed,
+          );
+        } catch {
+          logger.warn("[PhaseConversationService] Falha ao aplicar extração de backlog no SQLite.");
+        }
+      }
+    }
 
     const currentChangeSet = this.changeSetRepository.getById(changeSet.id);
     this.assertNotNull(currentChangeSet, "Change-set não encontrado após aplicar tudo");

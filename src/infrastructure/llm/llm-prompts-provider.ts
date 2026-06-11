@@ -55,9 +55,11 @@ let SYSTEM_PROMPT_DATA_MODEL = "";
 let SYSTEM_PROMPT_TIMELINE = "";
 let SYSTEM_PROMPT_SCOPE_AND_VISION = "";
 let SYSTEM_PROMPT_CURRENT_STATE = "";
+let SYSTEM_PROMPT_EXTRACT_BACKLOG = "";
 
 let USER_PROMPT_README = "";
 let USER_PROMPT_INITIAL_UNDERSTANDING = "";
+let USER_PROMPT_EXTRACT_BACKLOG = "";
 let USER_PROMPT_MEETING = "";
 let USER_PROMPT_ADR = "";
 let USER_PROMPT_ESM = "";
@@ -99,8 +101,10 @@ I18n.onLanguageChange((lang) => {
   SYSTEM_PROMPT_TIMELINE = loadSystemPrompt("timeline", true, lang);
   SYSTEM_PROMPT_SCOPE_AND_VISION = loadSystemPrompt("scope-and-vision", true, lang);
   SYSTEM_PROMPT_CURRENT_STATE = loadSystemPrompt("current-state", true, lang);
+  SYSTEM_PROMPT_EXTRACT_BACKLOG = loadSystemPrompt("extract-backlog", false, lang);
 
   USER_PROMPT_README = loadUserPrompt("readme", lang);
+  USER_PROMPT_EXTRACT_BACKLOG = loadUserPrompt("extract-backlog", lang);
   USER_PROMPT_INITIAL_UNDERSTANDING = loadUserPrompt("initial-understanding", lang);
   USER_PROMPT_MEETING = loadUserPrompt("meeting", lang);
   USER_PROMPT_ADR = loadUserPrompt("adr", lang);
@@ -112,6 +116,7 @@ I18n.onLanguageChange((lang) => {
   USER_PROMPT_TIMELINE = loadUserPrompt("timeline", lang);
   USER_PROMPT_SCOPE_AND_VISION = loadUserPrompt("scope-and-vision", lang);
   USER_PROMPT_CURRENT_STATE = loadUserPrompt("current-state", lang);
+  USER_PROMPT_EXTRACT_BACKLOG = loadUserPrompt("extract-backlog", lang);
 });
 
 export {
@@ -127,6 +132,7 @@ export {
   SYSTEM_PROMPT_TIMELINE,
   SYSTEM_PROMPT_SCOPE_AND_VISION,
   SYSTEM_PROMPT_CURRENT_STATE,
+  SYSTEM_PROMPT_EXTRACT_BACKLOG,
   USER_PROMPT_README,
   USER_PROMPT_INITIAL_UNDERSTANDING,
   USER_PROMPT_MEETING,
@@ -139,4 +145,5 @@ export {
   USER_PROMPT_TIMELINE,
   USER_PROMPT_SCOPE_AND_VISION,
   USER_PROMPT_CURRENT_STATE,
+  USER_PROMPT_EXTRACT_BACKLOG,
 };

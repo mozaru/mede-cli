@@ -360,7 +360,7 @@ export class CycleService implements ICycleService {
     cycle.projectId = project.id;
     cycle.status = "OPEN";
     cycle.currentPhaseIndex = 1;
-    cycle.phaseCount = 11;
+    cycle.phaseCount = 12;
     cycle.autoMode = "NONE";
     cycle.startedAt = this.getCurrentDateTime();
     cycle.finishedAt = "";
@@ -372,8 +372,18 @@ export class CycleService implements ICycleService {
 
       const firstPhase = this.insertPhase(
         insertedCycle.id,
-        "GENERATE_MEETING",
+        "EXTRACT_BACKLOG",
         1,
+        [],
+        csFileName,
+        "LIVE",
+        "extractBacklog",
+      );
+
+      this.insertPhase(
+        insertedCycle.id,
+        "GENERATE_MEETING",
+        2,
         [csFileName],
         ataFileName,
         "HISTORICAL",
@@ -383,7 +393,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "GENERATE_ADR",
-        2,
+        3,
         [ataFileName],
         adrFileName,
         "HISTORICAL",
@@ -393,7 +403,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "GENERATE_ESM",
-        3,
+        4,
         [ataFileName],
         esmFileName,
         "HISTORICAL",
@@ -403,7 +413,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "GENERATE_DELIVERY_LOG",
-        4,
+        5,
         [ataFileName, esmFileName],
         legFileName,
         "HISTORICAL",
@@ -413,7 +423,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "UPDATE_FUNCTIONAL_REQUIREMENTS",
-        5,
+        6,
         [ataFileName, adrFileName],
         rfFileName,
         "LIVE",
@@ -423,7 +433,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "UPDATE_NON_FUNCTIONAL_REQUIREMENTS",
-        6,
+        7,
         [ataFileName, adrFileName],
         nfFileName,
         "LIVE",
@@ -433,7 +443,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "UPDATE_DATA_MODEL",
-        7,
+        8,
         [ataFileName, adrFileName, rfFileName, nfFileName],
         dmFileName,
         "LIVE",
@@ -443,7 +453,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "UPDATE_TIMELINE",
-        8,
+        9,
         [ataFileName, adrFileName, esmFileName, rfFileName, nfFileName, dmFileName],
         tlFileName,
         "LIVE",
@@ -453,7 +463,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "UPDATE_SCOPE_AND_VISION",
-        9,
+        10,
         [ataFileName, adrFileName, rfFileName, nfFileName, dmFileName],
         svFileName,
         "LIVE",
@@ -463,7 +473,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "UPDATE_PROJECT_README",
-        10,
+        11,
         [ataFileName, adrFileName, svFileName],
         rmFileName,
         "LIVE",
@@ -473,7 +483,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "UPDATE_CURRENT_STATE",
-        11,
+        12,
         [ataFileName, adrFileName, rfFileName, nfFileName, dmFileName, svFileName],
         csFileName,
         "LIVE",
