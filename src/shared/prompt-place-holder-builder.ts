@@ -24,7 +24,10 @@ type PlaceholderKey =
   | "##TOTAL_PENDENTES##"
   | "##TOTAL_ENTREGUES_CICLO##"
   | "##NOVOS_CICLO##"
-  | "##PERCENTUAL_ENTREGA##";
+  | "##PERCENTUAL_ENTREGA##"
+  | "##TABELA_ENTREGUES##"
+  | "##TABELA_PENDENTES##"
+  | "##TABELA_NOVOS_CICLO##";
 
 export interface PromptPlaceholderContentMap {
   "##TABELA_INTERVENCAO##": string;
@@ -42,6 +45,9 @@ export interface PromptPlaceholderContentMap {
   "##TOTAL_ENTREGUES_CICLO##": string;
   "##NOVOS_CICLO##": string;
   "##PERCENTUAL_ENTREGA##": string;
+  "##TABELA_ENTREGUES##": string;
+  "##TABELA_PENDENTES##": string;
+  "##TABELA_NOVOS_CICLO##": string;
 }
 
 interface CurrentVsPreviousItem {
@@ -69,6 +75,9 @@ export class PromptPlaceholderBuilder {
     "##TOTAL_ENTREGUES_CICLO##",
     "##NOVOS_CICLO##",
     "##PERCENTUAL_ENTREGA##",
+    "##TABELA_ENTREGUES##",
+    "##TABELA_PENDENTES##",
+    "##TABELA_NOVOS_CICLO##",
   ];
 
   private readonly currentStateParser: CurrentStateParser;
@@ -113,6 +122,9 @@ export class PromptPlaceholderBuilder {
       "##TOTAL_ENTREGUES_CICLO##": String(comparisons.filter((c) => c.wasDeliveredInPeriod).length),
       "##NOVOS_CICLO##": String(comparisons.filter((c) => c.isNewInPeriod).length),
       "##PERCENTUAL_ENTREGA##": `${this.formatPercent(deliveryPercent)}%`,
+      "##TABELA_ENTREGUES##": this.buildEntreguesTable(currentItems),
+      "##TABELA_PENDENTES##": this.buildPendentesTable(currentItems),
+      "##TABELA_NOVOS_CICLO##": this.buildNovosCicloTable(comparisons),
     };
   }
 
@@ -225,6 +237,60 @@ export class PromptPlaceholderBuilder {
         item.current.deliver,
         item.wasDeliveredInPeriod ? "Sim" : "Não",
         item.isNewInPeriod ? "Sim" : "Não",
+      ]),
+    );
+  }
+
+  private buildEntreguesTable(items: BacklogEntity[]): string {
+    const rows = items
+      .filter((i) => this.normalizeStatus(i.status) === "CONCLUIDO")
+      .sort((a, b) => this.compareBacklogItems(a, b));
+
+    return this.toMarkdownTable(
+      ["ID", "Tipo", "Nome", "Origem", "Ciclo de Entrega", "Observação"],
+      rows.map((i) => [
+        i.immutableId,
+        `${i.nature}/${i.interventionType}`,
+        i.description,
+        i.source,
+        i.deliver,
+        i.ata,
+      ]),
+    );
+  }
+
+  private buildPendentesTable(items: BacklogEntity[]): string {
+    const PENDING_STATUSES = ["PENDENTE", "AGUARDANDO", "EM ANDAMENTO"];
+    const rows = items
+      .filter((i) => PENDING_STATUSES.includes(this.normalizeStatus(i.status)))
+      .sort((a, b) => this.compareBacklogItems(a, b));
+
+    return this.toMarkdownTable(
+      ["ID", "Tipo", "Nome", "Origem", "Status", "Prioridade"],
+      rows.map((i) => [
+        i.immutableId,
+        `${i.nature}/${i.interventionType}`,
+        i.description,
+        i.source,
+        i.status,
+        this.formatTags(i.tags),
+      ]),
+    );
+  }
+
+  private buildNovosCicloTable(comparisons: CurrentVsPreviousItem[]): string {
+    const rows = comparisons
+      .filter((c) => c.isNewInPeriod)
+      .sort((a, b) => this.compareBacklogItems(a.current, b.current));
+
+    return this.toMarkdownTable(
+      ["ID", "Tipo", "Nome", "Origem", "Status"],
+      rows.map((c) => [
+        c.current.immutableId,
+        `${c.current.nature}/${c.current.interventionType}`,
+        c.current.description,
+        c.current.source,
+        c.current.status,
       ]),
     );
   }

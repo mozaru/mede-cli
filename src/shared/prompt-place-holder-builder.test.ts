@@ -253,4 +253,99 @@ describe("PromptPlaceholderBuilder", () => {
       expect(map["##NOVOS_CICLO##"]).toBe("1");
     });
   });
+
+  describe("filtered backlog table placeholders (T03)", () => {
+    const previousState = `# Situação Atual\n**Data de referência:** 2026-01-01\n\n| ID | Descrição | Tags | Ata | Origem | Entrega | Status |\n| --- | --- | --- | --- | --- | --- | --- |\n`;
+
+    const items: BacklogEntity[] = [
+      {
+        immutableId: "DEI-20260101-000-RF-BLI-0001",
+        documentType: "DEI",
+        nature: "RF",
+        interventionType: "BLI",
+        referenceDate: "20260101",
+        sequence: 1,
+        description: "Item Entregue",
+        source: "cliente",
+        deliver: "ciclo 001",
+        ata: "ata-1",
+        status: "Concluído",
+        tags: [],
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+      {
+        immutableId: "DEI-20260101-000-RF-EVO-0002",
+        documentType: "DEI",
+        nature: "RF",
+        interventionType: "EVO",
+        referenceDate: "20260101",
+        sequence: 2,
+        description: "Item Pendente",
+        source: "interno",
+        deliver: "",
+        ata: "",
+        status: "Pendente",
+        tags: ["SEC"],
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+      {
+        immutableId: "DEI-20260101-000-RF-EVO-0003",
+        documentType: "DEI",
+        nature: "RF",
+        interventionType: "EVO",
+        referenceDate: "20260101",
+        sequence: 3,
+        description: "Item Aguardando",
+        source: "interno",
+        deliver: "",
+        ata: "",
+        status: "Aguardando",
+        tags: [],
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+    ] as BacklogEntity[];
+
+    function makeBuilder(): PromptPlaceholderBuilder {
+      const repo = { list: () => items } as unknown as IBacklogRepository;
+      const parser = new CurrentStateParser({
+        readFile: () => previousState,
+      } as unknown as IFileSystemRepository);
+      return new PromptPlaceholderBuilder(repo, parser);
+    }
+
+    it("TABELA_ENTREGUES contains only Concluído items", () => {
+      const map = makeBuilder().buildAll(1, "situacao-atual.md");
+      expect(map["##TABELA_ENTREGUES##"]).toContain("Item Entregue");
+      expect(map["##TABELA_ENTREGUES##"]).not.toContain("Item Pendente");
+      expect(map["##TABELA_ENTREGUES##"]).not.toContain("Item Aguardando");
+    });
+
+    it("TABELA_PENDENTES contains only Pendente and Aguardando items", () => {
+      const map = makeBuilder().buildAll(1, "situacao-atual.md");
+      expect(map["##TABELA_PENDENTES##"]).not.toContain("Item Entregue");
+      expect(map["##TABELA_PENDENTES##"]).toContain("Item Pendente");
+      expect(map["##TABELA_PENDENTES##"]).toContain("Item Aguardando");
+    });
+
+    it("TABELA_NOVOS_CICLO contains only items not in previous state (all items since previousState is empty)", () => {
+      const map = makeBuilder().buildAll(1, "situacao-atual.md");
+      // All 3 items are new since previous state has no rows
+      expect(map["##TABELA_NOVOS_CICLO##"]).toContain("Item Entregue");
+      expect(map["##TABELA_NOVOS_CICLO##"]).toContain("Item Pendente");
+    });
+
+    it("empty filter produces table with header and dash row", () => {
+      const repo = { list: () => [] } as unknown as IBacklogRepository;
+      const parser = new CurrentStateParser({
+        readFile: () => previousState,
+      } as unknown as IFileSystemRepository);
+      const builder = new PromptPlaceholderBuilder(repo, parser);
+      const map = builder.buildAll(1, "situacao-atual.md");
+
+      // Table should have headers + one dash row
+      const lines = map["##TABELA_ENTREGUES##"].split("\n");
+      expect(lines.length).toBe(3); // header, separator, dash row
+      expect(lines[2]).toContain("—");
+    });
+  });
 });
