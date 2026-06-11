@@ -1,13 +1,30 @@
 import { BacklogEntity } from "../domain/entities/backlog-entity.js";
 import type { IBacklogRepository } from "../domain/interfaces/repositories/backlog-repository-interface.js";
 import { CurrentStateParser, type CurrentStateParserResult } from "./current-state-parser.js";
+import type { MedeConfigModelEntity } from "../domain/entities/mede-config-model-entity.js";
+
+export interface PlaceholderContext {
+  config?: MedeConfigModelEntity;
+  cycleNumber?: number;
+  referenceDate?: string;
+}
 
 type PlaceholderKey =
   | "##TABELA_INTERVENCAO##"
   | "##TABELA_BACKLOG_RECENTE##"
   | "##TABELA_ESTATISTICA_ENTREGA##"
   | "##TABELA_BACKLOG_INICIAL##"
-  | "##TABELA_SITUACAO_ATUAL##";
+  | "##TABELA_SITUACAO_ATUAL##"
+  | "##NOME_PROJETO##"
+  | "##CLIENTE##"
+  | "##FORNECEDOR##"
+  | "##CICLO_CORRENTE##"
+  | "##DATA_REFERENCIA##"
+  | "##TOTAL_ENTREGUES##"
+  | "##TOTAL_PENDENTES##"
+  | "##TOTAL_ENTREGUES_CICLO##"
+  | "##NOVOS_CICLO##"
+  | "##PERCENTUAL_ENTREGA##";
 
 export interface PromptPlaceholderContentMap {
   "##TABELA_INTERVENCAO##": string;
@@ -15,6 +32,16 @@ export interface PromptPlaceholderContentMap {
   "##TABELA_ESTATISTICA_ENTREGA##": string;
   "##TABELA_BACKLOG_INICIAL##": string;
   "##TABELA_SITUACAO_ATUAL##": string;
+  "##NOME_PROJETO##": string;
+  "##CLIENTE##": string;
+  "##FORNECEDOR##": string;
+  "##CICLO_CORRENTE##": string;
+  "##DATA_REFERENCIA##": string;
+  "##TOTAL_ENTREGUES##": string;
+  "##TOTAL_PENDENTES##": string;
+  "##TOTAL_ENTREGUES_CICLO##": string;
+  "##NOVOS_CICLO##": string;
+  "##PERCENTUAL_ENTREGA##": string;
 }
 
 interface CurrentVsPreviousItem {
@@ -32,6 +59,16 @@ export class PromptPlaceholderBuilder {
     "##TABELA_ESTATISTICA_ENTREGA##",
     "##TABELA_BACKLOG_INICIAL##",
     "##TABELA_SITUACAO_ATUAL##",
+    "##NOME_PROJETO##",
+    "##CLIENTE##",
+    "##FORNECEDOR##",
+    "##CICLO_CORRENTE##",
+    "##DATA_REFERENCIA##",
+    "##TOTAL_ENTREGUES##",
+    "##TOTAL_PENDENTES##",
+    "##TOTAL_ENTREGUES_CICLO##",
+    "##NOVOS_CICLO##",
+    "##PERCENTUAL_ENTREGA##",
   ];
 
   private readonly currentStateParser: CurrentStateParser;
@@ -46,17 +83,36 @@ export class PromptPlaceholderBuilder {
   public buildAll(
     projectId: number,
     previousCurrentStateFilePath: string,
+    context?: PlaceholderContext,
   ): PromptPlaceholderContentMap {
     const currentItems = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
-
     const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
+    const comparisons = this.compareAllWithPrevious(currentItems, previousState);
+
+    const totalDelivered = this.countDelivered(currentItems);
+    const totalNonCancelled = currentItems.filter(
+      (i) => this.normalizeStatus(i.status) !== "CANCELADO",
+    ).length;
+    const deliveryPercent =
+      totalNonCancelled === 0 ? 0 : (totalDelivered / totalNonCancelled) * 100;
 
     return {
       "##TABELA_INTERVENCAO##": this.buildInterventionTable(currentItems),
-      "##TABELA_BACKLOG_RECENTE##": this.buildRecentBacklogTable(currentItems, previousState),
+      "##TABELA_BACKLOG_RECENTE##": this.buildRecentBacklogTableFromComparisons(comparisons),
       "##TABELA_ESTATISTICA_ENTREGA##": this.buildDeliveryStatistics(currentItems),
       "##TABELA_BACKLOG_INICIAL##": this.buildInitialBacklogTable(currentItems),
       "##TABELA_SITUACAO_ATUAL##": this.buildCurrentStateTable(currentItems),
+      "##NOME_PROJETO##": context?.config?.projectName || "—",
+      "##CLIENTE##": context?.config?.clientName || "—",
+      "##FORNECEDOR##": context?.config?.supplierName || "—",
+      "##CICLO_CORRENTE##":
+        context?.cycleNumber != null ? String(context.cycleNumber).padStart(3, "0") : "—",
+      "##DATA_REFERENCIA##": context?.referenceDate ?? "—",
+      "##TOTAL_ENTREGUES##": String(totalDelivered),
+      "##TOTAL_PENDENTES##": String(this.countPending(currentItems)),
+      "##TOTAL_ENTREGUES_CICLO##": String(comparisons.filter((c) => c.wasDeliveredInPeriod).length),
+      "##NOVOS_CICLO##": String(comparisons.filter((c) => c.isNewInPeriod).length),
+      "##PERCENTUAL_ENTREGA##": `${this.formatPercent(deliveryPercent)}%`,
     };
   }
 
@@ -85,7 +141,8 @@ export class PromptPlaceholderBuilder {
   ): string {
     const currentItems = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
     const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
-    return this.buildRecentBacklogTable(currentItems, previousState);
+    const comparisons = this.compareAllWithPrevious(currentItems, previousState);
+    return this.buildRecentBacklogTableFromComparisons(comparisons);
   }
 
   public buildDeliveryStatisticsFromProject(projectId: number): string {
@@ -122,16 +179,21 @@ export class PromptPlaceholderBuilder {
     );
   }
 
-  private buildRecentBacklogTable(
+  private compareAllWithPrevious(
     currentItems: BacklogEntity[],
     previousState: CurrentStateParserResult,
-  ): string {
+  ): CurrentVsPreviousItem[] {
     const baselineDate = this.parseReferenceDate(previousState.metadata.referenceDate);
-
     const previousMap = this.indexByImmutableId(previousState.backlogItems);
+    return currentItems.map((current) =>
+      this.compareWithPrevious(current, previousMap, baselineDate),
+    );
+  }
 
-    const comparisons = currentItems
-      .map((current) => this.compareWithPrevious(current, previousMap, baselineDate))
+  private buildRecentBacklogTableFromComparisons(
+    comparisons: CurrentVsPreviousItem[],
+  ): string {
+    const filtered = comparisons
       .filter(
         (item) =>
           item.isNewInPeriod ||
@@ -153,7 +215,7 @@ export class PromptPlaceholderBuilder {
         "FoiEntregueNoPeriodo",
         "EhNovoNoPeriodo",
       ],
-      comparisons.map((item) => [
+      filtered.map((item) => [
         item.current.immutableId,
         `${item.current.nature}/${item.current.interventionType}`,
         item.current.description,
@@ -165,6 +227,16 @@ export class PromptPlaceholderBuilder {
         item.isNewInPeriod ? "Sim" : "Não",
       ]),
     );
+  }
+
+  private countDelivered(items: BacklogEntity[]): number {
+    return items.filter((i) => this.normalizeStatus(i.status) === "CONCLUIDO").length;
+  }
+
+  private countPending(items: BacklogEntity[]): number {
+    return items.filter((i) =>
+      ["PENDENTE", "AGUARDANDO"].includes(this.normalizeStatus(i.status)),
+    ).length;
   }
 
   private buildDeliveryStatistics(items: BacklogEntity[]): string {
