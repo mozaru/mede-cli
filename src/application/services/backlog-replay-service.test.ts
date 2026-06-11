@@ -127,6 +127,22 @@ describe("BacklogReplayService.replayFromContent", () => {
     const { state } = service.replayFromContent("# Entendimento\n\nSem bloco.", []);
     expect(state.size).toBe(0);
   });
+
+  it("reads status from last column of 7-column TABELA_BACKLOG_INICIAL (Tags col ignored)", () => {
+    const content = [
+      "<!-- BEGIN-TABELA_BACKLOG_INICIAL -->",
+      "| ID | Natureza | Tipo | Descrição | Tags | Origem | Status Inicial |",
+      "| --- | --- | --- | --- | --- | --- | --- |",
+      "| DEI-0001 | OP | BLI | Criar raiz | SEC | src.md | Pendente |",
+      "| DEI-0002 | NF | BLI | Segurança | | src.md | Concluído |",
+      "<!-- END-TABELA_BACKLOG_INICIAL -->",
+    ].join("\n");
+
+    const { state } = service.replayFromContent(content, []);
+
+    expect(state.get("DEI-0001")).toBe("Pendente");
+    expect(state.get("DEI-0002")).toBe("Concluído");
+  });
 });
 
 describe("BacklogReplayService.validateLegStats", () => {

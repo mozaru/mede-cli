@@ -103,7 +103,7 @@ export class BacklogReplayService {
     const rows = this.parseMarkdownTable(block);
     for (const row of rows) {
       const id = row[0]?.trim() ?? "";
-      const status = row[4]?.trim() ?? "Pendente";
+      const status = row[row.length - 1]?.trim() || "Pendente";
       if (id && id !== "—") {
         state.set(id, status);
       }
@@ -126,7 +126,7 @@ export class BacklogReplayService {
     if (!block) return [];
     const rows = this.parseMarkdownTable(block);
     return rows
-      .map((r) => ({ id: r[0]?.trim() ?? "", status: r[4]?.trim() ?? "Pendente" }))
+      .map((r) => ({ id: r[0]?.trim() ?? "", status: r[r.length - 1]?.trim() || "Pendente" }))
       .filter((i) => i.id && i.id !== "—");
   }
 
