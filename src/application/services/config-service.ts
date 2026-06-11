@@ -75,6 +75,9 @@ export class ConfigService {
       configVersion: 1,
       language: "pt-BR",
       docsRoot: "docs",
+      projectName: "",
+      clientName: "",
+      supplierName: "",
       directories: {
         meetingMinutes: "atas-de-reuniao",
         architecturalDecisions: "decisoes-arquiteturais",

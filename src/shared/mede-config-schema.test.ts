@@ -63,4 +63,26 @@ describe("parseMedeConfig", () => {
     };
     expect(config.futureField).toBe("mantido");
   });
+
+  it("accepts a config without projectName, clientName, supplierName (all optional)", () => {
+    const raw = JSON.parse(validConfigJson());
+    delete raw.projectName;
+    delete raw.clientName;
+    delete raw.supplierName;
+
+    expect(() => parseMedeConfig(jsonToStr(raw))).not.toThrow();
+  });
+
+  it("parses projectName, clientName and supplierName when present", () => {
+    const raw = JSON.parse(validConfigJson());
+    raw.projectName = "Sistema X";
+    raw.clientName = "Empresa Y";
+    raw.supplierName = "11Tech";
+
+    const config = parseMedeConfig(jsonToStr(raw));
+
+    expect((config as MedeConfigModelEntity).projectName).toBe("Sistema X");
+    expect((config as MedeConfigModelEntity).clientName).toBe("Empresa Y");
+    expect((config as MedeConfigModelEntity).supplierName).toBe("11Tech");
+  });
 });

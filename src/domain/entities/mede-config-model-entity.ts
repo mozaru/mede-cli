@@ -9,6 +9,9 @@ export class MedeConfigModelEntity {
   public configVersion: number;
   public language: string;
   public docsRoot: string;
+  public projectName?: string;
+  public clientName?: string;
+  public supplierName?: string;
   public directories: MedeDirectoriesConfigEntity;
   public fileNames: MedeFileNamesConfigEntity;
   public prefixes: MedePrefixesConfigEntity;
