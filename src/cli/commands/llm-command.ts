@@ -2,7 +2,7 @@ import { getContainer } from "../container.js";
 import { emitResult } from "../output.js";
 import type { ILlmService } from "../../domain/interfaces/services/llm-service-interface.js";
 
-export class LlmHandler {
+export class LlmCommand {
   private readonly llmService: ILlmService;
 
   constructor() {

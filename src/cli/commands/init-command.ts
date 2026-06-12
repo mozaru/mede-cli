@@ -2,7 +2,7 @@ import { getContainer } from "../container.js";
 import { emitResult } from "../output.js";
 import type { IInitService } from "../../domain/interfaces/services/init-service-interface.js";
 
-export class InitHandler {
+export class InitCommand {
   private readonly initService: IInitService;
 
   constructor() {

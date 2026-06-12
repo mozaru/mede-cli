@@ -28,10 +28,10 @@ vi.mock("../../infrastructure/llm/llm-provider-factory.js", () => ({
   },
 }));
 
-import { InitHandler } from "./init-handler.js";
-import { ConfigHandler } from "./config-handler.js";
-import { CycleHandler } from "./cycle-handler.js";
-import { ChangesHandler } from "./changes-handler.js";
+import { InitCommand } from "./init-command.js";
+import { ConfigCommand } from "./config-command.js";
+import { CycleCommand } from "./cycle-command.js";
+import { ChangesCommand } from "./changes-command.js";
 import { BetterSqliteConnectionFactory } from "../../infrastructure/db/better-sqlite-connection-factory.js";
 import { UnitOfWork } from "../../infrastructure/db/unit-of-work.js";
 import { ProjectRepository } from "../../infrastructure/repositories/project-repository.js";
@@ -240,7 +240,7 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     expect(fs.readdirSync(root)).toHaveLength(0);
 
     // 1. Generate config file
-    await new ConfigHandler().executeInit();
+    await new ConfigCommand().executeInit();
     expect(fs.existsSync(path.join(root, "mede.config.json"))).toBe(true);
 
     const configContent = fs.readFileSync(path.join(root, "mede.config.json"), "utf-8");
@@ -248,7 +248,7 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     const docsRoot = path.join(root, config.docsRoot);
 
     // 2. Initialize the project via InitService (creates .mede/ and documents)
-    await new InitHandler().execute("Meu Projeto do Zero", []);
+    await new InitCommand().execute("Meu Projeto do Zero", []);
 
     expect(fs.existsSync(path.join(root, ".mede", "mede.db"))).toBe(true);
     expect(fs.existsSync(docsRoot)).toBe(true);
@@ -261,21 +261,21 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     expect(cycle!.currentPhaseIndex).toBe(1);
 
     // 3. Process the initialization cycle to the end (approve-all)
-    await new CycleHandler().executeApprove(true);
+    await new CycleCommand().executeApprove(true);
 
     const awaitingCommit = currentCycle();
     expect(awaitingCommit!.status).toBe("AWAITING_COMMIT");
 
     // 4. Commit the initialization cycle
-    new CycleHandler().executeCommit();
+    new CycleCommand().executeCommit();
     expect(currentCycle()).toBeNull(); // Cycle completed
 
     // 5. Run a full causal cycle (which generates all the documents).
     // Phase 1 is EXTRACT_BACKLOG (JSON mode, AWAITING_APPROVAL when no changes).
     // approve-all handles empty phases correctly: skips applyAll and advances.
-    await new CycleHandler().executeCycle("Criar a especificação completa", []);
-    await new CycleHandler().executeApprove(true);
-    new CycleHandler().executeCommit();
+    await new CycleCommand().executeCycle("Criar a especificação completa", []);
+    await new CycleCommand().executeApprove(true);
+    new CycleCommand().executeCommit();
 
     // 6. Assert quality on all generated structural documents
     assertDocumentQuality(config.fileNames.initialUnderstanding, "initial-understanding.md");
@@ -291,7 +291,7 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
   // ---------------------------------------------------------------------------
   it("Scenario 2: initializes in a directory containing pre-existing documents and uses them as context", async () => {
     // 1. Generate config file
-    await new ConfigHandler().executeInit();
+    await new ConfigCommand().executeInit();
 
     const configContent = fs.readFileSync(path.join(root, "mede.config.json"), "utf-8");
     const config = JSON.parse(configContent);
@@ -306,7 +306,7 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     fs.writeFileSync(path.join(docsRoot, config.fileNames.scopeAndVision), scopeContent, "utf-8");
 
     // 2. Run initialization passing the files as context
-    await new InitHandler().execute("iniciar", [
+    await new InitCommand().execute("iniciar", [
       `docs/${config.fileNames.readme}`,
       `docs/${config.fileNames.scopeAndVision}`
     ]);
@@ -324,17 +324,17 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     uow[Symbol.dispose]();
 
     // 3. Run and commit the init cycle
-    await new CycleHandler().executeApprove(true);
-    new CycleHandler().executeCommit();
+    await new CycleCommand().executeApprove(true);
+    new CycleCommand().executeCommit();
 
     expect(currentCycle()).toBeNull();
 
     // 4. Run a full causal cycle (which generates all the documents).
     // Phase 1 is EXTRACT_BACKLOG (JSON mode, no changes → AWAITING_APPROVAL).
     // approve-all handles empty phases: skips applyAll and advances automatically.
-    await new CycleHandler().executeCycle("Criar a especificação completa", []);
-    await new CycleHandler().executeApprove(true);
-    new CycleHandler().executeCommit();
+    await new CycleCommand().executeCycle("Criar a especificação completa", []);
+    await new CycleCommand().executeApprove(true);
+    new CycleCommand().executeCommit();
 
     // 5. Assert quality on all generated structural documents
     assertDocumentQuality(config.fileNames.initialUnderstanding, "initial-understanding.md");
@@ -350,7 +350,7 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
   // ---------------------------------------------------------------------------
   it("Scenario 3: runs cycles on an existing MEDE project demonstrating refinement, reset, commit and rollback", async () => {
     // 1. Setup config
-    await new ConfigHandler().executeInit();
+    await new ConfigCommand().executeInit();
 
     const configContent = fs.readFileSync(path.join(root, "mede.config.json"), "utf-8");
     const config = JSON.parse(configContent);
@@ -360,33 +360,33 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     fs.writeFileSync(path.join(docsRoot, config.fileNames.currentState), "# Situação Atual\n", "utf-8");
 
     // 2. Setup init and commit
-    await new InitHandler().execute("init", []);
-    await new CycleHandler().executeApprove(true);
-    new CycleHandler().executeCommit();
+    await new InitCommand().execute("init", []);
+    await new CycleCommand().executeApprove(true);
+    new CycleCommand().executeCommit();
 
     // --- Subcenário A: Ciclo com Refinamento e Commit ---
     // Reset lastDocState.path so the EXTRACT_BACKLOG mock correctly returns JSON.
     lastDocState.path = "";
-    await new CycleHandler().executeCycle("Adicionar nova funcionalidade", []);
+    await new CycleCommand().executeCycle("Adicionar nova funcionalidade", []);
     let cycle = currentCycle();
     expect(cycle).not.toBeNull();
     expect(cycle!.status).toBe("OPEN");
 
     // EXTRACT_BACKLOG only syncs SQLite; approve to advance to phase 2 (ATA).
-    await new CycleHandler().executeApprove(false);
+    await new CycleCommand().executeApprove(false);
 
     // Apply the pending ATA chunks to transition to AWAITING_APPROVAL
-    new ChangesHandler().executeApply(true);
+    new ChangesCommand().executeApply(true);
 
     // Request refinement on the ATA phase
-    await new CycleHandler().executeRefine("Refinar a proposta detalhando o modelo de dados", []);
+    await new CycleCommand().executeRefine("Refinar a proposta detalhando o modelo de dados", []);
 
     // Apply refined chunks and approve all remaining phases
-    new ChangesHandler().executeApply(true);
-    await new CycleHandler().executeApprove(true);
+    new ChangesCommand().executeApply(true);
+    await new CycleCommand().executeApprove(true);
 
     // Commit the cycle
-    new CycleHandler().executeCommit();
+    new CycleCommand().executeCommit();
     expect(currentCycle()).toBeNull(); // Committed and closed
 
     // Assert quality on all generated structural documents
@@ -396,16 +396,16 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
 
     // --- Subcenário B: Ciclo com Reset e Rollback ---
     lastDocState.path = "";
-    await new CycleHandler().executeCycle("Outra funcionalidade", []);
+    await new CycleCommand().executeCycle("Outra funcionalidade", []);
     expect(currentCycle()).not.toBeNull();
 
     // Perform a reset (discards proposal, returns to generator status of phase 1)
-    await new CycleHandler().executeReset();
+    await new CycleCommand().executeReset();
     cycle = currentCycle();
     expect(cycle!.currentPhaseIndex).toBe(1);
 
     // Perform a rollback (cancels the entire cycle, restoring repository to pre-cycle state)
-    new CycleHandler().executeRollback();
+    new CycleCommand().executeRollback();
     expect(currentCycle()).toBeNull(); // Discarded
   });
 });

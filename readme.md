@@ -796,11 +796,13 @@ docs/
  ├── modelo-de-dados.md
  ├── cronograma.md
  ├── visao-e-escopo.md
- ├── atas/
- ├── adr/
- ├── esm/
+ ├── atas-de-reuniao/
+ ├── decisoes-arquiteturais/
+ ├── especificacao-manutencao-sistema/
  └── log-entregas/
 ```
+
+*Nota: Os nomes das subpastas acima são os valores padrões e podem ser configurados no arquivo `mede.config.json` na propriedade `directories`.*
 
 ---
 

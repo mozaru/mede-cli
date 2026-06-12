@@ -2,7 +2,7 @@ import { getContainer } from "../container.js";
 import { emitResult } from "../output.js";
 import type { IConfigService } from "../../domain/interfaces/services/config-service-interface.js";
 
-export class ConfigHandler {
+export class ConfigCommand {
   private readonly configService: IConfigService;
 
   constructor() {

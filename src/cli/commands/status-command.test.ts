@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { StatusHandler } from "./status-handler.js";
+import { StatusCommand } from "./status-command.js";
 import { setSharedContainer, clearSharedContainer } from "../container.js";
 import { setOutputFormat } from "../output.js";
 
-describe("StatusHandler", () => {
+describe("StatusCommand", () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe("StatusHandler", () => {
 
     setOutputFormat("text");
 
-    const handler = new StatusHandler();
+    const handler = new StatusCommand();
     handler.execute();
 
     expect(mockStatusService.showStatus).toHaveBeenCalled();
@@ -46,7 +46,7 @@ describe("StatusHandler", () => {
 
     setOutputFormat("json");
 
-    const handler = new StatusHandler();
+    const handler = new StatusCommand();
     handler.execute();
 
     expect(mockStatusService.showStatus).toHaveBeenCalled();

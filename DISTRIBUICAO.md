@@ -12,7 +12,13 @@ O pacote publicado é deliberadamente enxuto. O campo `files` do `package.json`
 controla o que entra no tarball:
 
 ```json
-"files": ["dist", "readme.md", "CHANGELOG.md", "LICENSE"]
+"files": [
+  "dist",
+  "locales",
+  "readme.md",
+  "CHANGELOG.md",
+  "LICENSE"
+]
 ```
 
 Conteúdo do pacote publicado:
@@ -20,6 +26,7 @@ Conteúdo do pacote publicado:
 | Item                  | Origem                          | Observação                              |
 | --------------------- | ------------------------------- | --------------------------------------- |
 | `dist/cli/index.mjs`  | `npm run build` (`tsdown`)      | Bundle ESM único, executável (`bin`)    |
+| `locales/`            | raiz do repositório             | Dicionários de prompts e traduções      |
 | `readme.md`           | raiz do repositório             | Documentação principal                  |
 | `CHANGELOG.md`        | raiz do repositório             | Histórico de versões                    |
 | `LICENSE`             | raiz do repositório             | Apache-2.0                              |
@@ -30,10 +37,13 @@ Conteúdo do pacote publicado:
 > publica a partir de filesystems case-sensitive (Linux/CI); um nome divergente
 > faz o arquivo sumir silenciosamente do pacote.
 
-O `bin` aponta para o bundle gerado:
+O `bin` aponta para o bundle gerado (oferecendo os comandos `mede-cli` e o alias `mede`):
 
 ```json
-"bin": { "mede-cli": "./dist/cli/index.mjs" }
+"bin": {
+  "mede-cli": "dist/cli/index.mjs",
+  "mede": "dist/cli/index.mjs"
+}
 ```
 
 O `better-sqlite3` é declarado como dependência de runtime e marcado como

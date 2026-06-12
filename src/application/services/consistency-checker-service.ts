@@ -1,3 +1,6 @@
+import { BacklogStatus, normalizeStatus } from "../../domain/enums/backlog-status.js";
+import { isEmptyCell } from "../../shared/utils.js";
+
 export interface ConsistencyResult {
   ok: boolean;
   issues: string[];
@@ -20,7 +23,7 @@ export class ConsistencyCheckerService {
     for (const [id, status] of replayedState) {
       if (!currentState.has(id)) {
         issues.push(`Item ${id} presente no replay mas ausente em situacao-atual.md`);
-      } else if (this.normalize(currentState.get(id)!) !== this.normalize(status)) {
+      } else if (normalizeStatus(currentState.get(id)!) !== normalizeStatus(status)) {
         issues.push(
           `Item ${id}: status no replay e "${status}" mas em situacao-atual.md e "${currentState.get(id)}"`,
         );
@@ -43,7 +46,7 @@ export class ConsistencyCheckerService {
     for (const [id, status] of replayedState) {
       if (!currentState.has(id)) {
         lines.push(`+ ${id} -> ${status}`);
-      } else if (this.normalize(currentState.get(id)!) !== this.normalize(status)) {
+      } else if (normalizeStatus(currentState.get(id)!) !== normalizeStatus(status)) {
         lines.push(`~ ${id}: replay="${status}" atual="${currentState.get(id)}"`);
       }
     }
@@ -67,7 +70,7 @@ export class ConsistencyCheckerService {
         id: row[0]?.trim() ?? "",
         status: row[6]?.trim() ?? row[row.length - 1]?.trim() ?? "",
       }))
-      .filter((row) => row.id && row.id !== "-" && row.id !== "—" && row.id !== "â€”");
+      .filter((row) => !isEmptyCell(row.id));
   }
 
   private toState(rows: CurrentStateRow[]): Map<string, string> {
@@ -79,12 +82,16 @@ export class ConsistencyCheckerService {
   }
 
   private checkIndicators(currentState: Map<string, string>, content: string): string[] {
-    const statuses = [...currentState.values()].map((status) => this.normalize(status));
+    const statuses = [...currentState.values()].map((status) => normalizeStatus(status));
     const expected = {
-      concluded: statuses.filter((status) => status === "CONCLUIDO").length,
-      inProgress: statuses.filter((status) => status === "EM ANDAMENTO").length,
+      concluded: statuses.filter((status) => status === normalizeStatus(BacklogStatus.CONCLUIDO)).length,
+      inProgress: statuses.filter((status) => status === normalizeStatus(BacklogStatus.EM_ANDAMENTO)).length,
       pending: statuses.filter((status) =>
-        ["PENDENTE", "AGUARDANDO", "AGUARDANDO FORMALIZACAO"].includes(status),
+        [
+          normalizeStatus(BacklogStatus.PENDENTE),
+          normalizeStatus(BacklogStatus.AGUARDANDO),
+          normalizeStatus(BacklogStatus.AGUARDANDO_FORMALIZACAO),
+        ].includes(status),
       ).length,
     };
 
@@ -153,12 +160,5 @@ export class ConsistencyCheckerService {
       if (cells.length > 0) rows.push(cells);
     }
     return rows;
-  }
-
-  private normalize(status: string): string {
-    return status
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .toUpperCase();
   }
 }

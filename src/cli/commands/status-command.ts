@@ -2,7 +2,7 @@ import { getContainer } from "../container.js";
 import { emitResult } from "../output.js";
 import type { IStatusService } from "../../domain/interfaces/services/status-service-interface.js";
 
-export class StatusHandler {
+export class StatusCommand {
   private readonly statusService: IStatusService;
 
   constructor() {

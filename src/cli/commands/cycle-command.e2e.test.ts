@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-// End-to-end through the CLI command layer: a real CycleHandler builds the real
+// End-to-end through the CLI command layer: a real CycleCommand builds the real
 // composition root (container -> services -> repositories -> SQLite + filesystem)
 // for each command, exactly like the CLI does (one container per process). Only
 // the LLM provider is faked, so no network is touched. The cwd is pointed at a
@@ -26,8 +26,8 @@ vi.mock("../../infrastructure/llm/llm-provider-factory.js", () => ({
   },
 }));
 
-import { CycleHandler } from "./cycle-handler.js";
-import { ChangesHandler } from "./changes-handler.js";
+import { CycleCommand } from "./cycle-command.js";
+import { ChangesCommand } from "./changes-command.js";
 import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
 import { BetterSqliteConnectionFactory } from "../../infrastructure/db/better-sqlite-connection-factory.js";
 import { UnitOfWork } from "../../infrastructure/db/unit-of-work.js";
@@ -106,9 +106,9 @@ afterEach(() => {
   }
 });
 
-describe("CLI cycle flow (end-to-end through CycleHandler)", () => {
+describe("CLI cycle flow (end-to-end through CycleCommand)", () => {
   it("starts a cycle on disk: a project and an OPEN cycle on phase 1", async () => {
-    await new CycleHandler().executeCycle("", []);
+    await new CycleCommand().executeCycle("", []);
 
     const cycle = currentCycle();
     expect(cycle).not.toBeNull();
@@ -138,7 +138,7 @@ describe("CLI cycle flow (end-to-end through CycleHandler)", () => {
       }),
     });
 
-    await new CycleHandler().executeCycle("registrar backlog", []);
+    await new CycleCommand().executeCycle("registrar backlog", []);
 
     expect(fs.readFileSync(currentStatePath, "utf-8")).toBe(originalCurrentState);
     readProjectDb((uow) => {
@@ -153,7 +153,7 @@ describe("CLI cycle flow (end-to-end through CycleHandler)", () => {
       expect(new BacklogRepository(uow).list(project!.id)).toEqual([]);
     });
 
-    await new CycleHandler().executeApprove(false);
+    await new CycleCommand().executeApprove(false);
 
     expect(fs.readFileSync(currentStatePath, "utf-8")).toBe(originalCurrentState);
     readProjectDb((uow) => {
@@ -172,14 +172,14 @@ describe("CLI cycle flow (end-to-end through CycleHandler)", () => {
   });
 
   it("apply then approve advances to the next phase", async () => {
-    await new CycleHandler().executeCycle("", []);
+    await new CycleCommand().executeCycle("", []);
     // Phase 1 is EXTRACT_BACKLOG — it runs in JSON mode and, when there are no
     // backlog changes, produces no ChangeSet (status is already AWAITING_APPROVAL).
     // Approve it directly to advance to phase 2 (GENERATE_MEETING), which produces
     // a diff-based ChangeSet that can be applied and approved.
-    await new CycleHandler().executeApprove(false);  // phase 1 → APPROVED, triggers phase 2
-    new ChangesHandler().executeApply(true);          // apply phase 2 chunks
-    await new CycleHandler().executeApprove(false);  // phase 2 → APPROVED, triggers phase 3
+    await new CycleCommand().executeApprove(false);  // phase 1 → APPROVED, triggers phase 2
+    new ChangesCommand().executeApply(true);          // apply phase 2 chunks
+    await new CycleCommand().executeApprove(false);  // phase 2 → APPROVED, triggers phase 3
 
     const cycle = currentCycle();
     expect(cycle!.status).toBe("OPEN");
@@ -187,24 +187,24 @@ describe("CLI cycle flow (end-to-end through CycleHandler)", () => {
   });
 
   it("reject-all then commit closes the cycle", async () => {
-    await new CycleHandler().executeCycle("", []);
-    await new CycleHandler().executeReject(true);
+    await new CycleCommand().executeCycle("", []);
+    await new CycleCommand().executeReject(true);
 
     // After rejecting every phase the cycle is awaiting commit.
     const awaiting = currentCycle();
     expect(awaiting!.status).toBe("AWAITING_COMMIT");
 
-    new CycleHandler().executeCommit();
+    new CycleCommand().executeCommit();
 
     // Committing clears the operational cycle from the database.
     expect(currentCycle()).toBeNull();
   });
 
   it("rollback discards the cycle and restores the working tree", async () => {
-    await new CycleHandler().executeCycle("", []);
+    await new CycleCommand().executeCycle("", []);
     expect(currentCycle()).not.toBeNull();
 
-    new CycleHandler().executeRollback();
+    new CycleCommand().executeRollback();
 
     expect(currentCycle()).toBeNull();
   });

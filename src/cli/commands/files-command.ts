@@ -2,7 +2,7 @@ import { getContainer } from "../container.js";
 import { emitResult } from "../output.js";
 import type { IFilesService } from "../../domain/interfaces/services/files-service-interface.js";
 
-export class FilesHandler {
+export class FilesCommand {
   private readonly filesService: IFilesService;
 
   constructor() {

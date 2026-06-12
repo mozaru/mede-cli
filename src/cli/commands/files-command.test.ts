@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { FilesHandler } from "./files-handler.js";
+import { FilesCommand } from "./files-command.js";
 import { setSharedContainer, clearSharedContainer } from "../container.js";
 import { setOutputFormat } from "../output.js";
 
-describe("FilesHandler", () => {
+describe("FilesCommand", () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe("FilesHandler", () => {
 
     setOutputFormat("text");
 
-    const handler = new FilesHandler();
+    const handler = new FilesCommand();
     handler.executeList(true);
 
     expect(mockFilesService.files).toHaveBeenCalledWith(true);
@@ -50,7 +50,7 @@ describe("FilesHandler", () => {
 
     setOutputFormat("json");
 
-    const handler = new FilesHandler();
+    const handler = new FilesCommand();
     handler.executeList(true);
 
     expect(mockFilesService.files).toHaveBeenCalledWith(true);
@@ -70,7 +70,7 @@ describe("FilesHandler", () => {
 
     setOutputFormat("text");
 
-    const handler = new FilesHandler();
+    const handler = new FilesCommand();
     handler.executeCat("readme.md", false);
 
     expect(mockFilesService.cat).toHaveBeenCalledWith("readme.md", false);
@@ -90,7 +90,7 @@ describe("FilesHandler", () => {
 
     setOutputFormat("json");
 
-    const handler = new FilesHandler();
+    const handler = new FilesCommand();
     handler.executeCat("readme.md", false);
 
     expect(mockFilesService.cat).toHaveBeenCalledWith("readme.md", false);
@@ -110,7 +110,7 @@ describe("FilesHandler", () => {
 
     setOutputFormat("text");
 
-    const handler = new FilesHandler();
+    const handler = new FilesCommand();
     handler.executeDiff("readme.md");
 
     expect(mockFilesService.diff).toHaveBeenCalledWith("readme.md");
@@ -130,7 +130,7 @@ describe("FilesHandler", () => {
 
     setOutputFormat("json");
 
-    const handler = new FilesHandler();
+    const handler = new FilesCommand();
     handler.executeDiff("readme.md");
 
     expect(mockFilesService.diff).toHaveBeenCalledWith("readme.md");

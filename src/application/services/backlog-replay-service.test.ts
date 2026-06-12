@@ -19,7 +19,13 @@ function makeInitial(items: Array<{ id: string; status?: string }>): string {
 function makeLeg(opts: {
   deliveredIds?: string[];
   newItems?: Array<{ id: string; status?: string }>;
-  stats?: { totalEntregues?: number; totalPendentes?: number; entreguesCiclo?: number; novosCiclo?: number };
+  stats?: {
+    totalEntregues?: number;
+    totalPendentes?: number;
+    entreguesCiclo?: number;
+    novosCiclo?: number;
+    percentualEntrega?: string;
+  };
 }): string {
   const { deliveredIds = [], newItems = [], stats } = opts;
 
@@ -53,6 +59,7 @@ function makeLeg(opts: {
         `<!-- BEGIN-TOTAL_PENDENTES -->${stats.totalPendentes ?? ""}<!-- END-TOTAL_PENDENTES -->`,
         `<!-- BEGIN-TOTAL_ENTREGUES_CICLO -->${stats.entreguesCiclo ?? ""}<!-- END-TOTAL_ENTREGUES_CICLO -->`,
         `<!-- BEGIN-NOVOS_CICLO -->${stats.novosCiclo ?? ""}<!-- END-NOVOS_CICLO -->`,
+        `<!-- BEGIN-PERCENTUAL_ENTREGA -->${stats.percentualEntrega ?? ""}<!-- END-PERCENTUAL_ENTREGA -->`,
       ].join("\n")
     : "";
 
@@ -254,6 +261,39 @@ describe("BacklogReplayService.validateLegStats", () => {
     ].join("\n");
 
     const issues = service.validateLegStats(leg, stateAfterLeg, 0, 0);
+    expect(issues).toHaveLength(0);
+  });
+
+  it("reports issue when PERCENTUAL_ENTREGA is wrong or malformed", () => {
+    const stateAfterLeg = new Map([
+      ["SAT-20260611-001-RF-BLI-0001", "Concluído"],
+      ["SAT-20260611-001-RF-BLI-0002", "Pendente"],
+    ]); // 1 of 2 non-cancelled -> 50.0%
+
+    const leg = makeLeg({
+      deliveredIds: ["SAT-20260611-001-RF-BLI-0001"],
+      stats: { percentualEntrega: "99,9%" },
+    });
+
+    const issues = service.validateLegStats(leg, stateAfterLeg, 1, 0);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].stat).toBe("PERCENTUAL_ENTREGA");
+    expect(issues[0].expected).toBe(50.0);
+    expect(issues[0].found).toBe(99.9);
+  });
+
+  it("reports no issues when PERCENTUAL_ENTREGA is correct", () => {
+    const stateAfterLeg = new Map([
+      ["SAT-20260611-001-RF-BLI-0001", "Concluído"],
+      ["SAT-20260611-001-RF-BLI-0002", "Pendente"],
+    ]); // 50.0%
+
+    const leg = makeLeg({
+      deliveredIds: ["SAT-20260611-001-RF-BLI-0001"],
+      stats: { percentualEntrega: "50,0%" },
+    });
+
+    const issues = service.validateLegStats(leg, stateAfterLeg, 1, 0);
     expect(issues).toHaveLength(0);
   });
 });

@@ -2,6 +2,7 @@ import { BacklogEntity } from "../domain/entities/backlog-entity.js";
 import type { IBacklogRepository } from "../domain/interfaces/repositories/backlog-repository-interface.js";
 import { CurrentStateParser, type CurrentStateParserResult } from "./current-state-parser.js";
 import type { MedeConfigModelEntity } from "../domain/entities/mede-config-model-entity.js";
+import { BacklogStatus, normalizeStatus } from "../domain/enums/backlog-status.js";
 
 export interface PlaceholderContext {
   config?: MedeConfigModelEntity;
@@ -100,7 +101,7 @@ export class PromptPlaceholderBuilder {
 
     const totalDelivered = this.countDelivered(currentItems);
     const totalNonCancelled = currentItems.filter(
-      (i) => this.normalizeStatus(i.status) !== "CANCELADO",
+      (i) => normalizeStatus(i.status) !== normalizeStatus(BacklogStatus.CANCELADO),
     ).length;
     const deliveryPercent =
       totalNonCancelled === 0 ? 0 : (totalDelivered / totalNonCancelled) * 100;
@@ -180,7 +181,7 @@ export class PromptPlaceholderBuilder {
     const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
     const comparisons = this.compareAllWithPrevious(currentItems, previousState);
     const pendingItems = currentItems.filter((item) =>
-      ["PENDENTE", "AGUARDANDO"].includes(this.normalizeStatus(item.status)),
+      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(normalizeStatus(item.status)),
     );
 
     const countPendingType = (type: string): number =>
@@ -266,7 +267,7 @@ export class PromptPlaceholderBuilder {
     const items = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
     const totalDelivered = this.countDelivered(items);
     const totalNonCancelled = items.filter(
-      (i) => this.normalizeStatus(i.status) !== "CANCELADO",
+      (i) => normalizeStatus(i.status) !== normalizeStatus(BacklogStatus.CANCELADO),
     ).length;
     const deliveryPercent =
       totalNonCancelled === 0 ? 0 : (totalDelivered / totalNonCancelled) * 100;
@@ -312,7 +313,7 @@ export class PromptPlaceholderBuilder {
           item.isNewInPeriod ||
           item.wasDeliveredInPeriod ||
           item.changedInPeriod ||
-          this.normalizeStatus(item.current.status) === "CONCLUIDO",
+          normalizeStatus(item.current.status) === normalizeStatus(BacklogStatus.CONCLUIDO),
       )
       .sort((a, b) => this.compareBacklogItems(a.current, b.current));
 
@@ -362,9 +363,13 @@ export class PromptPlaceholderBuilder {
   }
 
   private buildPendentesTable(items: BacklogEntity[]): string {
-    const PENDING_STATUSES = ["PENDENTE", "AGUARDANDO", "EM ANDAMENTO"];
+    const PENDING_STATUSES = [
+      normalizeStatus(BacklogStatus.PENDENTE),
+      normalizeStatus(BacklogStatus.AGUARDANDO),
+      normalizeStatus(BacklogStatus.EM_ANDAMENTO),
+    ];
     const rows = items
-      .filter((i) => PENDING_STATUSES.includes(this.normalizeStatus(i.status)))
+      .filter((i) => PENDING_STATUSES.includes(normalizeStatus(i.status)))
       .sort((a, b) => this.compareBacklogItems(a, b));
 
     return this.toMarkdownTable(
@@ -398,34 +403,34 @@ export class PromptPlaceholderBuilder {
   }
 
   private countDelivered(items: BacklogEntity[]): number {
-    return items.filter((i) => this.normalizeStatus(i.status) === "CONCLUIDO").length;
+    return items.filter((i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.CONCLUIDO)).length;
   }
 
   private countPending(items: BacklogEntity[]): number {
     return items.filter((i) =>
-      ["PENDENTE", "AGUARDANDO"].includes(this.normalizeStatus(i.status)),
+      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(normalizeStatus(i.status)),
     ).length;
   }
 
   private countInProgress(items: BacklogEntity[]): number {
-    return items.filter((i) => this.normalizeStatus(i.status) === "EM ANDAMENTO").length;
+    return items.filter((i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.EM_ANDAMENTO)).length;
   }
 
   private countCancelled(items: BacklogEntity[]): number {
-    return items.filter((i) => this.normalizeStatus(i.status) === "CANCELADO").length;
+    return items.filter((i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.CANCELADO)).length;
   }
 
   private buildDeliveryStatistics(items: BacklogEntity[]): string {
     const totalDelivered = items.filter(
-      (item) => this.normalizeStatus(item.status) === "CONCLUIDO",
+      (item) => normalizeStatus(item.status) === normalizeStatus(BacklogStatus.CONCLUIDO),
     ).length;
 
     const totalPending = items.filter((item) =>
-      ["PENDENTE", "AGUARDANDO"].includes(this.normalizeStatus(item.status)),
+      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(normalizeStatus(item.status)),
     ).length;
 
     const totalRelevant = items.filter(
-      (item) => this.normalizeStatus(item.status) !== "CANCELADO",
+      (item) => normalizeStatus(item.status) !== normalizeStatus(BacklogStatus.CANCELADO),
     ).length;
 
     const deliveryPercent = totalRelevant === 0 ? 0 : (totalDelivered / totalRelevant) * 100;
@@ -482,8 +487,8 @@ export class PromptPlaceholderBuilder {
     const isNewInPeriod = previous === null;
 
     const wasDeliveredInPeriod =
-      this.normalizeStatus(current.status) === "CONCLUIDO" &&
-      this.normalizeStatus(previous?.status ?? "") !== "CONCLUIDO";
+      normalizeStatus(current.status) === normalizeStatus(BacklogStatus.CONCLUIDO) &&
+      normalizeStatus(previous?.status ?? "") !== normalizeStatus(BacklogStatus.CONCLUIDO);
 
     const changedInPeriod =
       updatedAt !== null && baselineDate !== null
@@ -508,7 +513,7 @@ export class PromptPlaceholderBuilder {
       this.normalizeText(current.description) !== this.normalizeText(previous.description) ||
       this.normalizeText(current.source) !== this.normalizeText(previous.source) ||
       this.normalizeText(current.deliver) !== this.normalizeText(previous.deliver) ||
-      this.normalizeStatus(current.status) !== this.normalizeStatus(previous.status) ||
+      normalizeStatus(current.status) !== normalizeStatus(previous.status) ||
       this.formatTags(current.tags) !== this.formatTags(previous.tags)
     );
   }
@@ -602,13 +607,6 @@ export class PromptPlaceholderBuilder {
   private normalizeText(value: string | null | undefined): string {
     return (value ?? "").trim().toUpperCase();
   }
-
-  private normalizeStatus(value: string | null | undefined): string {
-    return this.normalizeText(value)
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "");
-  }
-
   private parseReferenceDate(value: string | null): Date | null {
     if (!value) {
       return null;

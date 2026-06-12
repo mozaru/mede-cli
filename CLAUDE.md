@@ -34,48 +34,34 @@ npm run clean        # remove dist/
 
 ## Estrutura de diretórios do código-fonte
 
+O projeto está organizado na arquitetura de 5 camadas recomendada:
+
 ```
 src/
-  cli/
-    index.ts          # entry point
-    runner.ts         # registra todos os comandos via commander
-  commands/
-    *-handler.ts      # handlers de cada comando CLI (ciclo, config, changes, etc.)
-  db/
-    better-sqlite-connection-factory.ts
-    unit-of-work.ts
-    *-interface.ts
-  entities/
-    *.ts              # tipos/interfaces de domínio (cycle, change-set, phase, etc.)
-  models/
-    *.ts              # modelos de resultado/projeção
-  repositories/
-    *.ts              # implementações SQLite
-    interfaces/       # contratos de repositório
-  services/
-    *.ts              # lógica de negócio (cycle, changes, llm, etc.)
-    interfaces/       # contratos de serviço
-  shared/
-    llm/              # providers: OpenAI, Anthropic, Ollama, Gemini, Azure
-    diff.ts           # geração e aplicação de diffs
+  cli/             # Entrada e saída do usuário, console interativo (REPL)
+    commands/      # Controladores finos de comando CLI (*-command.ts)
+    index.ts       # Entry point principal
+    runner.ts      # Registro de comandos Commander
+    container.ts   # Injeção de dependências
+    output.ts      # Renderização de texto e JSON
+  application/     # Orquestração e Casos de Uso
+    services/      # Serviços de aplicação (cycle-service.ts, backlog-replay-service.ts, etc.)
+  domain/          # Modelo de domínio do negócio
+    entities/      # Entidades (backlog-entity.ts, project-entity.ts, etc.)
+    enums/         # Enums (backlog-status.ts, etc.)
+    interfaces/    # Contratos/portas de repositórios e serviços
+  infrastructure/  # Adaptadores concretos (técnicos)
+    db/            # SQLite setup (conexão, migrações, unit of work)
+    repositories/  # Implementação dos repositórios (SQLite e FileSystem)
+    llm/           # Provedores e integração com LLM gateways
+  shared/          # Utilitários neutros e Helpers transversais
+    diff.ts        # Algoritmo de geração/aplicação de diffs
+    i18n.ts        # Localização e tradução multilingue
     current-state-parser.ts
     initial-understanding-parser.ts
     utils.ts
     crypto.ts
     json.ts
-```
-
-### Organização alvo (arquitetura recomendada em `arquitetura.md`)
-
-A arquitetura recomendada é em 5 camadas. O código atual ainda usa uma estrutura mais flat, mas está sendo migrado:
-
-```
-src/
-  cli/           → parsing de comandos, apresentação (sem regra de negócio)
-  application/   → casos de uso e orquestração
-  domain/        → entidades, políticas, enums, contratos
-  infrastructure/→ SQLite, filesystem, LLM, diff, config
-  shared/        → utilitários transversais
 ```
 
 ---

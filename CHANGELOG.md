@@ -7,6 +7,27 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.1.0] - 2026-06-12
+
+### Adicionado
+- Autenticação avançada para LLMs (`llm.auth`):
+  - Suporte a OAuth interativo para Azure, Google/Vertex (Device Code Flow) e OpenRouter (PKCE Flow com callback local).
+  - Suporte a Application Default Credentials (ADC) para autenticação automática sem chaves salvas.
+  - Novos comandos `mede-cli llm login` e `mede-cli llm logout` com armazenamento seguro das chaves no cofre local (`~/.mede/keys.json`).
+- Suporte a Slugs de descrição curta (`shortDescriptionSlug`):
+  - Configuração opcional no `mede.config.json` para adicionar sufixos de identificação (slugs) nos nomes de artefatos históricos (ex: `ata-AAAAMMDD-NNN-sprint-001.md`).
+- Validação expandida:
+  - O comando `validate` agora valida as estatísticas dos ciclos, conferindo se os totais e cálculos batem com o backlog físico do projeto.
+- Internacionalização de constantes e strings:
+  - Centralização e padronização de textos e constantes operacionais utilizando o motor de `I18n` para suporte robusto a múltiplos idiomas configurados no projeto.
+
+### Alterado
+- Refatoração Arquitetural e Nomenclatura da CLI:
+  - Reorganização final de toda a base de código na estrutura de 5 camadas recomendada (`cli`, `application`, `domain`, `infrastructure`, `shared`).
+  - Renomeação de todos os arquivos de controle sob `src/cli/commands/` de `*-handler.ts` para `*-command.ts`.
+  - Renomeação das classes CLI de `*Handler` para `*Command` (ex: `CycleHandler` -> `CycleCommand`).
+  - Atualização completa de todas as importações, injeção de dependências (`container.ts`), runners e testes unitários/E2E para usar a nova nomenclatura.
+
 ## [1.0.0] - 2026-06-05
 
 ### Adicionado

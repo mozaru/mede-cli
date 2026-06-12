@@ -2,7 +2,7 @@ import { getContainer } from "../container.js";
 import { emitResult } from "../output.js";
 import type { IChangesService } from "../../domain/interfaces/services/changes-service-interface.js";
 
-export class ChangesHandler {
+export class ChangesCommand {
   private readonly changesService: IChangesService;
 
   constructor() {

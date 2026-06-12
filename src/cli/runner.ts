@@ -3,14 +3,14 @@ import { Command } from "commander";
 import { reportCliError } from "./error-handler.js";
 import { setOutputFormat } from "./output.js";
 import { startRepl } from "./repl.js";
-import { ChangesHandler } from "./commands/changes-handler.js";
-import { ConfigHandler } from "./commands/config-handler.js";
-import { CycleHandler } from "./commands/cycle-handler.js";
-import { FilesHandler } from "./commands/files-handler.js";
-import { InitHandler } from "./commands/init-handler.js";
-import { LlmHandler } from "./commands/llm-handler.js";
-import { StatusHandler } from "./commands/status-handler.js";
-import { ValidateHandler } from "./commands/validate-handler.js";
+import { ChangesCommand } from "./commands/changes-command.js";
+import { ConfigCommand } from "./commands/config-command.js";
+import { CycleCommand } from "./commands/cycle-command.js";
+import { FilesCommand } from "./commands/files-command.js";
+import { InitCommand } from "./commands/init-command.js";
+import { LlmCommand } from "./commands/llm-command.js";
+import { StatusCommand } from "./commands/status-command.js";
+import { ValidateCommand } from "./commands/validate-command.js";
 
 // Single source of truth for the version: read package.json at runtime. Using a
 // URL relative to this module keeps it working both in dev (tsx) and in the
@@ -68,7 +68,7 @@ export function buildProgram(): Command {
     .command("status")
     .description("Mostra o estado atual do projeto")
     .action(() => {
-      const handler = new StatusHandler();
+      const handler = new StatusCommand();
       handler.execute();
     });
 
@@ -83,7 +83,7 @@ export function buildProgram(): Command {
       [],
     )
     .action((options: { prompt?: string; file?: string[] }) => {
-      const handler = new InitHandler();
+      const handler = new InitCommand();
 
       handler.execute(options.prompt ?? "", options.file ?? []);
     });
@@ -93,7 +93,7 @@ export function buildProgram(): Command {
     .description("Lista os arquivos modificados no ciclo atual")
     .option("-b, --backup", "Mostra os arquivos do snapshot inicial em vez dos atuais")
     .action((options: { backup?: boolean }) => {
-      const handler = new FilesHandler();
+      const handler = new FilesCommand();
 
       handler.executeList(options.backup ?? false);
     });
@@ -103,7 +103,7 @@ export function buildProgram(): Command {
     .description("Mostra o conteúdo completo do arquivo 'file' no ciclo atual")
     .option("-b, --backup", "Mostra a versão do snapshot inicial em vez da atual")
     .action((file: string, options: { backup?: boolean }) => {
-      const handler = new FilesHandler();
+      const handler = new FilesCommand();
 
       handler.executeCat(file, options.backup ?? false);
     });
@@ -112,7 +112,7 @@ export function buildProgram(): Command {
     .command("diff <file>")
     .description("Mostra o diff do arquivo 'file' no ciclo atual")
     .action((file: string) => {
-      const handler = new FilesHandler();
+      const handler = new FilesCommand();
 
       handler.executeDiff(file);
     });
@@ -121,7 +121,7 @@ export function buildProgram(): Command {
     .command("config")
     .description("Mostra a configuração atual do MEDE")
     .action(async () => {
-      const handler = new ConfigHandler();
+      const handler = new ConfigCommand();
       await handler.execute();
     });
 
@@ -129,7 +129,7 @@ export function buildProgram(): Command {
     .command("init")
     .description("Cria o arquivo mede.config.json")
     .action(async () => {
-      const handler = new ConfigHandler();
+      const handler = new ConfigCommand();
       await handler.executeInit();
     });
 
@@ -137,7 +137,7 @@ export function buildProgram(): Command {
     .command("apply")
     .description("Aplica alterações manuais feitas na configuração")
     .action(async () => {
-      const handler = new ConfigHandler();
+      const handler = new ConfigCommand();
       await handler.executeApply();
     });
 
@@ -152,7 +152,7 @@ export function buildProgram(): Command {
       [],
     )
     .action(async (options: { prompt?: string; file?: string[] }) => {
-      const handler = new CycleHandler();
+      const handler = new CycleCommand();
       await handler.executeCycle(options.prompt ?? "", options.file ?? []);
     });
 
@@ -161,7 +161,7 @@ export function buildProgram(): Command {
     .description("Aprova e aplica o change-set da fase atual")
     .option("-a, --all", "Aprova automaticamente todas as fases seguintes")
     .action(async (options: { all?: boolean }) => {
-      const handler = new CycleHandler();
+      const handler = new CycleCommand();
       await handler.executeApprove(options.all ?? false);
     });
 
@@ -170,7 +170,7 @@ export function buildProgram(): Command {
     .description("Rejeita o change-set da fase atual")
     .option("-a, --all", "Rejeita automaticamente todas as fases seguintes")
     .action(async (options: { all?: boolean }) => {
-      const handler = new CycleHandler();
+      const handler = new CycleCommand();
       await handler.executeReject(options.all ?? false);
     });
 
@@ -178,7 +178,7 @@ export function buildProgram(): Command {
     .command("reset")
     .description("Reinicia a fase atual, descartando a proposta corrente")
     .action(async () => {
-      const handler = new CycleHandler();
+      const handler = new CycleCommand();
       await handler.executeReset();
     });
 
@@ -186,7 +186,7 @@ export function buildProgram(): Command {
     .command("retry")
     .description("Repete a geração da fase atual após erro da LLM")
     .action(async () => {
-      const handler = new CycleHandler();
+      const handler = new CycleCommand();
       await handler.executeRetry();
     });
 
@@ -201,7 +201,7 @@ export function buildProgram(): Command {
       [],
     )
     .action(async (options: { prompt?: string; file?: string[] }) => {
-      const handler = new CycleHandler();
+      const handler = new CycleCommand();
       await handler.executeRefine(options.prompt ?? "", options.file ?? []);
     });
 
@@ -209,7 +209,7 @@ export function buildProgram(): Command {
     .command("commit")
     .description("Finaliza o ciclo, mantendo todas as alterações aprovadas")
     .action(() => {
-      const handler = new CycleHandler();
+      const handler = new CycleCommand();
       handler.executeCommit();
     });
 
@@ -217,7 +217,7 @@ export function buildProgram(): Command {
     .command("rollback")
     .description("Cancela o ciclo, restaurando o snapshot inicial")
     .action(() => {
-      const handler = new CycleHandler();
+      const handler = new CycleCommand();
       handler.executeRollback();
     });
 
@@ -226,7 +226,7 @@ export function buildProgram(): Command {
     .description("Lista os trecho-diffs pendentes do change-set atual")
     .option("-a, --all", "Lista todos os trecho-diffs do change-set atual")
     .action((options: { all?: boolean }) => {
-      const handler = new ChangesHandler();
+      const handler = new ChangesCommand();
       handler.executePending(options.all ?? false);
     });
 
@@ -235,7 +235,7 @@ export function buildProgram(): Command {
     .description("Aplica o trecho-diff atual")
     .option("-a, --all", "Aplica todos os trecho-diffs do change-set atual")
     .action((options: { all?: boolean }) => {
-      const handler = new ChangesHandler();
+      const handler = new ChangesCommand();
       handler.executeApply(options.all ?? false);
     });
 
@@ -244,7 +244,7 @@ export function buildProgram(): Command {
     .description("Descarta o trecho-diff atual")
     .option("-a, --all", "Descarta todos os trecho-diffs do change-set atual")
     .action((options: { all?: boolean }) => {
-      const handler = new ChangesHandler();
+      const handler = new ChangesCommand();
       handler.executeDiscard(options.all ?? false);
     });
 
@@ -255,7 +255,7 @@ export function buildProgram(): Command {
     )
     .option("--strict", "Falha com erro se houver inconsistência")
     .action((options: { strict?: boolean }) => {
-      const handler = new ValidateHandler();
+      const handler = new ValidateCommand();
       handler.execute(options.strict ?? false);
     });
 
@@ -263,7 +263,7 @@ export function buildProgram(): Command {
     .command("llm")
     .description("Inspeciona a configuração de LLM atual")
     .action(() => {
-      const handler = new LlmHandler();
+      const handler = new LlmCommand();
       handler.execute();
     });
 
@@ -272,7 +272,7 @@ export function buildProgram(): Command {
     .description("Executa um prompt de teste isolado na LLM")
     .option("-p, --prompt <text>", "Prompt para o teste da LLM")
     .action(async (options: { prompt?: string }) => {
-      const handler = new LlmHandler();
+      const handler = new LlmCommand();
       await handler.executeTest(options.prompt ?? "");
     });
 
@@ -280,7 +280,7 @@ export function buildProgram(): Command {
     .command("login")
     .description("Autentica na LLM via OAuth (device-code) e guarda o token no cofre local")
     .action(async () => {
-      const handler = new LlmHandler();
+      const handler = new LlmCommand();
       await handler.executeLogin();
     });
 
@@ -288,7 +288,7 @@ export function buildProgram(): Command {
     .command("logout")
     .description("Remove as credenciais OAuth guardadas para o provider atual")
     .action(() => {
-      const handler = new LlmHandler();
+      const handler = new LlmCommand();
       handler.executeLogout();
     });
 

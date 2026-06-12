@@ -14,7 +14,7 @@
   "trecho-diff não está aguardando aprovação": "change-chunk is not awaiting approval",
   "Artefato do ciclo não encontrado": "Cycle artifact not found",
   "Backup already exist!": "Backup already exists!",
-  "Configuração não encontrada após a atualização": "Configuração não encontrada após a atualização",
+  "Configuração não encontrada após a atualização": "Configuration not found after update",
   "mede.config.json not found": "mede.config.json not found",
   "mede.config.json already exist": "mede.config.json already exists",
   "Cannot apply config while a cycle is active": "Cannot apply config while a cycle is active",
@@ -58,5 +58,16 @@
   "ChangeSet": "ChangeSet",
   "Available actions:": "Available actions:",
   "Commit successful.": "Commit successful.",
-  "Rollback successful.": "Rollback successful."
+  "Rollback successful.": "Rollback successful.",
+  "ERRO: mede.config.json nao encontrado.": "ERROR: mede.config.json not found.",
+  "{0} nao encontrado; validate ignorado.": "{0} not found; validate skipped.",
+  "ERRO: {0}": "ERROR: {0}",
+  "ERRO: {0}:": "ERROR: {0}:",
+  "  {0}: esperado {1}, encontrado {2}": "  {0}: expected {1}, found {2}",
+  "OK: {0} LEG(s) com estatisticas consistentes.": "OK: {0} LEG(s) with consistent statistics.",
+  "{0} nao encontrado.": "{0} not found.",
+  "OK: Estado final reconstruido = situacao-atual.md": "OK: Reconstructed final state matches situacao-atual.md",
+  "ERRO: Divergencia entre replay e situacao-atual.md:": "ERROR: Divergence between replay and situacao-atual.md:",
+  "Validacao de consistencia causal falhou (--strict).": "Causal consistency validation failed (--strict).",
+  "MEDE-CLI: Prompt padrão não encontrado para {0}": "MEDE-CLI: Default prompt not found for {0}"
 }

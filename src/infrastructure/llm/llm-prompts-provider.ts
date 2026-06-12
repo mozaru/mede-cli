@@ -38,7 +38,7 @@ function readPrompt(relativePath: string, lang: string): string {
     return fs.readFileSync(defaultPath, "utf-8");
   }
 
-  throw new Error(`MEDE-CLI: Prompt padrão não encontrado para ${relativePath}`);
+  throw new Error(I18n.t("MEDE-CLI: Prompt padrão não encontrado para {0}", relativePath));
 }
 
 let DIFF_RULES = "";

@@ -58,5 +58,16 @@
   "ChangeSet": "ChangeSet",
   "Available actions:": "Ações disponíveis:",
   "Commit successful.": "Commit realizado com sucesso.",
-  "Rollback successful.": "Rollback realizado com sucesso."
+  "Rollback successful.": "Rollback realizado com sucesso.",
+  "ERRO: mede.config.json nao encontrado.": "ERRO: mede.config.json não encontrado.",
+  "{0} nao encontrado; validate ignorado.": "{0} não encontrado; validate ignorado.",
+  "ERRO: {0}": "ERRO: {0}",
+  "ERRO: {0}:": "ERRO: {0}:",
+  "  {0}: esperado {1}, encontrado {2}": "  {0}: esperado {1}, encontrado {2}",
+  "OK: {0} LEG(s) com estatisticas consistentes.": "OK: {0} LEG(s) com estatísticas consistentes.",
+  "{0} nao encontrado.": "{0} não encontrado.",
+  "OK: Estado final reconstruido = situacao-atual.md": "OK: Estado final reconstruído = situacao-atual.md",
+  "ERRO: Divergencia entre replay e situacao-atual.md:": "ERRO: Divergência entre replay e situacao-atual.md:",
+  "Validacao de consistencia causal falhou (--strict).": "Validação de consistência causal falhou (--strict).",
+  "MEDE-CLI: Prompt padrão não encontrado para {0}": "MEDE-CLI: Prompt padrão não encontrado para {0}"
 }

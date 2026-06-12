@@ -1,5 +1,7 @@
 import type { IFileSystemRepository } from "../../domain/interfaces/repositories/file-system-repository-interface.js";
 import { FileSystemRepository } from "../../infrastructure/repositories/file-system-repository.js";
+import { BacklogStatus, normalizeStatus, isKnownStatus } from "../../domain/enums/backlog-status.js";
+import { isEmptyCell } from "../../shared/utils.js";
 
 export interface LegStatIssue {
   stat: string;
@@ -59,10 +61,10 @@ export class BacklogReplayService {
           causalIssues.push(`${name}: item entregue ${id} nao existia antes da LEG.`);
           continue;
         }
-        if (this.normalizeStatus(state.get(id) ?? "") === "CONCLUIDO") {
+        if (normalizeStatus(state.get(id) ?? "") === normalizeStatus(BacklogStatus.CONCLUIDO)) {
           causalIssues.push(`${name}: item ${id} foi entregue novamente.`);
         }
-        state.set(id, "Concluído");
+        state.set(id, BacklogStatus.CONCLUIDO);
       }
 
       const newItems = this.parseTableIdAndStatus(content, "TABELA_NOVOS_CICLO");
@@ -92,9 +94,13 @@ export class BacklogReplayService {
     const issues: LegStatIssue[] = [];
     const statuses = [...stateAtLeg.values()];
 
-    const totalDelivered = statuses.filter((s) => this.normalizeStatus(s) === "CONCLUIDO").length;
+    const totalDelivered = statuses.filter((s) => normalizeStatus(s) === normalizeStatus(BacklogStatus.CONCLUIDO)).length;
     const totalPending = statuses.filter((s) =>
-      ["PENDENTE", "AGUARDANDO", "AGUARDANDO FORMALIZACAO"].includes(this.normalizeStatus(s)),
+      [
+        normalizeStatus(BacklogStatus.PENDENTE),
+        normalizeStatus(BacklogStatus.AGUARDANDO),
+        normalizeStatus(BacklogStatus.AGUARDANDO_FORMALIZACAO),
+      ].includes(normalizeStatus(s)),
     ).length;
 
     const resolvedDeliveredCycle =
@@ -118,6 +124,22 @@ export class BacklogReplayService {
       }
     }
 
+    const rawPercent = this.parseInlineBlock(legDoc, "PERCENTUAL_ENTREGA");
+    if (rawPercent !== null && rawPercent !== "") {
+      const cleanPercent = rawPercent.replace("%", "").replace(",", ".").trim();
+      const foundPercent = parseFloat(cleanPercent);
+      const totalNonCancelled = statuses.filter((s) => normalizeStatus(s) !== normalizeStatus(BacklogStatus.CANCELADO)).length;
+      const deliveryPercent = totalNonCancelled === 0 ? 0 : (totalDelivered / totalNonCancelled) * 100;
+      const expectedPercent = parseFloat(deliveryPercent.toFixed(1));
+      if (Number.isNaN(foundPercent) || Math.abs(foundPercent - expectedPercent) > 0.05) {
+        issues.push({
+          stat: "PERCENTUAL_ENTREGA",
+          expected: expectedPercent,
+          found: Number.isNaN(foundPercent) ? -1 : foundPercent,
+        });
+      }
+    }
+
     return issues;
   }
 
@@ -135,7 +157,7 @@ export class BacklogReplayService {
     const rows = this.parseMarkdownTable(block);
     return rows
       .map((r) => r[0]?.trim() ?? "")
-      .filter((id) => id !== "" && id !== "-" && id !== "—" && id !== "â€”");
+      .filter((id) => !isEmptyCell(id));
   }
 
   private parseTableIdAndStatus(
@@ -147,7 +169,7 @@ export class BacklogReplayService {
     const rows = this.parseMarkdownTable(block);
     return rows
       .map((r) => ({ id: r[0]?.trim() ?? "", status: r[r.length - 1]?.trim() || "Pendente" }))
-      .filter((i) => i.id && i.id !== "-" && i.id !== "—" && i.id !== "â€”");
+      .filter((i) => !isEmptyCell(i.id));
   }
 
   private findDuplicateIssues(ids: string[], sourceName: string): string[] {
@@ -167,18 +189,8 @@ export class BacklogReplayService {
     sourceName: string,
   ): string[] {
     return items
-      .filter((item) => !this.isKnownStatus(item.status))
+      .filter((item) => !isKnownStatus(item.status))
       .map((item) => `${sourceName}: item ${item.id} tem status desconhecido "${item.status}".`);
-  }
-
-  private isKnownStatus(status: string): boolean {
-    return [
-      "CONCLUIDO",
-      "PENDENTE",
-      "EM ANDAMENTO",
-      "AGUARDANDO",
-      "AGUARDANDO FORMALIZACAO",
-    ].includes(this.normalizeStatus(status));
   }
 
   private extractBlock(content: string, blockName: string): string | null {
@@ -225,12 +237,5 @@ export class BacklogReplayService {
       if (cells.length > 0) rows.push(cells);
     }
     return rows;
-  }
-
-  private normalizeStatus(status: string): string {
-    return status
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .toUpperCase();
   }
 }

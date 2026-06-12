@@ -1,9 +1,9 @@
 import { getContainer } from "../container.js";
 import { emitResult, emitProgress } from "../output.js";
 import { ICycleService } from "../../domain/interfaces/services/cycle-service-interface.js";
-import { ValidateHandler } from "./validate-handler.js";
+import { ValidateCommand } from "./validate-command.js";
 
-export class CycleHandler {
+export class CycleCommand {
   private readonly cycleService: ICycleService;
 
   constructor() {
@@ -44,7 +44,7 @@ export class CycleHandler {
     const resp = this.cycleService.commit();
     emitResult(resp);
     try {
-      new ValidateHandler().execute(false);
+      new ValidateCommand().execute(false);
     } catch {
       // Non-blocking post-commit validation
     }

@@ -47,36 +47,36 @@ vi.mock("./error-handler.js", () => ({
   reportCliError: calls.reportCliError,
 }));
 
-vi.mock("./commands/status-handler.js", () => ({
-  StatusHandler: class {
+vi.mock("./commands/status-command.js", () => ({
+  StatusCommand: class {
     execute = calls.statusExecute;
   },
 }));
 
-vi.mock("./commands/init-handler.js", () => ({
-  InitHandler: class {
+vi.mock("./commands/init-command.js", () => ({
+  InitCommand: class {
     execute = calls.initExecute;
   },
 }));
 
-vi.mock("./commands/files-handler.js", () => ({
-  FilesHandler: class {
+vi.mock("./commands/files-command.js", () => ({
+  FilesCommand: class {
     executeList = calls.filesList;
     executeCat = calls.filesCat;
     executeDiff = calls.filesDiff;
   },
 }));
 
-vi.mock("./commands/config-handler.js", () => ({
-  ConfigHandler: class {
+vi.mock("./commands/config-command.js", () => ({
+  ConfigCommand: class {
     execute = calls.configExecute;
     executeInit = calls.configInit;
     executeApply = calls.configApply;
   },
 }));
 
-vi.mock("./commands/cycle-handler.js", () => ({
-  CycleHandler: class {
+vi.mock("./commands/cycle-command.js", () => ({
+  CycleCommand: class {
     executeCycle = calls.cycleStart;
     executeApprove = calls.cycleApprove;
     executeReject = calls.cycleReject;
@@ -88,22 +88,22 @@ vi.mock("./commands/cycle-handler.js", () => ({
   },
 }));
 
-vi.mock("./commands/changes-handler.js", () => ({
-  ChangesHandler: class {
+vi.mock("./commands/changes-command.js", () => ({
+  ChangesCommand: class {
     executePending = calls.pending;
     executeApply = calls.apply;
     executeDiscard = calls.discard;
   },
 }));
 
-vi.mock("./commands/validate-handler.js", () => ({
-  ValidateHandler: class {
+vi.mock("./commands/validate-command.js", () => ({
+  ValidateCommand: class {
     execute = calls.validate;
   },
 }));
 
-vi.mock("./commands/llm-handler.js", () => ({
-  LlmHandler: class {
+vi.mock("./commands/llm-command.js", () => ({
+  LlmCommand: class {
     execute = calls.llmExecute;
     executeTest = calls.llmTest;
     executeLogin = calls.llmLogin;

@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { LlmHandler } from "./llm-handler.js";
+import { LlmCommand } from "./llm-command.js";
 import { setSharedContainer, clearSharedContainer } from "../container.js";
 import { setOutputFormat } from "../output.js";
 
-describe("LlmHandler", () => {
+describe("LlmCommand", () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe("LlmHandler", () => {
 
     setOutputFormat("text");
 
-    const handler = new LlmHandler();
+    const handler = new LlmCommand();
     handler.execute();
 
     expect(mockLlmService.providers).toHaveBeenCalled();
@@ -52,7 +52,7 @@ describe("LlmHandler", () => {
 
     setOutputFormat("json");
 
-    const handler = new LlmHandler();
+    const handler = new LlmCommand();
     handler.execute();
 
     expect(mockLlmService.providers).toHaveBeenCalled();
@@ -73,7 +73,7 @@ describe("LlmHandler", () => {
 
     setOutputFormat("text");
 
-    const handler = new LlmHandler();
+    const handler = new LlmCommand();
     await handler.executeTest("test_prompt");
 
     expect(mockLlmService.test).toHaveBeenCalledWith("test_prompt");
@@ -94,7 +94,7 @@ describe("LlmHandler", () => {
 
     setOutputFormat("json");
 
-    const handler = new LlmHandler();
+    const handler = new LlmCommand();
     await handler.executeTest("test_prompt");
 
     expect(mockLlmService.test).toHaveBeenCalledWith("test_prompt");
@@ -118,7 +118,7 @@ describe("LlmHandler", () => {
 
     setOutputFormat("text");
 
-    const handler = new LlmHandler();
+    const handler = new LlmCommand();
     await handler.executeLogin();
 
     expect(mockLlmService.login).toHaveBeenCalled();
@@ -143,7 +143,7 @@ describe("LlmHandler", () => {
 
     setOutputFormat("json");
 
-    const handler = new LlmHandler();
+    const handler = new LlmCommand();
     await handler.executeLogin();
 
     expect(mockLlmService.login).toHaveBeenCalled();
@@ -165,7 +165,7 @@ describe("LlmHandler", () => {
 
     setOutputFormat("text");
 
-    const handler = new LlmHandler();
+    const handler = new LlmCommand();
     handler.executeLogout();
 
     expect(mockLlmService.logout).toHaveBeenCalled();
@@ -186,7 +186,7 @@ describe("LlmHandler", () => {
 
     setOutputFormat("json");
 
-    const handler = new LlmHandler();
+    const handler = new LlmCommand();
     handler.executeLogout();
 
     expect(mockLlmService.logout).toHaveBeenCalled();
