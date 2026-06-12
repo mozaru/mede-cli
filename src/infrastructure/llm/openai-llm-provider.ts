@@ -173,12 +173,7 @@ export class OpenAiLlmProvider implements ILlmProvider {
           "Content-Type": "application/json",
           ...authHeaders,
         },
-        body: JSON.stringify({
-          model: this.config.llm.model,
-          messages: requestMessages,
-          temperature: this.options.temperature ?? this.config.llm.temperature,
-          max_tokens: this.options.maxTokens ?? this.config.llm.maxTokens,
-        }),
+        body: JSON.stringify(this.buildRequestBody(requestMessages)),
         signal: controller.signal,
       });
 
@@ -264,6 +259,40 @@ export class OpenAiLlmProvider implements ILlmProvider {
 
     // Modelos "o*" mais novos preferem developer messages.
     return /^o\d|^o[1-9]-|^gpt-5|^gpt-4\.1/.test(model);
+  }
+
+  private buildRequestBody(requestMessages: OpenAiChatCompletionMessage[]): Record<string, unknown> {
+    const model = this.config.llm.model;
+    const body: Record<string, unknown> = {
+      model,
+      messages: requestMessages,
+    };
+
+    const maxTokens = this.options.maxTokens ?? this.config.llm.maxTokens;
+    if (maxTokens !== undefined) {
+      if (this.usesMaxCompletionTokens()) {
+        body.max_completion_tokens = maxTokens;
+      } else {
+        body.max_tokens = maxTokens;
+      }
+    }
+
+    const temperature = this.options.temperature ?? this.config.llm.temperature;
+    if (temperature !== undefined && !this.omitsTemperature()) {
+      body.temperature = temperature;
+    }
+
+    return body;
+  }
+
+  private usesMaxCompletionTokens(): boolean {
+    const model = this.config.llm.model?.trim().toLowerCase() ?? "";
+    return /^gpt-5|^o\d|^o[1-9]-/.test(model);
+  }
+
+  private omitsTemperature(): boolean {
+    const model = this.config.llm.model?.trim().toLowerCase() ?? "";
+    return /^gpt-5|^o\d|^o[1-9]-/.test(model);
   }
 
   private removeMessagesByRole(role: LlmRole): void {

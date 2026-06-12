@@ -96,6 +96,26 @@ describe("OpenAiLlmProvider", () => {
     expect(body.max_tokens).toBe(55);
   });
 
+  it("uses GPT-5 token parameter names and omits temperature", async () => {
+    fetchMock.mockResolvedValueOnce(
+      response(true, {
+        model: "gpt-5.4",
+        choices: [{ finish_reason: "stop", message: { content: "done" } }],
+      }),
+    );
+    const provider = new OpenAiLlmProvider(makeConfig("gpt-5.4"), { env });
+    provider.setUserPrompt("user");
+
+    await provider.generateText();
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.model).toBe("gpt-5.4");
+    expect(body.max_completion_tokens).toBe(100);
+    expect(body.max_tokens).toBeUndefined();
+    expect(body.temperature).toBeUndefined();
+  });
+
+
   it("throws on missing messages, HTTP failures, empty content, and aborts", async () => {
     await expect(new OpenAiLlmProvider(makeConfig(), { env }).generateText()).rejects.toThrow(
       /No messages/,

@@ -60,7 +60,7 @@ describe("LlmProviderFactory", () => {
   it("throws specific exception for bard/bart providers", () => {
     const config = makeConfig("bard");
     expect(() => LlmProviderFactory.create(config)).toThrow(
-      'Provider "bard" is ambiguous/not implemented. Se você quis dizer Bard, use "gemini".',
+      'Provider "bard" is ambiguous/not implemented. Se voce quis dizer Bard, use "gemini".',
     );
   });
 
@@ -73,19 +73,31 @@ describe("LlmProviderFactory", () => {
 
   it("injects dependencies (env and vault) to resolved providers", async () => {
     const config = makeConfig("openai");
-    config.llm.auth = "apikey";
+    config.llm.auth = "apiKey";
     config.llm.apiKeyEnv = "MOCK_KEY_VAR";
 
-    const customEnv = {
-      MOCK_KEY_VAR: "my-mock-api-key",
-    };
-
     const instance = LlmProviderFactory.create(config, {
-      env: customEnv,
+      env: { MOCK_KEY_VAR: "my-mock-api-key" },
     });
 
     expect(instance).toBeInstanceOf(OpenAiLlmProvider);
     const authHeaders = await (instance as any).authStrategy.resolveAuthHeaders();
     expect(authHeaders.Authorization).toBe("Bearer my-mock-api-key");
+  });
+
+  it("uses the routed LLM profile before instantiating the provider", () => {
+    const config = makeConfig("openai");
+    config.llm.activeProfile = "default";
+    config.llm.profiles = {
+      default: { provider: "openai", model: "gpt-5.4" },
+      local: { provider: "ollama", model: "llama3" },
+    };
+    config.llmRouting = {
+      extractBacklog: "local",
+    };
+
+    const instance = LlmProviderFactory.create(config, undefined, "extractBacklog");
+
+    expect(instance).toBeInstanceOf(OllamaLlmProvider);
   });
 });

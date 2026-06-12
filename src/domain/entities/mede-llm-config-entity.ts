@@ -11,6 +11,19 @@ export interface MedeLlmOAuthConfig {
   callbackPort?: number;
 }
 
+export interface MedeLlmProfileConfig {
+  provider?: string;
+  model?: string;
+  endpoint?: string;
+  apiKeyEnv?: string;
+  auth?: string;
+  oauth?: MedeLlmOAuthConfig;
+  temperature?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+  credentialsHelper?: string;
+}
+
 export class MedeLlmConfigEntity {
   public provider: string;
   public model: string;
@@ -28,9 +41,11 @@ export class MedeLlmConfigEntity {
   public timeoutMs: number;
   // Optional credential helper name or "system" / "keychain"
   public credentialsHelper?: string;
+  public activeProfile?: string;
+  public profiles?: Record<string, MedeLlmProfileConfig>;
   constructor() {
-    this.provider = "openai-compatible";
-    this.model = "gpt-4.1";
+    this.provider = "openai";
+    this.model = "gpt-5.4";
     this.endpoint = "https://api.openai.com/v1";
     this.apiKeyEnv = "OPENAI_API_KEY";
     this.auth = "apiKey";

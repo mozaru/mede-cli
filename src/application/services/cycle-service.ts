@@ -9,11 +9,13 @@ import type { IChangeSetRepository } from "../../domain/interfaces/repositories/
 import type { IChangeChunkRepository } from "../../domain/interfaces/repositories/change-chunk-repository-interface.js";
 import type { IPhaseAttachmentRepository } from "../../domain/interfaces/repositories/phase-attachment-repository-interface.js";
 import type { IPhaseConversationRepository } from "../../domain/interfaces/repositories/phase-conversation-repository-interface.js";
+import type { IOperationalEventRepository } from "../../domain/interfaces/repositories/operational-event-repository-interface.js";
 import type { ProjectEntity } from "../../domain/entities/project-entity.js";
 import type { ProjectConfigEntity } from "../../domain/entities/project-config-entity.js";
 import { CycleEntity } from "../../domain/entities/cycle-entity.js";
 import { PhaseEntity } from "../../domain/entities/phase-entity.js";
 import { CycleArtifactEntity } from "../../domain/entities/cycle-artifact-entity.js";
+import { OperationalEventEntity } from "../../domain/entities/operational-event-entity.js";
 import { FileSystemRepository } from "../../infrastructure/repositories/file-system-repository.js";
 import { ICycleService } from "../../domain/interfaces/services/cycle-service-interface.js";
 import { IProjectReconstructionService } from "../../domain/interfaces/services/project-reconstruction-service-interface.js";
@@ -36,6 +38,7 @@ export class CycleService implements ICycleService {
   private readonly changeChunkRepository: IChangeChunkRepository;
   private readonly phaseAttachmentRepository: IPhaseAttachmentRepository;
   private readonly phaseConversationRepository: IPhaseConversationRepository;
+  private readonly operationalEventRepository: IOperationalEventRepository | null;
   private readonly docsService: IProjectReconstructionService;
   private readonly phaseConversationService: IPhaseConversationService;
   private readonly statusService: IStatusService;
@@ -56,6 +59,7 @@ export class CycleService implements ICycleService {
     phaseAttachmentRepository: IPhaseAttachmentRepository,
     phaseConversationRepository: IPhaseConversationRepository,
     fileSystemRepository: IFileSystemRepository | null = null,
+    operationalEventRepository: IOperationalEventRepository | null = null,
   ) {
     this.uow = uow;
     this.docsService = docsService;
@@ -71,6 +75,7 @@ export class CycleService implements ICycleService {
     this.changeChunkRepository = changeChunkRepository;
     this.phaseAttachmentRepository = phaseAttachmentRepository;
     this.phaseConversationRepository = phaseConversationRepository;
+    this.operationalEventRepository = operationalEventRepository;
   }
 
   // Runs a block of pure-DB writes inside a single SQLite transaction so that
@@ -614,6 +619,10 @@ export class CycleService implements ICycleService {
         onProgress?.(`[Aprova] Aprovando fase ${phase.name}...`);
         this.phaseConversationService.applyExtractBacklog(phase);
         this.phaseRepository.approve(phase.id);
+        this.recordEvent(project.id, cycle.id, phase.id, "phase.approve", `Fase ${phase.name} aprovada`, {
+          all: true,
+          phaseName: phase.name,
+        });
 
         const nextResult = this.next(cycle);
         cycle = nextResult.cycle;
@@ -645,6 +654,10 @@ export class CycleService implements ICycleService {
     onProgress?.(`[Aprova] Aprovando fase ${phase.name}...`);
     this.phaseConversationService.applyExtractBacklog(phase);
     this.phaseRepository.approve(phase.id);
+    this.recordEvent(project.id, cycle.id, phase.id, "phase.approve", `Fase ${phase.name} aprovada`, {
+      all: false,
+      phaseName: phase.name,
+    });
 
     const nextResult = this.next(cycle);
     cycle = nextResult.cycle;
@@ -694,6 +707,10 @@ export class CycleService implements ICycleService {
         }
 
         this.phaseRepository.reject(phase.id);
+        this.recordEvent(project.id, cycle.id, phase.id, "phase.reject", `Fase ${phase.name} rejeitada`, {
+          all: true,
+          phaseName: phase.name,
+        });
 
         const nextResult = this.next(cycle);
         cycle = nextResult.cycle;
@@ -721,6 +738,10 @@ export class CycleService implements ICycleService {
     this.assert(phase.status === "AWAITING_APPROVAL", "A fase não está aguardando aprovação");
 
     this.phaseRepository.reject(phase.id);
+    this.recordEvent(project.id, cycle.id, phase.id, "phase.reject", `Fase ${phase.name} rejeitada`, {
+      all: false,
+      phaseName: phase.name,
+    });
 
     const nextResult = this.next(cycle);
     cycle = nextResult.cycle;
@@ -888,6 +909,9 @@ export class CycleService implements ICycleService {
     this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
     this.assertTrue(cycle.status === "AWAITING_COMMIT", "O ciclo não está aguardando commit");
 
+    this.recordEvent(project.id, cycle.id, null, "cycle.commit", "Ciclo confirmado", {
+      previousStatus: "AWAITING_COMMIT",
+    });
     this.clearCycle(cycle);
     cycle.status = "COMMITTED";
 
@@ -901,6 +925,9 @@ export class CycleService implements ICycleService {
     const cycle = this.cycleRepository.getCurrent(project.id);
     this.assertNotNull(cycle, "Nenhum ciclo ativo no projeto atual");
 
+    this.recordEvent(project.id, cycle.id, null, "cycle.rollback", "Ciclo revertido", {
+      previousStatus: cycle.status,
+    });
     this.restoreBackup(cycle);
     this.clearCycle(cycle);
     this.docsService.reconstruct();
@@ -1024,6 +1051,29 @@ export class CycleService implements ICycleService {
 
   private getCurrentDateTime(): string {
     return new Date().toISOString();
+  }
+
+  private recordEvent(
+    projectId: number,
+    cycleId: number | null,
+    phaseId: number | null,
+    eventType: string,
+    message: string,
+    payload: Record<string, unknown> = {},
+  ): void {
+    if (!this.operationalEventRepository) {
+      return;
+    }
+
+    const event = new OperationalEventEntity();
+    event.projectId = projectId;
+    event.cycleId = cycleId;
+    event.phaseId = phaseId;
+    event.eventType = eventType;
+    event.message = message;
+    event.payloadJson = JSON.stringify(payload);
+    event.createdAt = this.getCurrentDateTime();
+    this.operationalEventRepository.insert(event);
   }
 
   private isEmpty(value: string | null | undefined): boolean {

@@ -16,6 +16,7 @@ export class MedeConfigModelEntity {
   public fileNames: MedeFileNamesConfigEntity;
   public prefixes: MedePrefixesConfigEntity;
   public llm: MedeLlmConfigEntity;
+  public llmRouting?: Record<string, string>;
   public systemPrompts: MedePromptsConfigEntity;
   public prompts: MedePromptsConfigEntity;
   public shortDescriptionSlug: MedeShortDescriptionSlugConfigEntity;

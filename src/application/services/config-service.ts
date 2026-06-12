@@ -101,8 +101,8 @@ export class ConfigService {
         deliveryLog: "leg",
       },
       llm: {
-        provider: "openai-compatible",
-        model: "gpt-4.1",
+        provider: "openai",
+        model: "gpt-5.4",
         endpoint: "https://api.openai.com/v1",
         apiKeyEnv: "OPENAI_API_KEY",
         auth: "apiKey",

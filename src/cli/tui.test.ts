@@ -32,14 +32,16 @@ function makeStream(): PassThrough & {
 
 function makeContainer(overrides: Record<string, unknown> = {}) {
   return {
-    projectRepository: { getCurrent: vi.fn(() => null) },
-    cycleRepository: { getCurrent: vi.fn(() => null) },
-    phaseRepository: { getByIndex: vi.fn(() => null) },
-    changeSetRepository: {
-      getCurrent: vi.fn(() => null),
-      updateChunkIndex: vi.fn(),
+    tuiViewModelService: {
+      getViewModel: vi.fn(() => ({
+        project: null,
+        cycle: null,
+        phase: null,
+        changeSet: null,
+        chunks: [],
+      })),
+      selectChunk: vi.fn(),
     },
-    changeChunkRepository: { list: vi.fn(() => []) },
     cycleService: {
       cycle: vi.fn(async () => "cycle started"),
       approve: vi.fn(async () => "approved"),
@@ -51,11 +53,6 @@ function makeContainer(overrides: Record<string, unknown> = {}) {
     changesService: {
       apply: vi.fn(() => "applied"),
       discard: vi.fn(() => "discarded"),
-    },
-    uow: {
-      requireTransaction: vi.fn(),
-      commit: vi.fn(),
-      rollback: vi.fn(),
     },
     dispose: vi.fn(),
     ...overrides,
@@ -111,37 +108,30 @@ describe("Tui render", () => {
 
   it("renders active cycle actions from repository state", async () => {
     const container = makeContainer({
-      projectRepository: {
-        getCurrent: vi.fn(() => ({
+      tuiViewModelService: {
+        selectChunk: vi.fn(),
+        getViewModel: vi.fn(() => ({
+          project: {
           id: 1,
           name: "Projeto Teste",
           documentationLanguage: "pt-BR",
           docsRootPath: "docs",
-        })),
-      },
-      cycleRepository: {
-        getCurrent: vi.fn(() => ({
+          },
+          cycle: {
           id: 2,
           status: "OPEN",
           currentPhaseIndex: 0,
           phaseCount: 2,
-        })),
-      },
-      phaseRepository: {
-        getByIndex: vi.fn(() => ({
+          },
+          phase: {
           id: 3,
           cycleId: 2,
           name: "EXTRACT_BACKLOG",
           status: "AWAITING_APPROVAL",
           proposalState: "NON_EMPTY",
-        })),
-      },
-      changeSetRepository: {
-        getCurrent: vi.fn(() => ({ id: 4, fileName: "docs/a.md", currentOffset: 0 })),
-        updateChunkIndex: vi.fn(),
-      },
-      changeChunkRepository: {
-        list: vi.fn(() => [
+          },
+          changeSet: { id: 4, fileName: "docs/a.md", currentOffset: 0 },
+          chunks: [
           {
             id: 5,
             index: 1,
@@ -149,7 +139,8 @@ describe("Tui render", () => {
             changeContent: "+ nova linha",
             blockLocation: "linha 1",
           },
-        ]),
+          ],
+        })),
       },
     });
 
@@ -180,30 +171,25 @@ describe("Tui render", () => {
 
   it("renders the diff screen with pending, applied, and discarded chunks", async () => {
     const container = makeContainer({
-      projectRepository: { getCurrent: vi.fn(() => ({ id: 1, name: "P" })) },
-      cycleRepository: {
-        getCurrent: vi.fn(() => ({
+      tuiViewModelService: {
+        selectChunk: vi.fn(),
+        getViewModel: vi.fn(() => ({
+          project: { id: 1, name: "P" },
+          cycle: {
           id: 2,
           status: "OPEN",
           currentPhaseIndex: 0,
           phaseCount: 1,
-        })),
-      },
-      phaseRepository: {
-        getByIndex: vi.fn(() => ({
+          },
+          phase: {
           id: 3,
           cycleId: 2,
           name: "PHASE",
           status: "REFINING",
           proposalState: "NON_EMPTY",
-        })),
-      },
-      changeSetRepository: {
-        getCurrent: vi.fn(() => ({ id: 4, fileName: "docs/a.md", currentOffset: 0 })),
-        updateChunkIndex: vi.fn(),
-      },
-      changeChunkRepository: {
-        list: vi.fn(() => [
+          },
+          changeSet: { id: 4, fileName: "docs/a.md", currentOffset: 0 },
+          chunks: [
           {
             id: 5,
             index: 1,
@@ -225,7 +211,8 @@ describe("Tui render", () => {
             changeContent: "- descartada",
             blockLocation: "linha 3",
           },
-        ]),
+          ],
+        })),
       },
     });
     const { instance, output } = await renderTui(container, { initialScreen: "diffs" });
@@ -242,29 +229,27 @@ describe("Tui render", () => {
 
   it("renders an empty diff screen and awaiting-commit action", async () => {
     const container = makeContainer({
-      projectRepository: { getCurrent: vi.fn(() => ({ id: 1, name: "P" })) },
-      cycleRepository: {
-        getCurrent: vi.fn(() => ({
+      tuiViewModelService: {
+        selectChunk: vi.fn(),
+        getViewModel: vi.fn(() => ({
+          project: { id: 1, name: "P" },
+          cycle: {
           id: 2,
           status: "AWAITING_COMMIT",
           currentPhaseIndex: 0,
           phaseCount: 1,
-        })),
-      },
-      phaseRepository: {
-        getByIndex: vi.fn(() => ({
+          },
+          phase: {
           id: 3,
           cycleId: 2,
           name: "",
           status: "REFINING",
           proposalState: "EMPTY",
+          },
+          changeSet: null,
+          chunks: [],
         })),
       },
-      changeSetRepository: {
-        getCurrent: vi.fn(() => null),
-        updateChunkIndex: vi.fn(),
-      },
-      changeChunkRepository: { list: vi.fn(() => []) },
     });
 
     const statusRender = await renderTui(container);

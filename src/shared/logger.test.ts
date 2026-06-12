@@ -4,11 +4,13 @@ import { logger } from "./logger.js";
 describe("logger", () => {
   const previousLogLevel = process.env.MEDE_LOG_LEVEL;
   const previousDebug = process.env.MEDE_DEBUG;
+  const previousLogFormat = process.env.MEDE_LOG_FORMAT;
   let consoleError: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     delete process.env.MEDE_LOG_LEVEL;
     delete process.env.MEDE_DEBUG;
+    delete process.env.MEDE_LOG_FORMAT;
     consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
   });
 
@@ -23,6 +25,11 @@ describe("logger", () => {
       delete process.env.MEDE_DEBUG;
     } else {
       process.env.MEDE_DEBUG = previousDebug;
+    }
+    if (previousLogFormat === undefined) {
+      delete process.env.MEDE_LOG_FORMAT;
+    } else {
+      process.env.MEDE_LOG_FORMAT = previousLogFormat;
     }
   });
 
@@ -53,5 +60,18 @@ describe("logger", () => {
     logger.debug("debug");
 
     expect(consoleError).toHaveBeenCalledWith("[debug]", "debug");
+  });
+
+  it("can emit structured JSON logs", () => {
+    process.env.MEDE_LOG_FORMAT = "json";
+
+    logger.warn("event", { id: 7 });
+
+    expect(consoleError).toHaveBeenCalledTimes(1);
+    const [payload] = consoleError.mock.calls[0] as [string];
+    expect(JSON.parse(payload)).toMatchObject({
+      level: "warn",
+      message: 'event {"id":7}',
+    });
   });
 });

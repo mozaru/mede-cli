@@ -3,6 +3,7 @@ import type { IProjectConfigRepository } from "../../domain/interfaces/repositor
 import { LlmProviderFactory } from "../../infrastructure/llm/llm-provider-factory.js";
 import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
 import { parseMedeConfig } from "../../shared/mede-config-schema.js";
+import { resolveLlmConfig } from "../../shared/llm-config-resolver.js";
 import { withRetry } from "../../shared/retry.js";
 import { logger } from "../../shared/logger.js";
 import { ISecretVault, createSecretVault } from "../../shared/secret-vault.js";
@@ -42,7 +43,7 @@ export class LlmService {
     const configEntity = this.projectConfigRepository.getCurrent(project.id);
     this.assertNotNull(configEntity, "Config not found");
 
-    const config = this.parseConfig(configEntity.content);
+    const config = resolveLlmConfig(this.parseConfig(configEntity.content));
 
     const provider = config.llm.provider.trim().toLowerCase();
 
@@ -77,7 +78,7 @@ export class LlmService {
     const configEntity = this.projectConfigRepository.getCurrent(project.id);
     this.assertNotNull(configEntity, "Config not found");
 
-    const config = parseMedeConfig(configEntity.content);
+    const config = resolveLlmConfig(parseMedeConfig(configEntity.content));
     const llm = LlmProviderFactory.create(config);
     llm.setOptions(config.llm);
     llm.setUserPrompt(prompt);
@@ -169,7 +170,7 @@ export class LlmService {
     const configEntity = this.projectConfigRepository.getCurrent(project.id);
     this.assertNotNull(configEntity, "Config not found");
 
-    return this.parseConfig(configEntity.content);
+    return resolveLlmConfig(this.parseConfig(configEntity.content));
   }
 
   private parseConfig(content: string): MedeConfigModelEntity {

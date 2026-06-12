@@ -13,6 +13,7 @@ import { CycleEntity } from "../domain/entities/cycle-entity.js";
 import { PhaseEntity } from "../domain/entities/phase-entity.js";
 import { ChangeSetEntity } from "../domain/entities/change-set-entity.js";
 import { ChangeChunkEntity } from "../domain/entities/change-chunk-entity.js";
+import type { TuiViewModel } from "../application/services/tui-view-model-service.js";
 
 // Helper to check if TTY is available
 export function isTty(): boolean {
@@ -21,24 +22,15 @@ export function isTty(): boolean {
 
 interface TuiProps {
   onExit: () => void;
-  container?: TuiContainer;
+  container?: TuiRuntimeContainer;
   initialScreen?: "status" | "diffs" | "refine";
   initialRefinePrompt?: string;
 }
 
-type TuiContainer = Container & {
-  projectRepository: { getCurrent(): ProjectEntity | null };
-  cycleRepository: { getCurrent(projectId: number): CycleEntity | null };
-  phaseRepository: { getByIndex(cycleId: number, index: number): PhaseEntity | null };
-  changeSetRepository: {
-    getCurrent(phaseId: number): ChangeSetEntity | null;
-    updateChunkIndex(id: number, index: number, offset: number): unknown;
-  };
-  changeChunkRepository: { list(changeSetId: number): ChangeChunkEntity[] };
-  uow: {
-    requireTransaction(): void;
-    commit(): void;
-    rollback(): void;
+type TuiRuntimeContainer = Pick<Container, "changesService" | "cycleService" | "tuiViewModelService"> & {
+  tuiViewModelService: {
+    getViewModel(): TuiViewModel;
+    selectChunk(changeSetId: number, chunkIndex: number, currentOffset: number): void;
   };
 };
 
@@ -142,7 +134,7 @@ export function Tui({
   initialScreen = "status",
   initialRefinePrompt = "",
 }: TuiProps) {
-  const container = injectedContainer ?? (getContainer() as TuiContainer);
+  const container = injectedContainer ?? getContainer();
   const { exit } = useApp();
 
   // State
@@ -165,39 +157,15 @@ export function Tui({
   // Load state from DB
   const refreshData = () => {
     try {
-      const p = container.projectRepository.getCurrent();
-      setProject(p);
-      if (p) {
-        const c = container.cycleRepository.getCurrent(p.id);
-        setCycle(c);
-        if (c) {
-          const ph = container.phaseRepository.getByIndex(c.id, c.currentPhaseIndex);
-          setPhase(ph);
-          if (ph) {
-            const cs = container.changeSetRepository.getCurrent(ph.id);
-            setChangeSet(cs);
-            if (cs) {
-              const chs = container.changeChunkRepository.list(cs.id);
-              setChunks(chs);
-              // reset selected chunk if out of range
-              if (selectedChunkIdx >= chs.length) {
-                setSelectedChunkIdx(Math.max(0, chs.length - 1));
-              }
-            } else {
-              setChangeSet(null);
-              setChunks([]);
-            }
-          } else {
-            setPhase(null);
-            setChangeSet(null);
-            setChunks([]);
-          }
-        } else {
-          setCycle(null);
-          setPhase(null);
-          setChangeSet(null);
-          setChunks([]);
-        }
+      const viewModel = container.tuiViewModelService.getViewModel();
+      setProject(viewModel.project);
+      setCycle(viewModel.cycle);
+      setPhase(viewModel.phase);
+      setChangeSet(viewModel.changeSet);
+      setChunks(viewModel.chunks);
+
+      if (selectedChunkIdx >= viewModel.chunks.length) {
+        setSelectedChunkIdx(Math.max(0, viewModel.chunks.length - 1));
       }
     } catch (err) {
       setMsg(`Erro ao ler dados: ${err instanceof Error ? err.message : String(err)}`, "error");
@@ -308,15 +276,7 @@ export function Tui({
     setLoading(true);
     setMsg(`Aplicando trecho #${chunk.index}...`, "info");
     try {
-      // Set the chunk index in the DB to make it the active one
-      container.uow.requireTransaction();
-      try {
-        container.changeSetRepository.updateChunkIndex(changeSet.id, index, changeSet.currentOffset);
-        container.uow.commit();
-      } catch (err) {
-        container.uow.rollback();
-        throw err;
-      }
+      container.tuiViewModelService.selectChunk(changeSet.id, index, changeSet.currentOffset);
       container.changesService.apply(false);
       setMsg(`Trecho #${chunk.index} aplicado.`, "success");
       refreshData();
@@ -332,14 +292,7 @@ export function Tui({
     setLoading(true);
     setMsg(`Descartando trecho #${chunk.index}...`, "info");
     try {
-      container.uow.requireTransaction();
-      try {
-        container.changeSetRepository.updateChunkIndex(changeSet.id, index, changeSet.currentOffset);
-        container.uow.commit();
-      } catch (err) {
-        container.uow.rollback();
-        throw err;
-      }
+      container.tuiViewModelService.selectChunk(changeSet.id, index, changeSet.currentOffset);
       container.changesService.discard(false);
       setMsg(`Trecho #${chunk.index} descartado.`, "success");
       refreshData();
@@ -603,10 +556,10 @@ export function Tui({
 type InkRender = typeof render;
 
 export async function startTui(
-  containerOverride?: TuiContainer,
+  containerOverride?: Container,
   renderApp: InkRender = render,
 ): Promise<void> {
-  const container = containerOverride ?? (createContainer() as TuiContainer);
+  const container = containerOverride ?? createContainer();
   setSharedContainer(container);
   try {
     await new Promise<void>((resolve) => {

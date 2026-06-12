@@ -37,6 +37,11 @@ export class BetterSqliteConnectionFactory implements IDbConnectionFactory {
       description: "initial schema",
       up: (connection) => connection.exec(BetterSqliteConnectionFactory.INITIAL_SCHEMA),
     },
+    {
+      version: 2,
+      description: "operational event audit log",
+      up: (connection) => connection.exec(BetterSqliteConnectionFactory.OPERATIONAL_EVENT_SCHEMA),
+    },
   ];
 
   public constructor(options?: BetterSqliteConnectionFactoryOptions) {
@@ -249,6 +254,22 @@ create table if not exists ChangeChunk (
         'updatedAt' DATETIME NOT NULL,
         FOREIGN KEY (phaseId) REFERENCES Phase(id) ON UPDATE CASCADE ON DELETE CASCADE,
         FOREIGN KEY (changeSetId) REFERENCES ChangeSet(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+`;
+
+  private static readonly OPERATIONAL_EVENT_SCHEMA = `
+create table if not exists OperationalEvent (
+        'id' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+        'projectId' INTEGER NOT NULL,
+        'cycleId' INTEGER NULL,
+        'phaseId' INTEGER NULL,
+        'eventType' VARCHAR(60) NOT NULL,
+        'message' TEXT NOT NULL,
+        'payloadJson' TEXT NOT NULL,
+        'createdAt' DATETIME NOT NULL,
+        FOREIGN KEY (projectId) REFERENCES Project(id) ON UPDATE CASCADE ON DELETE CASCADE,
+        FOREIGN KEY (cycleId) REFERENCES Cycle(id) ON UPDATE CASCADE ON DELETE SET NULL,
+        FOREIGN KEY (phaseId) REFERENCES Phase(id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 `;
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { BacklogReplayService } from "./backlog-replay-service.js";
 
 const service = new BacklogReplayService();
@@ -102,6 +102,37 @@ describe("BacklogReplayService.replayFromContent", () => {
     expect(state.get("SAT-20260611-001-RF-BLI-0001")).toBe("Pendente");
   });
 
+  it("reports causal issues for unknown delivered IDs and duplicated new items", () => {
+    const initial = makeInitial([{ id: "SAT-20260611-001-RF-BLI-0001" }]);
+    const leg = makeLeg({
+      deliveredIds: ["SAT-UNKNOWN-ID"],
+      newItems: [
+        { id: "SAT-20260611-002-RF-BLI-0001" },
+        { id: "SAT-20260611-002-RF-BLI-0001" },
+      ],
+    });
+
+    const { legResults } = service.replayFromContent(initial, [{ name: "leg-001.md", content: leg }]);
+
+    expect(legResults[0].causalIssues).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("SAT-UNKNOWN-ID"),
+        expect.stringContaining("duplicado SAT-20260611-002-RF-BLI-0001"),
+      ]),
+    );
+  });
+
+  it("reports initial duplicated IDs", () => {
+    const initial = makeInitial([
+      { id: "SAT-20260611-001-RF-BLI-0001" },
+      { id: "SAT-20260611-001-RF-BLI-0001" },
+    ]);
+
+    const { initialIssues } = service.replayFromContent(initial, []);
+
+    expect(initialIssues[0]).toContain("duplicado SAT-20260611-001-RF-BLI-0001");
+  });
+
   it("multiple LEGs are applied in order", () => {
     const initial = makeInitial([
       { id: "SAT-20260611-001-RF-BLI-0001" },
@@ -142,6 +173,36 @@ describe("BacklogReplayService.replayFromContent", () => {
 
     expect(state.get("DEI-0001")).toBe("Pendente");
     expect(state.get("DEI-0002")).toBe("Concluído");
+  });
+});
+
+describe("BacklogReplayService.replay", () => {
+  it("reads files through the filesystem abstraction and sorts LEGs by basename", () => {
+    const fsRepository = {
+      readFile: vi.fn((filePath: string) => {
+        if (filePath.endsWith("entendimento.md")) {
+          return makeInitial([{ id: "SAT-001" }]);
+        }
+        if (filePath.endsWith("leg-b.md")) {
+          return makeLeg({ newItems: [{ id: "SAT-003" }] });
+        }
+        return makeLeg({ deliveredIds: ["SAT-001"], newItems: [{ id: "SAT-002" }] });
+      }),
+      basename: vi.fn((filePath: string) => filePath.split(/[\\/]/).pop() ?? filePath),
+    };
+    const replayService = new BacklogReplayService(fsRepository as any);
+
+    const result = replayService.replay("docs/entendimento.md", ["docs/leg-b.md", "docs/leg-a.md"]);
+
+    expect(fsRepository.readFile.mock.calls.map((call) => call[0])).toEqual([
+      "docs/entendimento.md",
+      "docs/leg-a.md",
+      "docs/leg-b.md",
+    ]);
+    expect(result.legResults.map((leg) => leg.legFile)).toEqual(["leg-a.md", "leg-b.md"]);
+    expect(result.state.get("SAT-001")).toBe("Concluído");
+    expect(result.state.get("SAT-002")).toBe("Pendente");
+    expect(result.state.get("SAT-003")).toBe("Pendente");
   });
 });
 

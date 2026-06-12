@@ -1,5 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
+import type { IFileSystemRepository } from "../../domain/interfaces/repositories/file-system-repository-interface.js";
+import { FileSystemRepository } from "../../infrastructure/repositories/file-system-repository.js";
 
 export interface LegStatIssue {
   stat: string;
@@ -10,22 +10,28 @@ export interface LegStatIssue {
 export interface LegReplayResult {
   legFile: string;
   statIssues: LegStatIssue[];
+  causalIssues: string[];
 }
 
 export interface ReplayResult {
   state: Map<string, string>;
   legResults: LegReplayResult[];
+  initialIssues: string[];
 }
 
 export class BacklogReplayService {
+  constructor(
+    private readonly fileSystemRepository: IFileSystemRepository = new FileSystemRepository(),
+  ) {}
+
   public replay(initialUnderstandingPath: string, legPaths: string[]): ReplayResult {
-    const initialContent = fs.readFileSync(initialUnderstandingPath, "utf-8");
+    const initialContent = this.fileSystemRepository.readFile(initialUnderstandingPath);
     const sorted = [...legPaths].sort((a, b) =>
-      path.basename(a).localeCompare(path.basename(b)),
+      this.fileSystemRepository.basename(a).localeCompare(this.fileSystemRepository.basename(b)),
     );
     const legContents = sorted.map((p) => ({
-      name: path.basename(p),
-      content: fs.readFileSync(p, "utf-8"),
+      name: this.fileSystemRepository.basename(p),
+      content: this.fileSystemRepository.readFile(p),
     }));
     return this.replayFromContent(initialContent, legContents);
   }
@@ -34,27 +40,47 @@ export class BacklogReplayService {
     initialContent: string,
     legContents: Array<{ name: string; content: string }>,
   ): ReplayResult {
-    const state = this.parseInitialState(initialContent);
+    const initialItems = this.parseTableIdAndStatus(initialContent, "TABELA_BACKLOG_INICIAL");
+    const initialIssues = [
+      ...this.findDuplicateIssues(initialItems.map((item) => item.id), "entendimento-inicial.md"),
+      ...this.findInvalidStatusIssues(initialItems, "entendimento-inicial.md"),
+    ];
+    const state = this.buildState(initialItems);
     const legResults: LegReplayResult[] = [];
 
     for (const { name, content } of legContents) {
+      const causalIssues: string[] = [];
+      const knownBeforeLeg = new Set(state.keys());
+
       const deliveredIds = this.parseTableFirstColumn(content, "TABELA_ENTREGUES");
+      causalIssues.push(...this.findDuplicateIssues(deliveredIds, name));
       for (const id of deliveredIds) {
-        if (state.has(id)) {
-          state.set(id, "Concluído");
+        if (!knownBeforeLeg.has(id)) {
+          causalIssues.push(`${name}: item entregue ${id} nao existia antes da LEG.`);
+          continue;
         }
+        if (this.normalizeStatus(state.get(id) ?? "") === "CONCLUIDO") {
+          causalIssues.push(`${name}: item ${id} foi entregue novamente.`);
+        }
+        state.set(id, "Concluído");
       }
 
       const newItems = this.parseTableIdAndStatus(content, "TABELA_NOVOS_CICLO");
+      causalIssues.push(...this.findDuplicateIssues(newItems.map((item) => item.id), name));
+      causalIssues.push(...this.findInvalidStatusIssues(newItems, name));
       for (const { id, status } of newItems) {
+        if (knownBeforeLeg.has(id)) {
+          causalIssues.push(`${name}: item novo ${id} ja existia antes da LEG.`);
+          continue;
+        }
         state.set(id, status);
       }
 
       const statIssues = this.validateLegStats(content, state, deliveredIds.length, newItems.length);
-      legResults.push({ legFile: name, statIssues });
+      legResults.push({ legFile: name, statIssues, causalIssues });
     }
 
-    return { state, legResults };
+    return { state, legResults, initialIssues };
   }
 
   public validateLegStats(
@@ -68,7 +94,7 @@ export class BacklogReplayService {
 
     const totalDelivered = statuses.filter((s) => this.normalizeStatus(s) === "CONCLUIDO").length;
     const totalPending = statuses.filter((s) =>
-      ["PENDENTE", "AGUARDANDO"].includes(this.normalizeStatus(s)),
+      ["PENDENTE", "AGUARDANDO", "AGUARDANDO FORMALIZACAO"].includes(this.normalizeStatus(s)),
     ).length;
 
     const resolvedDeliveredCycle =
@@ -95,18 +121,10 @@ export class BacklogReplayService {
     return issues;
   }
 
-  private parseInitialState(content: string): Map<string, string> {
+  private buildState(items: Array<{ id: string; status: string }>): Map<string, string> {
     const state = new Map<string, string>();
-    const block = this.extractBlock(content, "TABELA_BACKLOG_INICIAL");
-    if (!block) return state;
-
-    const rows = this.parseMarkdownTable(block);
-    for (const row of rows) {
-      const id = row[0]?.trim() ?? "";
-      const status = row[row.length - 1]?.trim() || "Pendente";
-      if (id && id !== "—") {
-        state.set(id, status);
-      }
+    for (const { id, status } of items) {
+      state.set(id, status);
     }
     return state;
   }
@@ -115,7 +133,9 @@ export class BacklogReplayService {
     const block = this.extractBlock(content, blockName);
     if (!block) return [];
     const rows = this.parseMarkdownTable(block);
-    return rows.map((r) => r[0]?.trim() ?? "").filter(Boolean);
+    return rows
+      .map((r) => r[0]?.trim() ?? "")
+      .filter((id) => id !== "" && id !== "-" && id !== "—" && id !== "â€”");
   }
 
   private parseTableIdAndStatus(
@@ -127,7 +147,38 @@ export class BacklogReplayService {
     const rows = this.parseMarkdownTable(block);
     return rows
       .map((r) => ({ id: r[0]?.trim() ?? "", status: r[r.length - 1]?.trim() || "Pendente" }))
-      .filter((i) => i.id && i.id !== "—");
+      .filter((i) => i.id && i.id !== "-" && i.id !== "—" && i.id !== "â€”");
+  }
+
+  private findDuplicateIssues(ids: string[], sourceName: string): string[] {
+    const seen = new Set<string>();
+    const duplicated = new Set<string>();
+    for (const id of ids) {
+      if (seen.has(id)) {
+        duplicated.add(id);
+      }
+      seen.add(id);
+    }
+    return [...duplicated].map((id) => `${sourceName}: item duplicado ${id}.`);
+  }
+
+  private findInvalidStatusIssues(
+    items: Array<{ id: string; status: string }>,
+    sourceName: string,
+  ): string[] {
+    return items
+      .filter((item) => !this.isKnownStatus(item.status))
+      .map((item) => `${sourceName}: item ${item.id} tem status desconhecido "${item.status}".`);
+  }
+
+  private isKnownStatus(status: string): boolean {
+    return [
+      "CONCLUIDO",
+      "PENDENTE",
+      "EM ANDAMENTO",
+      "AGUARDANDO",
+      "AGUARDANDO FORMALIZACAO",
+    ].includes(this.normalizeStatus(status));
   }
 
   private extractBlock(content: string, blockName: string): string | null {

@@ -3,17 +3,26 @@ export interface ConsistencyResult {
   issues: string[];
 }
 
+interface CurrentStateRow {
+  id: string;
+  status: string;
+}
+
 export class ConsistencyCheckerService {
   public check(replayedState: Map<string, string>, currentStateContent: string): ConsistencyResult {
-    const currentState = this.parseCurrentState(currentStateContent);
-    const issues: string[] = [];
+    const currentRows = this.parseCurrentStateRows(currentStateContent);
+    const currentState = this.toState(currentRows);
+    const issues: string[] = [
+      ...this.findDuplicateIssues(currentRows.map((row) => row.id)),
+      ...this.checkIndicators(currentState, currentStateContent),
+    ];
 
     for (const [id, status] of replayedState) {
       if (!currentState.has(id)) {
         issues.push(`Item ${id} presente no replay mas ausente em situacao-atual.md`);
       } else if (this.normalize(currentState.get(id)!) !== this.normalize(status)) {
         issues.push(
-          `Item ${id}: status no replay é "${status}" mas em situacao-atual.md é "${currentState.get(id)}"`,
+          `Item ${id}: status no replay e "${status}" mas em situacao-atual.md e "${currentState.get(id)}"`,
         );
       }
     }
@@ -28,12 +37,12 @@ export class ConsistencyCheckerService {
   }
 
   public diff(replayedState: Map<string, string>, currentStateContent: string): string {
-    const currentState = this.parseCurrentState(currentStateContent);
+    const currentState = this.toState(this.parseCurrentStateRows(currentStateContent));
     const lines: string[] = [];
 
     for (const [id, status] of replayedState) {
       if (!currentState.has(id)) {
-        lines.push(`+ ${id} → ${status}`);
+        lines.push(`+ ${id} -> ${status}`);
       } else if (this.normalize(currentState.get(id)!) !== this.normalize(status)) {
         lines.push(`~ ${id}: replay="${status}" atual="${currentState.get(id)}"`);
       }
@@ -41,27 +50,72 @@ export class ConsistencyCheckerService {
 
     for (const [id, status] of currentState) {
       if (!replayedState.has(id)) {
-        lines.push(`- ${id} → ${status}`);
+        lines.push(`- ${id} -> ${status}`);
       }
     }
 
     return lines.join("\n");
   }
 
-  private parseCurrentState(content: string): Map<string, string> {
-    const state = new Map<string, string>();
+  private parseCurrentStateRows(content: string): CurrentStateRow[] {
     const block = this.extractBlock(content, "TABELA_SITUACAO_ATUAL");
-    if (!block) return state;
+    if (!block) return [];
 
     const rows = this.parseMarkdownTable(block);
+    return rows
+      .map((row) => ({
+        id: row[0]?.trim() ?? "",
+        status: row[6]?.trim() ?? row[row.length - 1]?.trim() ?? "",
+      }))
+      .filter((row) => row.id && row.id !== "-" && row.id !== "—" && row.id !== "â€”");
+  }
+
+  private toState(rows: CurrentStateRow[]): Map<string, string> {
+    const state = new Map<string, string>();
     for (const row of rows) {
-      const id = row[0]?.trim() ?? "";
-      const status = row[6]?.trim() ?? "";
-      if (id && id !== "—") {
-        state.set(id, status);
-      }
+      state.set(row.id, row.status);
     }
     return state;
+  }
+
+  private checkIndicators(currentState: Map<string, string>, content: string): string[] {
+    const statuses = [...currentState.values()].map((status) => this.normalize(status));
+    const expected = {
+      concluded: statuses.filter((status) => status === "CONCLUIDO").length,
+      inProgress: statuses.filter((status) => status === "EM ANDAMENTO").length,
+      pending: statuses.filter((status) =>
+        ["PENDENTE", "AGUARDANDO", "AGUARDANDO FORMALIZACAO"].includes(status),
+      ).length,
+    };
+
+    const checks = [
+      { label: "Itens concluidos", value: this.parseIndicator(content, "Itens conclu"), expected: expected.concluded },
+      { label: "Itens em andamento", value: this.parseIndicator(content, "Itens em andamento"), expected: expected.inProgress },
+      { label: "Itens pendentes", value: this.parseIndicator(content, "Itens pendentes"), expected: expected.pending },
+    ];
+
+    return checks
+      .filter((check) => check.value !== null && check.value !== check.expected)
+      .map((check) => `${check.label}: esperado ${check.expected}, encontrado ${check.value}.`);
+  }
+
+  private parseIndicator(content: string, labelPrefix: string): number | null {
+    const escaped = labelPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\*\\*${escaped}[^:]*:\\*\\*\\s*(\\d+)`, "i");
+    const match = content.match(regex);
+    return match ? Number(match[1]) : null;
+  }
+
+  private findDuplicateIssues(ids: string[]): string[] {
+    const seen = new Set<string>();
+    const duplicated = new Set<string>();
+    for (const id of ids) {
+      if (seen.has(id)) {
+        duplicated.add(id);
+      }
+      seen.add(id);
+    }
+    return [...duplicated].map((id) => `Item ${id} duplicado em situacao-atual.md`);
   }
 
   private extractBlock(content: string, blockName: string): string | null {

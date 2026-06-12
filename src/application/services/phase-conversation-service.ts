@@ -15,6 +15,8 @@ import type { IChangeSetRepository } from "../../domain/interfaces/repositories/
 import type { IChangeChunkRepository } from "../../domain/interfaces/repositories/change-chunk-repository-interface.js";
 import type { IPhaseRepository } from "../../domain/interfaces/repositories/phase-repository-interface.js";
 import type { ICycleRepository } from "../../domain/interfaces/repositories/cycle-repository-interface.js";
+import type { IOperationalEventRepository } from "../../domain/interfaces/repositories/operational-event-repository-interface.js";
+import { OperationalEventEntity } from "../../domain/entities/operational-event-entity.js";
 
 import { FileSystemRepository } from "../../infrastructure/repositories/file-system-repository.js";
 import { LlmProviderFactory } from "../../infrastructure/llm/llm-provider-factory.js";
@@ -51,6 +53,7 @@ export class PhaseConversationService implements IPhaseConversationService {
   private readonly phaseRepository: IPhaseRepository;
   private readonly cycleRepository: ICycleRepository | null;
   private readonly backlogSyncService: BacklogSyncService | null;
+  private readonly operationalEventRepository: IOperationalEventRepository | null;
   private readonly applyDiff: Diff.ApplyFunction;
   private readonly promptPlaceholderBuilder: PromptPlaceholderBuilder;
 
@@ -66,6 +69,7 @@ export class PhaseConversationService implements IPhaseConversationService {
     fileSystemRepository: IFileSystemRepository | null = null,
     applyDiff: Diff.ApplyFunction | null = null,
     backlogSyncService: BacklogSyncService | null = null,
+    operationalEventRepository: IOperationalEventRepository | null = null,
   ) {
     this.phaseConversationRepository = phaseConversationRepository;
     this.phaseAttachmentRepository = phaseAttachmentRepository;
@@ -75,6 +79,7 @@ export class PhaseConversationService implements IPhaseConversationService {
     this.phaseRepository = phaseRepository;
     this.cycleRepository = cycleRepository;
     this.backlogSyncService = backlogSyncService;
+    this.operationalEventRepository = operationalEventRepository;
 
     this.fileSystemRepository = fileSystemRepository ?? new FileSystemRepository();
     this.applyDiff = applyDiff ?? Diff.applyDiff;
@@ -287,7 +292,7 @@ export class PhaseConversationService implements IPhaseConversationService {
       this.phaseAttachmentRepository.insert(attachment);
     }
 
-    const llm = LlmProviderFactory.create(config);
+    const llm = LlmProviderFactory.create(config, undefined, phase.promptName);
     llm.setSystemPrompt(systemPrompt);
     for (const message of this.phaseConversationRepository.list(phase.id))
       llm.addMessage(message.actor as LlmRole, message.content);
@@ -510,7 +515,7 @@ export class PhaseConversationService implements IPhaseConversationService {
       this.phaseAttachmentRepository.insert(attachment);
     }
 
-    const llm = LlmProviderFactory.create(config);
+    const llm = LlmProviderFactory.create(config, undefined, phase.promptName);
     llm.setSystemPrompt(systemPrompt);
     for (const message of this.phaseConversationRepository.list(phase.id))
       llm.addMessage(message.actor as LlmRole, message.content);
@@ -646,6 +651,11 @@ export class PhaseConversationService implements IPhaseConversationService {
     this.phaseRepository.awaitingApproval(phase.id);
 
     this.syncBacklogFromAppliedEsm(phase, newContent);
+    this.recordPhaseEvent(phase, "change.apply_all", `Todos os trechos aplicados em ${changeSet.fileName}`, {
+      changeSetId: changeSet.id,
+      fileName: changeSet.fileName,
+      changeChunkCount: changeSet.changeChunkCount,
+    });
 
     const currentChangeSet = this.changeSetRepository.getById(changeSet.id);
     this.assertNotNull(currentChangeSet, "Change-set não encontrado após aplicar tudo");
@@ -694,6 +704,11 @@ export class PhaseConversationService implements IPhaseConversationService {
     }
 
     this.fileSystemRepository.writeFile(changeSet.fileName, result.newContent);
+    this.recordPhaseEvent(phase, "change.apply", `Trecho ${chunk.index} aplicado em ${changeSet.fileName}`, {
+      changeSetId: changeSet.id,
+      chunkIndex: chunk.index,
+      fileName: changeSet.fileName,
+    });
     return this.changeSetRepository.getCurrent(phase.id);
   }
 
@@ -715,6 +730,11 @@ export class PhaseConversationService implements IPhaseConversationService {
     );
     this.changeSetRepository.updateComplete(changeSet.id);
     this.phaseRepository.awaitingApproval(phase.id);
+    this.recordPhaseEvent(phase, "change.discard_all", `Todos os trechos descartados em ${changeSet.fileName}`, {
+      changeSetId: changeSet.id,
+      fileName: changeSet.fileName,
+      changeChunkCount: changeSet.changeChunkCount,
+    });
 
     const currentChangeSet = this.changeSetRepository.getById(changeSet.id);
     this.assertNotNull(currentChangeSet, "Change-set não encontrado após descartar tudo");
@@ -749,6 +769,11 @@ export class PhaseConversationService implements IPhaseConversationService {
       );
     }
 
+    this.recordPhaseEvent(phase, "change.discard", `Trecho ${chunk.index} descartado em ${changeSet.fileName}`, {
+      changeSetId: changeSet.id,
+      chunkIndex: chunk.index,
+      fileName: changeSet.fileName,
+    });
     return this.changeSetRepository.getCurrent(phase.id);
   }
 
@@ -799,6 +824,32 @@ export class PhaseConversationService implements IPhaseConversationService {
     this.backlogSyncService.applyEsmInterventions(cycle.projectId, content);
   }
 
+  private recordPhaseEvent(
+    phase: PhaseEntity,
+    eventType: string,
+    message: string,
+    payload: Record<string, unknown> = {},
+  ): void {
+    if (!this.operationalEventRepository || !this.cycleRepository) {
+      return;
+    }
+
+    const cycle = this.cycleRepository.getById(phase.cycleId);
+    if (!cycle) {
+      return;
+    }
+
+    const event = new OperationalEventEntity();
+    event.projectId = cycle.projectId;
+    event.cycleId = phase.cycleId;
+    event.phaseId = phase.id;
+    event.eventType = eventType;
+    event.message = message;
+    event.payloadJson = JSON.stringify(payload);
+    event.createdAt = this.getCurrentDateTime();
+    this.operationalEventRepository.insert(event);
+  }
+
   private replaceCurrentStateIndicators(
     content: string,
     projectId: number,
@@ -843,7 +894,7 @@ export class PhaseConversationService implements IPhaseConversationService {
       config.shortDescriptionSlug?.prompt && config.shortDescriptionSlug.prompt.trim() !== ""
         ? config.shortDescriptionSlug.prompt
         : DEFAULT_PROMPT;
-    const llm = LlmProviderFactory.create(config);
+    const llm = LlmProviderFactory.create(config, undefined, "shortDescriptionSlug");
     llm.setSystemPrompt(systemPrompt);
     llm.setUserPrompt(content);
     const result = await llm.generateText();

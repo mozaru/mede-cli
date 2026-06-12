@@ -47,13 +47,15 @@ const prefixesSchema = z.object({
   deliveryLog: z.string(),
 });
 
-const llmSchema = z.object({
-  provider: z.string().refine((value) => SUPPORTED_PROVIDERS.includes(value.trim().toLowerCase()), {
-    message: `provider não suportado (use um de: ${SUPPORTED_PROVIDERS.join(", ")})`,
-  }),
-  model: z.string().min(1, "model é obrigatório"),
-  endpoint: z.string(),
-  apiKeyEnv: z.string().min(1, "apiKeyEnv é obrigatório"),
+const providerSchema = z.string().refine((value) => SUPPORTED_PROVIDERS.includes(value.trim().toLowerCase()), {
+  message: `provider nao suportado (use um de: ${SUPPORTED_PROVIDERS.join(", ")})`,
+});
+
+const llmProfileSchema = z.object({
+  provider: providerSchema.optional(),
+  model: z.string().min(1, "model e obrigatorio").optional(),
+  endpoint: z.string().optional(),
+  apiKeyEnv: z.string().min(1, "apiKeyEnv e obrigatorio").optional(),
   // Optional for backward compatibility: configs written before Q2 omit it and
   // default to "apiKey". adc is accepted here but only wired in a later Q2 slice
   // (the auth strategy fails fast with a clear message until then).
@@ -64,16 +66,31 @@ const llmSchema = z.object({
     .object({
       deviceAuthUrl: z.string().optional(),
       tokenUrl: z.string().optional(),
-      clientId: z.string().min(1, "oauth.clientId é obrigatório"),
+      clientId: z.string().min(1, "oauth.clientId e obrigatorio"),
       scope: z.string().optional(),
       tenant: z.string().optional(),
     })
     .optional(),
-  temperature: z.number().min(0, "temperature não pode ser negativa"),
-  maxTokens: z.number().int().positive("maxTokens deve ser um inteiro positivo"),
-  timeoutMs: z.number().int().positive("timeoutMs deve ser um inteiro positivo"),
+  temperature: z.number().min(0, "temperature nao pode ser negativa").optional(),
+  maxTokens: z.number().int().positive("maxTokens deve ser um inteiro positivo").optional(),
+  timeoutMs: z.number().int().positive("timeoutMs deve ser um inteiro positivo").optional(),
   credentialsHelper: z.string().optional(),
 });
+
+const llmSchema = llmProfileSchema
+  .extend({
+    activeProfile: z.string().min(1).optional(),
+    profiles: z.record(z.string(), llmProfileSchema).optional(),
+  })
+  .superRefine((llm, ctx) => {
+    if (llm.activeProfile && !llm.profiles?.[llm.activeProfile]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["activeProfile"],
+        message: `perfil LLM ativo "${llm.activeProfile}" nao existe em llm.profiles`,
+      });
+    }
+  });
 
 // Prompt sections are optional and only partially filled in real configs.
 const promptsSchema = z
@@ -104,7 +121,7 @@ const shortDescriptionSlugSchema = z
 export const medeConfigSchema = z.object({
   configVersion: z.number().optional(),
   language: z.string(),
-  docsRoot: z.string().min(1, "docsRoot é obrigatório"),
+  docsRoot: z.string().min(1, "docsRoot e obrigatorio"),
   projectName: z.string().optional(),
   clientName: z.string().optional(),
   supplierName: z.string().optional(),
@@ -112,6 +129,7 @@ export const medeConfigSchema = z.object({
   fileNames: fileNamesSchema,
   prefixes: prefixesSchema,
   llm: llmSchema,
+  llmRouting: z.record(z.string(), z.string().min(1)).optional(),
   systemPrompts: promptsSchema.optional(),
   prompts: promptsSchema.optional(),
   shortDescriptionSlug: shortDescriptionSlugSchema,
@@ -122,14 +140,14 @@ export const medeConfigSchema = z.object({
 // object (unknown keys preserved) typed as MedeConfigModelEntity.
 export function parseMedeConfig(content: string): MedeConfigModelEntity {
   if (content.trim() === "") {
-    throw new Error("Configuração inválida: mede.config.json está vazio.");
+    throw new Error("Configuracao invalida: mede.config.json esta vazio.");
   }
 
   let raw: unknown;
   try {
     raw = JSON.parse(content);
   } catch {
-    throw new Error("Configuração inválida: mede.config.json não é um JSON válido.");
+    throw new Error("Configuracao invalida: mede.config.json nao e um JSON valido.");
   }
 
   const result = medeConfigSchema.safeParse(raw);
@@ -142,7 +160,7 @@ export function parseMedeConfig(content: string): MedeConfigModelEntity {
       })
       .join("\n");
 
-    throw new Error(`Configuração inválida (mede.config.json):\n${issues}`);
+    throw new Error(`Configuracao invalida (mede.config.json):\n${issues}`);
   }
 
   return raw as MedeConfigModelEntity;

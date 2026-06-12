@@ -13,6 +13,8 @@ import { PhaseConversationRepository } from "../infrastructure/repositories/phas
 import { PhaseRepository } from "../infrastructure/repositories/phase-repository.js";
 import { ProjectConfigRepository } from "../infrastructure/repositories/project-config-repository.js";
 import { ProjectRepository } from "../infrastructure/repositories/project-repository.js";
+import { FileSystemRepository } from "../infrastructure/repositories/file-system-repository.js";
+import { OperationalEventRepository } from "../infrastructure/repositories/operational-event-repository.js";
 
 import { BacklogSyncService } from "../application/services/backlog-sync-service.js";
 import { ChangesService } from "../application/services/changes-service.js";
@@ -24,6 +26,7 @@ import { LlmService } from "../application/services/llm-service.js";
 import { PhaseConversationService } from "../application/services/phase-conversation-service.js";
 import { ProjectReconstructionService } from "../application/services/project-reconstruction-service.js";
 import { StatusService } from "../application/services/status-service.js";
+import { TuiViewModelService } from "../application/services/tui-view-model-service.js";
 
 import type { IChangesService } from "../domain/interfaces/services/changes-service-interface.js";
 import type { IConfigService } from "../domain/interfaces/services/config-service-interface.js";
@@ -45,6 +48,7 @@ export interface Container {
   phaseRepository: PhaseRepository;
   changeSetRepository: ChangeSetRepository;
   changeChunkRepository: ChangeChunkRepository;
+  operationalEventRepository: OperationalEventRepository;
   statusService: IStatusService;
   cycleService: ICycleService;
   initService: IInitService;
@@ -52,6 +56,7 @@ export interface Container {
   configService: IConfigService;
   filesService: IFilesService;
   llmService: ILlmService;
+  tuiViewModelService: TuiViewModelService;
   // Closes the underlying unit of work / SQLite connection. The one-shot CLI lets
   // the process exit instead of calling this; the interactive console disposes its
   // shared container when the session ends.
@@ -60,7 +65,9 @@ export interface Container {
 
 export function createContainer(options?: BetterSqliteConnectionFactoryOptions): Container {
   const inMemory = options?.inMemory ?? (process.argv.includes("--in-memory") || process.env.MEDE_IN_MEMORY === "true");
+  const projectRootPath = options?.projectRootPath ?? process.cwd();
   const uow = new UnitOfWork(new BetterSqliteConnectionFactory({ ...options, inMemory }));
+  const fileSystemRepository = new FileSystemRepository([projectRootPath]);
 
   const projectRepository = new ProjectRepository(uow);
   const projectConfigRepository = new ProjectConfigRepository(uow);
@@ -73,12 +80,17 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
   const phaseConversationRepository = new PhaseConversationRepository(uow);
   const backlogRepository = new BacklogRepository(uow);
   const backlogInterventionCountersRepository = new BacklogInterventionCountersRepository(uow);
+  const operationalEventRepository = new OperationalEventRepository(uow);
 
   const projectReconstructionService = new ProjectReconstructionService(
     projectConfigRepository,
     projectRepository,
     backlogRepository,
     backlogInterventionCountersRepository,
+    undefined,
+    undefined,
+    projectRootPath,
+    fileSystemRepository,
   );
 
   const statusService = new StatusService(
@@ -103,9 +115,10 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     phaseRepository,
     backlogRepository,
     cycleRepository,
-    null,
+    fileSystemRepository,
     null,
     backlogSyncService,
+    operationalEventRepository,
   );
 
   const cycleService = new CycleService(
@@ -122,6 +135,8 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     changeChunkRepository,
     phaseAttachmentRepository,
     phaseConversationRepository,
+    fileSystemRepository,
+    operationalEventRepository,
   );
 
   const initService = new InitService(
@@ -132,6 +147,7 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     projectConfigRepository,
     phaseRepository,
     cycleArtifactRepository,
+    fileSystemRepository,
   );
 
   const changesService = new ChangesService(
@@ -149,6 +165,7 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     projectRepository,
     projectConfigRepository,
     cycleRepository,
+    fileSystemRepository,
   );
 
   const filesService = new FilesService(
@@ -159,6 +176,14 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
   );
 
   const llmService = new LlmService(projectRepository, projectConfigRepository);
+  const tuiViewModelService = new TuiViewModelService(
+    uow,
+    projectRepository,
+    cycleRepository,
+    phaseRepository,
+    changeSetRepository,
+    changeChunkRepository,
+  );
 
   return {
     uow,
@@ -167,6 +192,7 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     phaseRepository,
     changeSetRepository,
     changeChunkRepository,
+    operationalEventRepository,
     statusService,
     cycleService,
     initService,
@@ -174,6 +200,7 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
     configService,
     filesService,
     llmService,
+    tuiViewModelService,
     dispose: () => uow[Symbol.dispose](),
   };
 }

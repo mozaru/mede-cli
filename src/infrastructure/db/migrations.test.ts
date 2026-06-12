@@ -44,11 +44,12 @@ describe("schema migrations", () => {
     }).createConnection();
 
     try {
-      expect(userVersion(connection)).toBe(1);
+      expect(userVersion(connection)).toBe(2);
       const tables = tableNames(connection);
       expect(tables).toContain("Project");
       expect(tables).toContain("Cycle");
       expect(tables).toContain("ChangeChunk");
+      expect(tables).toContain("OperationalEvent");
     } finally {
       connection.close();
     }
@@ -61,7 +62,7 @@ describe("schema migrations", () => {
     }).createConnection();
 
     try {
-      expect(userVersion(connection)).toBe(1);
+      expect(userVersion(connection)).toBe(2);
       expect(tableNames(connection)).toContain("Project");
       // No `.mede` directory is created for an in-memory database.
       expect(fs.existsSync(path.join(root, ".mede"))).toBe(false);
@@ -77,7 +78,7 @@ describe("schema migrations", () => {
       projectRootPath: root,
     }).createConnection();
     try {
-      expect(userVersion(connection)).toBe(1);
+      expect(userVersion(connection)).toBe(2);
       expect(tableNames(connection)).toContain("Project");
     } finally {
       connection.close();
@@ -104,11 +105,12 @@ describe("schema migrations", () => {
       projectRootPath: root,
     }).createConnection();
     try {
-      expect(userVersion(connection)).toBe(1);
+      expect(userVersion(connection)).toBe(2);
       // The pre-existing table is preserved and the missing ones are created.
       const tables = tableNames(connection);
       expect(tables).toContain("Project");
       expect(tables).toContain("Cycle");
+      expect(tables).toContain("OperationalEvent");
     } finally {
       connection.close();
     }
