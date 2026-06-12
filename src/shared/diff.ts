@@ -116,7 +116,7 @@ function generateDiff(contentOld: string, contentNew: string): Array<ChunkModel>
   if (parsedDiff.length > 0 && parsedDiff[0].hunks) {
     parsedDiff[0].hunks.forEach((hunk, idx) => {
       chunks.push({
-        index: idx,
+        index: idx + 1,
         offset: 0,
         location: `@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@`,
         content: hunk.lines.join("\n"),

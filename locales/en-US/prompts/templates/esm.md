@@ -42,7 +42,7 @@ List, when they exist:
 
 ---
 
-## 4. Intervention Control
+## 4. Intervention Backlog
 
 ##TABELA_INTERVENCAO##
 
@@ -55,6 +55,11 @@ Each item must have a formal and immutable identifier.
 Mandatory identifier format:
 
 <DOC>-<YYYYMMDD>-<NAT>-<TIP>-<NNNN>
+
+Mandatory counter rule:
+
+The <NNNN> suffix is sequential per <DOC> + <NAT> + <TIP> combination, not global within the document.
+Example: after ESM-20260301-AR-EVO-0003, the first ESM-20260301-OP-AJU must be 0001.
 
 Examples:
 

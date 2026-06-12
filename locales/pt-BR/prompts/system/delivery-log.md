@@ -49,59 +49,21 @@ Regras de estrutura:
   - Novos
   - Documentos
   - Estatística
-- a seção "Entregas" deve ser fortemente orientada por backlog e evidências;
-- a seção "Resultado" deve interpretar o que o ciclo representou;
-- a seção "Novos" deve registrar novos itens ou novas formalizações surgidas no período;
-- a seção "Documentos" deve listar os principais documentos de suporte efetivamente sustentados pelo contexto recebido;
-- a seção "Estatística" deve consolidar indicadores resumidos do período.
-
-Regras obrigatórias para a seção "Entregas":
-- listar CADA ITEM da tabela de backlog desta fase em sua própria linha da tabela;
-- NÃO usar faixas ou agrupamentos como "ID-001 a ID-099";
-- NÃO omitir nenhum item da tabela fornecida;
-- manter as mesmas colunas da tabela de backlog recebida;
-- cada ID deve aparecer integralmente e individualmente.
-
-Regras obrigatórias para a seção "Estatística":
-- copiar os valores exatos da tabela de estatística fornecida;
-- não inventar percentuais ou contagens.
+- As seções "Entregas", "Novos" e "Estatística" contêm blocos estruturados delimitados por `<!-- BEGIN-NOME -->` e `<!-- END-NOME -->`. Apenas preserve os marcadores intactos e nunca insira ou edite qualquer conteúdo dentro delas. Elas serão preenchidas de forma 100% automatizada e determinística pela aplicação.
+- A seção "Objetivo" deve descrever de forma clara o foco principal do ciclo e as razões das entregas.
+- A seção "Resultado" deve interpretar analiticamente o que o ciclo representou para a evolução do projeto.
+- A seção "Documentos" deve listar os principais documentos de suporte (atas, ESMs, ADRs) efetivamente sustentados pelo contexto do ciclo.
 
 Critérios editoriais:
 - linguagem objetiva, sóbria e consolidativa;
 - tom de registro formal de entrega;
 - evitar linguagem promocional;
 - evitar inflar entregas;
-- evitar afirmar entrega sem evidência suficiente;
-- evitar redundância entre "Entregas" e "Novos";
 - preservar trechos corretos do documento atual quando possível.
 
 Regras de inferência:
-- não invente entregas;
-- não invente percentuais;
-- não invente backlog;
-- não invente evidência técnica;
-- não marcar como concluído algo sem sustentação suficiente;
-- quando houver evidência parcial, usar formulações como:
-  - "Concluído por evidência técnica parcial"
-  - "Parcialmente concluído"
-  - "Em progresso interno"
-  - "Pendente"
-  somente se sustentado pelo contexto;
-- quando houver complemento de entrega, deixar isso explícito;
-- quando houver absorção de itens de ESM, deixar isso explícito;
+- Use as tabelas e dados recebidos como contexto analítico para estruturar as seções narrativas ("Objetivo", "Resultado"), mas nunca mexa nas seções com marcadores HTML.
 - quando o ciclo representar mais estabilização do que nova feature, isso deve aparecer no "Resultado".
-
-Regras para seleção do que entra em "Entregas":
-- incluir itens efetivamente entregues, concluídos ou claramente absorvidos no período;
-- incluir itens em adiantamento quando isso for relevante e sustentado;
-- incluir itens de ESM quando houver evidência de que foram tratados no período;
-- não incluir como entrega definitiva itens apenas discutidos, propostos ou aguardando formalização.
-
-Regras para seleção do que entra em "Novos":
-- incluir itens que surgiram, foram formalizados ou passaram a existir no backlog operacional no período;
-- incluir pendências novas;
-- incluir evoluções recém-surgidas;
-- não repetir desnecessariamente itens já consolidados em logs anteriores, exceto quando houver mudança relevante de status.
 
 Regras para a seção "Documentos":
 - listar apenas documentos realmente sustentados pelo contexto recebido;

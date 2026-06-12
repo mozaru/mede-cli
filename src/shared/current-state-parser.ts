@@ -317,7 +317,7 @@ export class CurrentStateParser {
   } | null {
     const normalized = value.trim().toUpperCase();
     const match = normalized.match(
-      /^(DEI|ESM|LEG)-(\d{8})-(RF|NF|RN|UX|OP|AR)-(BLI|COR|AJU|EVO)-(\d{4})$/,
+      /^(DEI|ESM|LEG)-(\d{8})(?:-(\d{3}))?-(RF|NF|RN|UX|OP|AR)-(BLI|COR|AJU|EVO)-(\d{4})$/,
     );
 
     if (!match) {
@@ -327,9 +327,9 @@ export class CurrentStateParser {
     return {
       classificationDoc: match[1],
       classificationDate: match[2],
-      classificationNature: match[3],
-      classificationInterventionType: match[4],
-      classificationSequence: Number(match[5]),
+      classificationNature: match[4],
+      classificationInterventionType: match[5],
+      classificationSequence: Number(match[6]),
     };
   }
 

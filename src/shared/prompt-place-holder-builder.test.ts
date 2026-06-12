@@ -347,5 +347,19 @@ describe("PromptPlaceholderBuilder", () => {
       expect(lines.length).toBe(3); // header, separator, dash row
       expect(lines[2]).toContain("—");
     });
+
+    it("buildCurrentStateIndicatorsFromProject counts current backlog deterministically", () => {
+      const indicators = makeBuilder().buildCurrentStateIndicatorsFromProject(
+        1,
+        "situacao-atual.md",
+      );
+
+      expect(indicators).toContain("**Itens concluídos:** 1");
+      expect(indicators).toContain("**Itens em andamento:** 0");
+      expect(indicators).toContain("**Itens pendentes:** 2");
+      expect(indicators).toContain("**Novos itens no ciclo:** 3");
+      expect(indicators).toContain("- Evoluções: 2");
+      expect(indicators).toContain("- Backlog inicial: 0");
+    });
   });
 });

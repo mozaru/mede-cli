@@ -158,8 +158,8 @@ describe("BacklogSyncService.applyExtraction", () => {
     expect(items[2].immutableId).toBe("SAT-20260611-001-NF-BLI-0001");
 
     const counters = countersRepo.list(PROJECT_ID);
-    const rfBli = counters.find((c) => c.name === "RF-BLI");
-    const nfBli = counters.find((c) => c.name === "NF-BLI");
+    const rfBli = counters.find((c) => c.name === "SAT-RF-BLI");
+    const nfBli = counters.find((c) => c.name === "SAT-NF-BLI");
     expect(rfBli?.lastNumber).toBe(2);
     expect(nfBli?.lastNumber).toBe(1);
   });
@@ -174,5 +174,60 @@ describe("BacklogSyncService.applyExtraction", () => {
 
     // No items should have been modified
     expect(backlogRepo.list(PROJECT_ID)).toHaveLength(0);
+  });
+});
+
+describe("BacklogSyncService.applyEsmInterventions", () => {
+  it("inserts missing formal ESM intervention rows into backlog", () => {
+    const esm = [
+      "## 4. Backlog de Intervenções",
+      "",
+      "| ID | Natureza | Tipo | Nome | Origem | Entrega | Status |",
+      "| --- | --- | --- | --- | --- | --- | --- |",
+      "| ESM-20260612-AR-EVO-0001 | AR | EVO | Loader JSON | Ata 003 | leg-003 | Concluído |",
+      "| ESM-20260612-OP-AJU-0001 | OP | AJU | Ajuste compliance | Ata 003 |  | Pendente |",
+    ].join("\n");
+
+    service.applyEsmInterventions(PROJECT_ID, esm);
+
+    const items = backlogRepo.list(PROJECT_ID);
+    expect(items.map((item) => item.immutableId)).toEqual([
+      "ESM-20260612-AR-EVO-0001",
+      "ESM-20260612-OP-AJU-0001",
+    ]);
+    expect(items[0].description).toBe("Loader JSON");
+    expect(items[0].deliver).toBe("leg-003");
+    expect(items[0].status).toBe("Concluído");
+    expect(items[1].status).toBe("Pendente");
+
+    const counters = countersRepo.list(PROJECT_ID);
+    expect(counters.find((counter) => counter.name === "ESM-AR-EVO")?.lastNumber).toBe(1);
+    expect(counters.find((counter) => counter.name === "ESM-OP-AJU")?.lastNumber).toBe(1);
+  });
+
+  it("does not duplicate an ESM intervention that already exists", () => {
+    backlogRepo.insert(
+      makeItem({
+        documentType: "ESM",
+        referenceDate: "2026-06-12",
+        nature: "AR",
+        interventionType: "EVO",
+        sequence: 1,
+        immutableId: "ESM-20260612-AR-EVO-0001",
+        status: "Pendente",
+      }),
+    );
+
+    const esm = [
+      "| ID | Natureza | Tipo | Nome | Origem | Entrega | Status |",
+      "| --- | --- | --- | --- | --- | --- | --- |",
+      "| ESM-20260612-AR-EVO-0001 | AR | EVO | Loader JSON | Ata 003 | leg-003 | Concluído |",
+    ].join("\n");
+
+    service.applyEsmInterventions(PROJECT_ID, esm);
+
+    const items = backlogRepo.list(PROJECT_ID);
+    expect(items).toHaveLength(1);
+    expect(items[0].status).toBe("Concluído");
   });
 });

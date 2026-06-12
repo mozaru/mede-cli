@@ -6,6 +6,8 @@ Regras obrigatórias de formato do unified git diff:
 - nunca omitir os @@ finais do cabeçalho;
 - linhas adicionadas começam com "+", linhas removidas com "-", contexto com " " (espaço);
 - o diff gerado deve ser compatível com parsers padrão de unified git diff.
+- para atualização de arquivo existente, nunca anexar uma segunda cópia completa do documento ao final;
+- se for necessário reescrever o documento inteiro, o diff deve remover/substituir o conteúdo antigo no mesmo hunk, não duplicá-lo.
 
 Exemplo correto para criação de arquivo novo:
 --- /dev/null

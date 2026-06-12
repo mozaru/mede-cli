@@ -1,3 +1,5 @@
 - never generate an incomplete hunk header;
 - never omit the trailing @@;
 - the generated diff must be compatible with standard unified git diff parsers.
+- when updating an existing file, never append a second complete copy of the document at the end;
+- if the whole document must be rewritten, the diff must remove/replace the old content in the same hunk, not duplicate it.

@@ -43,7 +43,7 @@ Listar, quando existirem:
 
 ---
 
-## 4. Controle de Intervenções
+## 4. Backlog de Intervenções
 
 ##TABELA_INTERVENCAO##
 
@@ -56,6 +56,11 @@ Cada item deve possuir identificador formal e imutável.
 Formato obrigatório do identificador:
 
 <DOC>-<AAAAMMDD>-<NAT>-<TIP>-<NNNN>
+
+Regra obrigatória do contador:
+
+O sufixo <NNNN> é sequencial por combinação <DOC> + <NAT> + <TIP>, não global no documento.
+Exemplo: após ESM-20260301-AR-EVO-0003, o primeiro ESM-20260301-OP-AJU deve ser 0001.
 
 Exemplos:
 

@@ -32,6 +32,12 @@ Modelo estrutural obrigatório:
 Formato obrigatório dos identificadores:
 <DOC>-<AAAAMMDD>-<NAT>-<TIP>-<NNNN>
 
+Regra obrigatória do contador:
+- o sufixo <NNNN> é sequencial por combinação <DOC> + <NAT> + <TIP>;
+- o contador não é global dentro do documento;
+- ao criar itens novos, continuar a maior sequência já existente para a mesma combinação;
+- exemplos: após ESM-20260301-AR-EVO-0003, o primeiro ESM-20260301-OP-AJU deve ser 0001, e o próximo ESM-20260301-AR-EVO deve ser 0004.
+
 Exemplos:
 - ESM-20260301-RF-COR-0001
 - ESM-20260301-UX-AJU-0002
@@ -84,7 +90,7 @@ Regras de estrutura:
 - usar apenas as seções realmente aplicáveis ao ciclo atual.
 
 Tabela de controle:
-A seção "Controle de Intervenções" deve manter obrigatoriamente o placeholder:
+A seção "Backlog de Intervenções" deve manter obrigatoriamente o placeholder:
 
 ##TABELA_INTERVENCAO##
 

@@ -31,6 +31,12 @@ Mandatory structural template:
 Mandatory format of identifiers:
 <DOC>-<YYYYMMDD>-<NAT>-<TIP>-<NNNN>
 
+Mandatory counter rule:
+- the <NNNN> suffix is sequential per <DOC> + <NAT> + <TIP> combination;
+- the counter is not global within the document;
+- when creating new items, continue the highest existing sequence for the same combination;
+- examples: after ESM-20260301-AR-EVO-0003, the first ESM-20260301-OP-AJU must be 0001, and the next ESM-20260301-AR-EVO must be 0004.
+
 Examples:
 - ESM-20260301-RF-COR-0001
 - ESM-20260301-UX-AJU-0002
@@ -83,7 +89,7 @@ Structure rules:
 - use only the sections actually applicable to the current cycle.
 
 Control table:
-The "Intervention Control" section must mandatorily maintain the placeholder:
+The "Intervention Backlog" section must mandatorily maintain the placeholder:
 
 ##TABELA_INTERVENCAO##
 

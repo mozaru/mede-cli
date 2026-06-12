@@ -162,7 +162,7 @@ Foram identificados problemas de validação no módulo de cadastro.
 
 ---
 
-## 4. Controle de Intervenções
+## 4. Backlog de Intervenções
 
 | ID | Natureza | Tipo | Nome | Origem | Entrega | Status |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -847,7 +847,7 @@ const REQUIRED: Record<string, string[]> = {
     "## 1. Objetivo",
     "## 2. Contexto",
     "## 3. Referências",
-    "## 4. Controle de Intervenções",
+    "## 4. Backlog de Intervenções",
     "## 5. Itens de Manutenção",
     "## 6. Observações",
   ],

@@ -21,6 +21,7 @@ function makeBuilder(
     buildPendentesTableFromProject: vi.fn(() => "| ID | Status |\n| --- | --- |\n| 002 | Pendente |"),
     buildNovosCicloTableFromProject: vi.fn(() => "| ID | Nome |\n| --- | --- |"),
     buildCurrentStateTableFromProject: vi.fn(() => "| ID | Desc |\n| --- | --- |"),
+    buildInitialBacklogTableFromProject: vi.fn(() => "| ID | Inicial |\n| --- | --- |"),
     ...overrides,
   } as unknown as PromptPlaceholderBuilder;
 }
@@ -125,4 +126,55 @@ describe("buildDeterministicChunks", () => {
     expect(result.length).toBeGreaterThan(0);
     expect(result[0].changeContent).toContain("Sistema Novo");
   });
+
+  it("offsets block location by block start line", () => {
+    const doc = [
+      "Line 0",
+      "Line 1",
+      "Line 2",
+      "<!-- BEGIN-NOME_PROJETO -->",
+      "old name",
+      "<!-- END-NOME_PROJETO -->",
+    ].join("\n");
+
+    const opts = {
+      ...DEFAULT_OPTS,
+      config: { projectName: "Sistema Novo" } as MedeConfigModelEntity,
+    };
+
+    const result = buildDeterministicChunks(doc, opts, makeBuilder());
+    expect(result).toHaveLength(1);
+    // block.startLine is 3 (0-indexed). So offsetLine is 4.
+    // oldStart in hunk is 1, so transformed should be 1 + 4 = 5.
+    expect(result[0].blockLocation).toContain("@@ -5,1 +5,1 @@");
+  });
+
+  it("resolves TABELA_BACKLOG_INICIAL using buildInitialBacklogTableFromProject", () => {
+    const doc = [
+      "<!-- BEGIN-TABELA_BACKLOG_INICIAL -->",
+      "old content",
+      "<!-- END-TABELA_BACKLOG_INICIAL -->",
+    ].join("\n");
+
+    const result = buildDeterministicChunks(doc, DEFAULT_OPTS, makeBuilder());
+    expect(result).toHaveLength(1);
+    expect(result[0].changeContent).toContain("Inicial");
+  });
+
+  it("resolves inline blocks by replacing the entire line content instead of inserting lines", () => {
+    const doc = [
+      "Cliente: <!-- BEGIN-CLIENTE --><!-- END-CLIENTE -->",
+    ].join("\n");
+
+    const opts = {
+      ...DEFAULT_OPTS,
+      config: { clientName: "11Tech" } as MedeConfigModelEntity,
+    };
+
+    const result = buildDeterministicChunks(doc, opts, makeBuilder());
+    expect(result).toHaveLength(1);
+    expect(result[0].blockLocation).toBe("@@ -1,1 +1,1 @@");
+    expect(result[0].changeContent).toContain("Cliente: <!-- BEGIN-CLIENTE -->11Tech<!-- END-CLIENTE -->");
+  });
 });
+

@@ -122,7 +122,7 @@ export class PromptPlaceholderBuilder {
       "##TOTAL_ENTREGUES_CICLO##": String(comparisons.filter((c) => c.wasDeliveredInPeriod).length),
       "##NOVOS_CICLO##": String(comparisons.filter((c) => c.isNewInPeriod).length),
       "##PERCENTUAL_ENTREGA##": `${this.formatPercent(deliveryPercent)}%`,
-      "##TABELA_ENTREGUES##": this.buildEntreguesTable(currentItems),
+      "##TABELA_ENTREGUES##": this.buildEntreguesTable(comparisons),
       "##TABELA_PENDENTES##": this.buildPendentesTable(currentItems),
       "##TABELA_NOVOS_CICLO##": this.buildNovosCicloTable(comparisons),
     };
@@ -172,9 +172,49 @@ export class PromptPlaceholderBuilder {
     return this.buildCurrentStateTable(items);
   }
 
-  public buildEntreguesTableFromProject(projectId: number): string {
-    const items = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
-    return this.buildEntreguesTable(items);
+  public buildCurrentStateIndicatorsFromProject(
+    projectId: number,
+    previousCurrentStateFilePath: string,
+  ): string {
+    const currentItems = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
+    const comparisons = this.compareAllWithPrevious(currentItems, previousState);
+    const pendingItems = currentItems.filter((item) =>
+      ["PENDENTE", "AGUARDANDO"].includes(this.normalizeStatus(item.status)),
+    );
+
+    const countPendingType = (type: string): number =>
+      pendingItems.filter((item) => this.normalizeText(item.interventionType) === type).length;
+    const countPendingNature = (nature: string): number =>
+      pendingItems.filter((item) => this.normalizeText(item.nature) === nature).length;
+
+    return [
+      "## 2. Indicadores Consolidados",
+      "",
+      `**Itens concluídos:** ${this.countDelivered(currentItems)}`,
+      `**Itens em andamento:** ${this.countInProgress(currentItems)}`,
+      `**Itens pendentes:** ${this.countPending(currentItems)}`,
+      `**Itens cancelados:** ${this.countCancelled(currentItems)}`,
+      `**Novos itens no ciclo:** ${comparisons.filter((c) => c.isNewInPeriod).length}`,
+      "",
+      "### Distribuição do backlog pendente",
+      "",
+      `- Correções: ${countPendingType("COR")}`,
+      `- Ajustes: ${countPendingType("AJU")}`,
+      `- Evoluções: ${countPendingType("EVO")}`,
+      `- Backlog inicial: ${countPendingType("BLI")}`,
+      `- Regras / Operação: ${countPendingNature("RN") + countPendingNature("OP")}`,
+    ].join("\n");
+  }
+
+  public buildEntreguesTableFromProject(
+    projectId: number,
+    previousCurrentStateFilePath: string,
+  ): string {
+    const currentItems = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
+    const comparisons = this.compareAllWithPrevious(currentItems, previousState);
+    return this.buildEntreguesTable(comparisons);
   }
 
   public buildPendentesTableFromProject(projectId: number): string {
@@ -190,6 +230,47 @@ export class PromptPlaceholderBuilder {
     const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
     const comparisons = this.compareAllWithPrevious(currentItems, previousState);
     return this.buildNovosCicloTable(comparisons);
+  }
+
+  public buildTotalEntreguesFromProject(projectId: number): string {
+    const items = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    return String(this.countDelivered(items));
+  }
+
+  public buildTotalPendentesFromProject(projectId: number): string {
+    const items = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    return String(this.countPending(items));
+  }
+
+  public buildTotalEntreguesCicloFromProject(
+    projectId: number,
+    previousCurrentStateFilePath: string,
+  ): string {
+    const currentItems = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
+    const comparisons = this.compareAllWithPrevious(currentItems, previousState);
+    return String(comparisons.filter((c) => c.wasDeliveredInPeriod).length);
+  }
+
+  public buildNovosCicloCountFromProject(
+    projectId: number,
+    previousCurrentStateFilePath: string,
+  ): string {
+    const currentItems = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
+    const comparisons = this.compareAllWithPrevious(currentItems, previousState);
+    return String(comparisons.filter((c) => c.isNewInPeriod).length);
+  }
+
+  public buildPercentualEntregaFromProject(projectId: number): string {
+    const items = this.normalizeBacklogItems(this.backlogRepository.list(projectId));
+    const totalDelivered = this.countDelivered(items);
+    const totalNonCancelled = items.filter(
+      (i) => this.normalizeStatus(i.status) !== "CANCELADO",
+    ).length;
+    const deliveryPercent =
+      totalNonCancelled === 0 ? 0 : (totalDelivered / totalNonCancelled) * 100;
+    return `${this.formatPercent(deliveryPercent)}%`;
   }
 
   private buildInterventionTable(items: BacklogEntity[]): string {
@@ -261,9 +342,10 @@ export class PromptPlaceholderBuilder {
     );
   }
 
-  private buildEntreguesTable(items: BacklogEntity[]): string {
-    const rows = items
-      .filter((i) => this.normalizeStatus(i.status) === "CONCLUIDO")
+  private buildEntreguesTable(comparisons: CurrentVsPreviousItem[]): string {
+    const rows = comparisons
+      .filter((c) => c.wasDeliveredInPeriod)
+      .map((c) => c.current)
       .sort((a, b) => this.compareBacklogItems(a, b));
 
     return this.toMarkdownTable(
@@ -323,6 +405,14 @@ export class PromptPlaceholderBuilder {
     return items.filter((i) =>
       ["PENDENTE", "AGUARDANDO"].includes(this.normalizeStatus(i.status)),
     ).length;
+  }
+
+  private countInProgress(items: BacklogEntity[]): number {
+    return items.filter((i) => this.normalizeStatus(i.status) === "EM ANDAMENTO").length;
+  }
+
+  private countCancelled(items: BacklogEntity[]): number {
+    return items.filter((i) => this.normalizeStatus(i.status) === "CANCELADO").length;
   }
 
   private buildDeliveryStatistics(items: BacklogEntity[]): string {

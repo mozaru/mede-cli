@@ -1,8 +1,7 @@
 // Verifies that sendMessage() wires the BEGIN-END placeholder pipeline:
 // (1) documents are compressed before being sent to the LLM,
 // (2) LLM diff coordinates are transformed back to original-doc space, and
-// (3) deterministic chunks are generated for each BEGIN-END block and appended
-//     to the same ChangeSet as the LLM chunks.
+// (3) deterministic block updates are folded into the final persisted diff.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
@@ -176,7 +175,7 @@ afterEach(() => {
 });
 
 describe("PhaseConversationService — BEGIN-END placeholder pipeline (T07)", () => {
-  it("document with block: ChangeSet includes LLM chunk + deterministic chunk for the block", async () => {
+  it("document with block: ChangeSet includes LLM edit and deterministic block update", async () => {
     const outputFile = path.join(root, "leg-20260611-001.md");
     const phase = makePhase(outputFile);
     seedArtifact(outputFile, DOC_WITH_BLOCK);
@@ -186,20 +185,20 @@ describe("PhaseConversationService — BEGIN-END placeholder pipeline (T07)", ()
     const changeSet = await service.sendMessage(projectEntity, config, phase);
     expect(changeSet).not.toBeNull();
 
-    // 1 LLM chunk (transformed) + 1 deterministic chunk for TABELA_ENTREGUES
-    expect(changeSet!.changeChunkCount).toBe(2);
+    expect(changeSet!.changeChunkCount).toBe(1);
 
     const chunks = changeChunkRepo.list(changeSet!.id);
-    expect(chunks).toHaveLength(2);
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].status).toBe("AWAITING_APPROVAL");
+    expect(chunks[0].changeContent).toContain("+Total: 10 itens");
+    expect(chunks[0].changeContent).toContain("| ID | Tipo | Nome | Origem | Ciclo de Entrega | Observa");
+    expect(chunks[0].changeContent).not.toContain("+| OLD-001 | Old Item |");
 
-    // First chunk (LLM) should have coordinates shifted from compressed to original space
-    const llmChunk = chunks.find((c) => c.index === 1)!;
-    expect(llmChunk.blockLocation).toContain("@@ -11,1 +11,1 @@");
-    expect(llmChunk.changeContent).toContain("+Total: 10 itens");
-
-    // Second chunk (deterministic) should target the TABELA_ENTREGUES block
-    const detChunk = chunks.find((c) => c.index === 2)!;
-    expect(detChunk.status).toBe("AWAITING_APPROVAL");
+    service.applyAll(phase, changeSet!);
+    const applied = fs.readFileSync(outputFile, "utf-8");
+    expect(applied).toContain("Total: 10 itens");
+    expect(applied).toContain("| ID | Tipo | Nome | Origem | Ciclo de Entrega | Observa");
+    expect(applied).not.toContain("| OLD-001 | Old Item |");
   });
 
   it("document without blocks: ChangeSet has only the LLM chunk (backward-compat)", async () => {
@@ -217,12 +216,10 @@ describe("PhaseConversationService — BEGIN-END placeholder pipeline (T07)", ()
     const chunks = changeChunkRepo.list(changeSet!.id);
     expect(chunks).toHaveLength(1);
 
-    // Coordinates should be unchanged (no compression map)
-    expect(chunks[0].blockLocation).toContain("@@ -3,1 +3,1 @@");
+    expect(chunks[0].changeContent).toContain("+Conteúdo alterado.");
   });
 
-  it("document with block: LLM diff that does NOT touch the block still gets a deterministic chunk", async () => {
-    // Same as first test but we also verify the deterministic chunk contains fresh content
+  it("document with block: LLM diff that does NOT touch the block still gets deterministic content", async () => {
     const outputFile = path.join(root, "leg-20260611-003.md");
     const phase = makePhase(outputFile);
     seedArtifact(outputFile, DOC_WITH_BLOCK);
@@ -233,10 +230,11 @@ describe("PhaseConversationService — BEGIN-END placeholder pipeline (T07)", ()
     const changeSet = await service.sendMessage(projectEntity, config, phase);
     expect(changeSet).not.toBeNull();
 
-    // 0 LLM chunks + 1 deterministic chunk
     expect(changeSet!.changeChunkCount).toBe(1);
     const chunks = changeChunkRepo.list(changeSet!.id);
     expect(chunks).toHaveLength(1);
     expect(chunks[0].status).toBe("AWAITING_APPROVAL");
+    expect(chunks[0].changeContent).toContain("| ID | Tipo | Nome | Origem | Ciclo de Entrega | Observa");
+    expect(chunks[0].changeContent).not.toContain("+| OLD-001 | Old Item |");
   });
 });

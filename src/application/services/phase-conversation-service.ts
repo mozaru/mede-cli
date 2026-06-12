@@ -38,7 +38,8 @@ import {
   buildCompressionMap,
   transformDiffCoordinates,
 } from "../../shared/diff-coordinate-transformer.js";
-import { buildDeterministicChunks } from "../../shared/deterministic-chunk-builder.js";
+import { buildDeterministicContent } from "../../shared/deterministic-chunk-builder.js";
+import { collapseDuplicateRootDocumentAppend } from "../../shared/markdown-document-normalizer.js";
 
 export class PhaseConversationService implements IPhaseConversationService {
   private readonly fileSystemRepository: IFileSystemRepository;
@@ -396,19 +397,32 @@ export class PhaseConversationService implements IPhaseConversationService {
     // Apply transformed chunks in memory to obtain the document after LLM edits
     const docAfterLlm = this.applyChunksInMemory(originalContent, transformedChunks);
 
-    // Generate deterministic chunks for each BEGIN-END block present in docAfterLlm
-    const deterministicChunks = buildDeterministicChunks(
+    const deterministicOptions = {
+      projectId: project.id,
+      config,
+      cycleNumber,
+      referenceDate,
+      previousCurrentStateFilePath,
+      startChunkIndex: transformedChunks.length + 1,
+    };
+
+    const contentAfterDeterministic = buildDeterministicContent(
       docAfterLlm,
-      {
-        projectId: project.id,
-        config,
-        cycleNumber,
-        referenceDate,
-        previousCurrentStateFilePath,
-        startChunkIndex: transformedChunks.length + 1,
-      },
+      deterministicOptions,
       this.promptPlaceholderBuilder,
     );
+    let finalContent =
+      cycleArtifact.canonicalType === "LIVE"
+        ? collapseDuplicateRootDocumentAppend(contentAfterDeterministic)
+        : contentAfterDeterministic;
+    if (phase.promptName === "currentState") {
+      finalContent = this.replaceCurrentStateIndicators(
+        finalContent,
+        project.id,
+        previousCurrentStateFilePath,
+      );
+    }
+    const finalChunks = Diff.generateDiff(originalContent, finalContent);
 
     const changeSet = new ChangeSetEntity();
     changeSet.id = 0;
@@ -417,12 +431,12 @@ export class PhaseConversationService implements IPhaseConversationService {
     changeSet.fileName = cycleArtifact.artifactPath;
     changeSet.completed = false;
     changeSet.currentChangeChunkIndex = 1;
-    changeSet.changeChunkCount = transformedChunks.length + deterministicChunks.length;
+    changeSet.changeChunkCount = finalChunks.length;
     changeSet.startedAt = this.getCurrentDateTime();
     changeSet.updatedAt = this.getCurrentDateTime();
     const insertedChangeSet = this.changeSetRepository.insert(changeSet);
 
-    for (const chunk of transformedChunks) {
+    for (const chunk of finalChunks) {
       const changeChunk = new ChangeChunkEntity();
       changeChunk.id = 0;
       changeChunk.phaseId = phase.id;
@@ -437,15 +451,7 @@ export class PhaseConversationService implements IPhaseConversationService {
       this.changeChunkRepository.insert(changeChunk);
     }
 
-    for (const det of deterministicChunks) {
-      det.phaseId = phase.id;
-      det.changeSetId = insertedChangeSet.id;
-      det.startedAt = this.getCurrentDateTime();
-      det.updatedAt = this.getCurrentDateTime();
-      this.changeChunkRepository.insert(det);
-    }
-
-    await this.maybeFinalizeSlug(config, phase, cycleArtifact, insertedChangeSet, transformedChunks);
+    await this.maybeFinalizeSlug(config, phase, cycleArtifact, insertedChangeSet, finalChunks);
     return this.changeSetRepository.getById(insertedChangeSet.id) ?? insertedChangeSet;
   }
 
@@ -577,7 +583,10 @@ export class PhaseConversationService implements IPhaseConversationService {
     const tableBlock = blocks.find((b) => b.name === "TABELA_SITUACAO_ATUAL");
     const oldTableContent = tableBlock?.innerContent ?? "";
     const newTableContent = this.promptPlaceholderBuilder.buildCurrentStateTableFromProject(project.id);
-    const diffChunks = Diff.generateDiff(oldTableContent, newTableContent);
+    const diffChunks = Diff.generateDiff(oldTableContent, newTableContent).map((chunk) => ({
+      ...chunk,
+      location: this.offsetHunkLocation(chunk.location, (tableBlock?.startLine ?? -1) + 1),
+    }));
 
     if (diffChunks.length === 0) {
       return null;
@@ -683,6 +692,8 @@ export class PhaseConversationService implements IPhaseConversationService {
       }
     }
 
+    this.syncBacklogFromAppliedEsm(phase, newContent);
+
     const currentChangeSet = this.changeSetRepository.getById(changeSet.id);
     this.assertNotNull(currentChangeSet, "Change-set não encontrado após aplicar tudo");
 
@@ -720,6 +731,7 @@ export class PhaseConversationService implements IPhaseConversationService {
       );
       this.changeSetRepository.updateComplete(changeSet.id);
       this.phaseRepository.awaitingApproval(phase.id);
+      this.syncBacklogFromAppliedEsm(phase, result.newContent);
     } else {
       this.changeSetRepository.updateChunkIndex(
         changeSet.id,
@@ -819,6 +831,48 @@ export class PhaseConversationService implements IPhaseConversationService {
       content = result.newContent;
     }
     return content;
+  }
+
+  private syncBacklogFromAppliedEsm(phase: PhaseEntity, content: string): void {
+    if (phase.promptName !== "systemMaintenanceSpecifications" || !this.backlogSyncService) {
+      return;
+    }
+
+    const cycle = this.cycleRepository?.getById(phase.cycleId) ?? null;
+    if (!cycle) {
+      return;
+    }
+
+    this.backlogSyncService.applyEsmInterventions(cycle.projectId, content);
+  }
+
+  private replaceCurrentStateIndicators(
+    content: string,
+    projectId: number,
+    previousCurrentStateFilePath: string,
+  ): string {
+    const indicators = this.promptPlaceholderBuilder.buildCurrentStateIndicatorsFromProject(
+      projectId,
+      previousCurrentStateFilePath,
+    );
+    const sectionRe =
+      /## 2\. Indicadores Consolidados[\s\S]*?(?=\n### Situa[çc][ãa]o geral consolidada|\n---\n\n## 3\.|\n## 3\.)/i;
+
+    if (sectionRe.test(content)) {
+      return content.replace(sectionRe, indicators);
+    }
+
+    return content;
+  }
+
+  private offsetHunkLocation(location: string, offsetLine: number): string {
+    const match = /@@ -(\d+)((?:,\d+)?) \+(\d+)((?:,\d+)?) @@/.exec(location);
+    if (!match) return location;
+    const oldStart = Number(match[1]) + offsetLine;
+    const oldCount = match[2];
+    const newStart = Number(match[3]) + offsetLine;
+    const newCount = match[4];
+    return `@@ -${oldStart}${oldCount} +${newStart}${newCount} @@`;
   }
 
   private normalizeSlug(raw: string): string {
