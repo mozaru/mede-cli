@@ -1,8 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { FileSecretVault, SystemKeychainSecretVault, DockerCredentialHelperSecretVault, createSecretVault } from "./secret-vault.js";
+
+vi.mock("node:child_process", () => ({
+  execSync: vi.fn(),
+}));
 
 describe("FileSecretVault", () => {
   let dir: string;
@@ -88,5 +93,72 @@ describe("FileSecretVault", () => {
     } finally {
       delete process.env.MEDE_CREDENTIALS_HELPER;
     }
+  });
+});
+
+describe("SystemKeychainSecretVault and DockerCredentialHelperSecretVault", () => {
+  beforeEach(() => {
+    vi.mocked(execSync).mockReset();
+  });
+
+  it("returns undefined when the system keychain read fails and ignores delete failures", () => {
+    vi.mocked(execSync).mockImplementation(() => {
+      throw new Error("missing helper");
+    });
+    const vault = new SystemKeychainSecretVault();
+
+    expect(vault.get("missing")).toBeUndefined();
+    expect(() => vault.delete("missing")).not.toThrow();
+  });
+
+  it("uses cached keychain values after a successful set", () => {
+    vi.mocked(execSync).mockReturnValue(Buffer.from(""));
+    const vault = new SystemKeychainSecretVault();
+
+    vault.set("oauth:test", "secret");
+
+    expect(vault.get("oauth:test")).toBe("secret");
+    expect(vi.mocked(execSync)).toHaveBeenCalledTimes(1);
+  });
+
+  it("surfaces system keychain write failures", () => {
+    vi.mocked(execSync).mockImplementation(() => {
+      throw new Error("denied");
+    });
+
+    expect(() => new SystemKeychainSecretVault().set("k", "v")).toThrow(/Falha ao gravar/);
+  });
+
+  it("normalizes Docker helper names and caches values", () => {
+    vi.mocked(execSync).mockReturnValue(Buffer.from(JSON.stringify({ Secret: "dockersecret" })));
+    const vault = new DockerCredentialHelperSecretVault("wincred");
+
+    expect(vault.get("server")).toBe("dockersecret");
+    expect(vault.get("server")).toBe("dockersecret");
+    expect(vi.mocked(execSync)).toHaveBeenCalledTimes(1);
+    expect(String(vi.mocked(execSync).mock.calls[0][0])).toContain("docker-credential-wincred get");
+  });
+
+  it("stores and erases Docker helper credentials", () => {
+    vi.mocked(execSync).mockReturnValue(Buffer.from(""));
+    const vault = new DockerCredentialHelperSecretVault("docker-credential-pass");
+
+    vault.set("server", "secret");
+    expect(vault.get("server")).toBe("secret");
+    vault.delete("server");
+
+    expect(String(vi.mocked(execSync).mock.calls[0][0])).toContain("docker-credential-pass store");
+    expect(String(vi.mocked(execSync).mock.calls[1][0])).toContain("docker-credential-pass erase");
+  });
+
+  it("handles Docker helper failures", () => {
+    vi.mocked(execSync).mockImplementation(() => {
+      throw new Error("helper down");
+    });
+    const vault = new DockerCredentialHelperSecretVault("pass");
+
+    expect(vault.get("server")).toBeUndefined();
+    expect(() => vault.set("server", "secret")).toThrow(/Falha ao gravar via helper/);
+    expect(() => vault.delete("server")).not.toThrow();
   });
 });

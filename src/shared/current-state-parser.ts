@@ -30,6 +30,10 @@ export class CurrentStateParser {
   }
 
   public parse(filePath: string): CurrentStateParserResult {
+    if (this.fileExistsCheckAvailable() && !this.fileSystemRepository.exists(filePath)) {
+      return this.emptyResult();
+    }
+
     const content = this.fileSystemRepository.readFile(filePath);
 
     const backlogItems = this.extractIndexedBacklogItemsFromContent(content);
@@ -51,8 +55,30 @@ export class CurrentStateParser {
   }
 
   public extractIndexedBacklogItems(filePath: string): BacklogEntity[] {
+    if (this.fileExistsCheckAvailable() && !this.fileSystemRepository.exists(filePath)) {
+      return [];
+    }
+
     const content = this.fileSystemRepository.readFile(filePath);
     return this.extractIndexedBacklogItemsFromContent(content);
+  }
+
+  private emptyResult(): CurrentStateParserResult {
+    return {
+      backlogItems: [],
+      metadata: {
+        systemName: null,
+        referenceDate: null,
+        sourceDescription: null,
+        totalParsedItems: 0,
+        totalFormalBacklogItems: 0,
+        classificationCounters: [],
+      },
+    };
+  }
+
+  private fileExistsCheckAvailable(): boolean {
+    return typeof this.fileSystemRepository.exists === "function";
   }
 
   private extractIndexedBacklogItemsFromContent(content: string): BacklogEntity[] {

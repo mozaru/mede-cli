@@ -44,16 +44,21 @@ export class LlmService {
 
     const config = this.parseConfig(configEntity.content);
 
-    const anthropicModel =
-      config.llm.provider === "anthropic-compatible" ? config.llm.model : "None";
+    const provider = config.llm.provider.trim().toLowerCase();
 
-    const azureModel = config.llm.provider === "azure-compatible" ? config.llm.model : "None";
+    const anthropicModel = ["anthropic", "claude"].includes(provider) ? config.llm.model : "None";
 
-    const geminiModel = config.llm.provider === "gemini-compatible" ? config.llm.model : "None";
+    const azureModel = ["azure", "azure-openai", "azure-openia"].includes(provider)
+      ? config.llm.model
+      : "None";
 
-    const ollamaModel = config.llm.provider === "ollama-compatible" ? config.llm.model : "None";
+    const geminiModel = ["gemini", "google"].includes(provider) ? config.llm.model : "None";
 
-    const openaiModel = config.llm.provider === "openai-compatible" ? config.llm.model : "None";
+    const ollamaModel = provider === "ollama" ? config.llm.model : "None";
+
+    const openaiModel = ["openai", "openai-compatible", "chatgpt", "openrouter"].includes(provider)
+      ? config.llm.model
+      : "None";
 
     return `
   LLM - Providers Status

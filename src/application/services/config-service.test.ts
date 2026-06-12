@@ -12,6 +12,7 @@ import { ConfigService } from "./config-service.js";
 import { ProjectEntity } from "../../domain/entities/project-entity.js";
 import { ProjectConfigEntity } from "../../domain/entities/project-config-entity.js";
 import { MedeConfigModelEntity } from "../../domain/entities/mede-config-model-entity.js";
+import { CycleEntity } from "../../domain/entities/cycle-entity.js";
 import { I18n } from "../../shared/i18n.js";
 
 describe("ConfigService unit tests with real filesystem", () => {
@@ -81,9 +82,61 @@ describe("ConfigService unit tests with real filesystem", () => {
     });
   });
 
+  describe("getConfig()", () => {
+    it("reads mede.config.json and fails clearly when it is missing", () => {
+      expect(() => configService.getConfig()).toThrow("mede.config.json not found");
+
+      fs.writeFileSync("mede.config.json", '{"ok":true}');
+
+      expect(configService.getConfig()).toBe('{"ok":true}');
+    });
+  });
+
   describe("apply()", () => {
     it("throws if project or old config is not found", () => {
       expect(() => configService.apply()).toThrow("Project not found");
+    });
+
+    it("throws when a project config is missing or a cycle is active", () => {
+      const now = new Date().toISOString();
+      const projectEntity = new ProjectEntity();
+      projectEntity.name = "TestProject";
+      projectEntity.rootProjectPath = tempDir;
+      projectEntity.docsRootPath = path.join(tempDir, "docs");
+      projectEntity.documentationLanguage = "pt-BR";
+      projectEntity.createdAt = now;
+      projectEntity.updatedAt = now;
+
+      uow.requireTransaction();
+      const project = projectRepository.insert(projectEntity);
+      uow.commit();
+
+      expect(() => configService.apply()).toThrow("Configuration not found");
+
+      configService.init();
+      const configContent = fs.readFileSync("mede.config.json", "utf-8");
+      const projectConfigEntity = new ProjectConfigEntity();
+      projectConfigEntity.projectId = project.id;
+      projectConfigEntity.medeConfigPath = "mede.config.json";
+      projectConfigEntity.content = configContent;
+      projectConfigEntity.hashContent = "hash";
+      projectConfigEntity.createdAt = now;
+      projectConfigEntity.updatedAt = now;
+
+      const cycle = new CycleEntity();
+      cycle.projectId = project.id;
+      cycle.status = "OPEN";
+      cycle.currentPhaseIndex = 1;
+      cycle.phaseCount = 1;
+      cycle.autoMode = "none";
+      cycle.startedAt = now;
+
+      uow.requireTransaction();
+      projectConfigRepository.insert(projectConfigEntity);
+      cycleRepository.insert(cycle);
+      uow.commit();
+
+      expect(() => configService.apply()).toThrow(/cycle is active|ciclo estiver ativo/);
     });
 
     it("applies changes from mede.config.json renaming base files, directories and moving docsRoot with real filesystem", () => {

@@ -53,4 +53,38 @@ describe("collapseDuplicateRootDocumentAppend", () => {
 
     expect(result).toBe(newDoc);
   });
+
+  it("preserves the final newline when collapsing a duplicated root document", () => {
+    const oldDoc = [
+      "# Relatorio",
+      "",
+      "## 1. Antigo",
+      "Texto",
+      "",
+      "## 2. Antigo",
+      "Texto",
+    ].join("\n");
+    const newDoc = [
+      "# Relatorio",
+      "",
+      "## 1. Novo",
+      "Texto",
+      "",
+      "## 2. Novo",
+      "Texto",
+      "",
+      "## 3. Novo",
+      "Texto",
+      "",
+      "## 4. Novo",
+      "Texto",
+      "",
+      "## 5. Novo",
+      "Texto",
+    ].join("\n");
+
+    const result = collapseDuplicateRootDocumentAppend(`${oldDoc}\n\n${newDoc}\n`);
+
+    expect(result).toBe(`${newDoc}\n`);
+  });
 });

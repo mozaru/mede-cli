@@ -39,6 +39,12 @@ import type { IStatusService } from "../domain/interfaces/services/status-servic
 // seven handlers). Each call builds an independent graph with its own unit of
 // work / connection — appropriate for a CLI that runs one command per process.
 export interface Container {
+  uow: UnitOfWork;
+  projectRepository: ProjectRepository;
+  cycleRepository: CycleRepository;
+  phaseRepository: PhaseRepository;
+  changeSetRepository: ChangeSetRepository;
+  changeChunkRepository: ChangeChunkRepository;
   statusService: IStatusService;
   cycleService: ICycleService;
   initService: IInitService;
@@ -155,6 +161,12 @@ export function createContainer(options?: BetterSqliteConnectionFactoryOptions):
   const llmService = new LlmService(projectRepository, projectConfigRepository);
 
   return {
+    uow,
+    projectRepository,
+    cycleRepository,
+    phaseRepository,
+    changeSetRepository,
+    changeChunkRepository,
     statusService,
     cycleService,
     initService,

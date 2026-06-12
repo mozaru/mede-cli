@@ -229,7 +229,7 @@ export class CycleService implements ICycleService {
     cycle.projectId = project.id;
     cycle.status = "OPEN";
     cycle.currentPhaseIndex = 1;
-    cycle.phaseCount = 2;
+    cycle.phaseCount = 3;
     cycle.autoMode = "NONE";
     cycle.startedAt = this.getCurrentDateTime();
     cycle.finishedAt = "";
@@ -248,8 +248,18 @@ export class CycleService implements ICycleService {
 
       const insertedPhase = this.insertPhase(
         insertedCycle.id,
-        "GENERATE_README",
+        "EXTRACT_BACKLOG",
         1,
+        [],
+        "",
+        "info",
+        "extractBacklog",
+      );
+
+      this.insertPhase(
+        insertedCycle.id,
+        "GENERATE_README",
+        2,
         [],
         readmeFileName,
         "LIVE",
@@ -259,7 +269,7 @@ export class CycleService implements ICycleService {
       this.insertPhase(
         insertedCycle.id,
         "GENERATE_INITIAL_UNDERSTANDING",
-        2,
+        3,
         [],
         initialUnderstandingFileName,
         "LIVE",
@@ -375,8 +385,8 @@ export class CycleService implements ICycleService {
         "EXTRACT_BACKLOG",
         1,
         [],
-        csFileName,
-        "LIVE",
+        "",
+        "info",
         "extractBacklog",
       );
 
@@ -602,6 +612,7 @@ export class CycleService implements ICycleService {
         }
 
         onProgress?.(`[Aprova] Aprovando fase ${phase.name}...`);
+        this.phaseConversationService.applyExtractBacklog(phase);
         this.phaseRepository.approve(phase.id);
 
         const nextResult = this.next(cycle);
@@ -632,6 +643,7 @@ export class CycleService implements ICycleService {
     this.assert(phase.status === "AWAITING_APPROVAL", "A fase não está aguardando aprovação");
 
     onProgress?.(`[Aprova] Aprovando fase ${phase.name}...`);
+    this.phaseConversationService.applyExtractBacklog(phase);
     this.phaseRepository.approve(phase.id);
 
     const nextResult = this.next(cycle);
@@ -891,6 +903,7 @@ export class CycleService implements ICycleService {
 
     this.restoreBackup(cycle);
     this.clearCycle(cycle);
+    this.docsService.reconstruct();
     cycle.status = "ROLLEDBACK";
     return this.statusService.successRollback(project, cycle);
   }

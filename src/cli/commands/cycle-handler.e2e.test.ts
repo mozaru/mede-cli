@@ -33,6 +33,9 @@ import { BetterSqliteConnectionFactory } from "../../infrastructure/db/better-sq
 import { UnitOfWork } from "../../infrastructure/db/unit-of-work.js";
 import { ProjectRepository } from "../../infrastructure/repositories/project-repository.js";
 import { CycleRepository } from "../../infrastructure/repositories/cycle-repository.js";
+import { PhaseRepository } from "../../infrastructure/repositories/phase-repository.js";
+import { ChangeSetRepository } from "../../infrastructure/repositories/change-set-repository.js";
+import { BacklogRepository } from "../../infrastructure/repositories/backlog-repository.js";
 import type { CycleEntity } from "../../domain/entities/cycle-entity.js";
 
 let root: string;
@@ -50,6 +53,16 @@ function currentCycle(): CycleEntity | null {
       return null;
     }
     return new CycleRepository(uow).getCurrent(project.id);
+  } finally {
+    uow[Symbol.dispose]();
+  }
+}
+
+function readProjectDb<T>(work: (uow: UnitOfWork) => T): T {
+  const uow = new UnitOfWork(new BetterSqliteConnectionFactory({ projectRootPath: root }));
+  uow.ensureConnection();
+  try {
+    return work(uow);
   } finally {
     uow[Symbol.dispose]();
   }
@@ -102,6 +115,60 @@ describe("CLI cycle flow (end-to-end through CycleHandler)", () => {
     expect(cycle!.status).toBe("OPEN");
     expect(cycle!.currentPhaseIndex).toBe(1);
     expect(cycle!.phaseCount).toBe(12);
+  });
+
+  it("extracts backlog without touching situacao-atual.md and syncs SQLite on approval", async () => {
+    const config = new MedeConfigModelEntity();
+    const currentStatePath = path.join(root, config.docsRoot, config.fileNames.currentState);
+    const originalCurrentState = fs.readFileSync(currentStatePath, "utf-8");
+    generateText.mockResolvedValueOnce({
+      rawText: JSON.stringify({
+        statusChanges: [],
+        newItems: [
+          {
+            documentType: "ESM",
+            nature: "RF",
+            interventionType: "EVO",
+            description: "Nova extração validada por e2e",
+            source: "ata futura",
+            tags: ["SEC"],
+            status: "Pendente",
+          },
+        ],
+      }),
+    });
+
+    await new CycleHandler().executeCycle("registrar backlog", []);
+
+    expect(fs.readFileSync(currentStatePath, "utf-8")).toBe(originalCurrentState);
+    readProjectDb((uow) => {
+      const project = new ProjectRepository(uow).getCurrent();
+      expect(project).not.toBeNull();
+      const cycle = new CycleRepository(uow).getCurrent(project!.id);
+      expect(cycle).not.toBeNull();
+      const phase = new PhaseRepository(uow).getByIndex(cycle!.id, 1);
+      expect(phase?.name).toBe("EXTRACT_BACKLOG");
+      expect(phase?.status).toBe("AWAITING_APPROVAL");
+      expect(new ChangeSetRepository(uow).getCurrent(phase!.id)).toBeNull();
+      expect(new BacklogRepository(uow).list(project!.id)).toEqual([]);
+    });
+
+    await new CycleHandler().executeApprove(false);
+
+    expect(fs.readFileSync(currentStatePath, "utf-8")).toBe(originalCurrentState);
+    readProjectDb((uow) => {
+      const project = new ProjectRepository(uow).getCurrent();
+      expect(project).not.toBeNull();
+      const items = new BacklogRepository(uow).list(project!.id);
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        description: "Nova extração validada por e2e",
+        documentType: "ESM",
+        nature: "RF",
+        interventionType: "EVO",
+        status: "Pendente",
+      });
+    });
   });
 
   it("apply then approve advances to the next phase", async () => {

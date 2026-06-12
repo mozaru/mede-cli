@@ -1,6 +1,12 @@
 import { Box, render, Text, useApp, useInput } from "ink";
 import React, { useEffect, useState } from "react";
-import { clearSharedContainer, createContainer, getContainer, setSharedContainer } from "./container.js";
+import {
+  clearSharedContainer,
+  Container,
+  createContainer,
+  getContainer,
+  setSharedContainer,
+} from "./container.js";
 import { formatCliError } from "./error-handler.js";
 import { ProjectEntity } from "../domain/entities/project-entity.js";
 import { CycleEntity } from "../domain/entities/cycle-entity.js";
@@ -15,15 +21,132 @@ export function isTty(): boolean {
 
 interface TuiProps {
   onExit: () => void;
+  container?: TuiContainer;
+  initialScreen?: "status" | "diffs" | "refine";
+  initialRefinePrompt?: string;
 }
 
-function Tui({ onExit }: TuiProps) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const container = getContainer() as any;
+type TuiContainer = Container & {
+  projectRepository: { getCurrent(): ProjectEntity | null };
+  cycleRepository: { getCurrent(projectId: number): CycleEntity | null };
+  phaseRepository: { getByIndex(cycleId: number, index: number): PhaseEntity | null };
+  changeSetRepository: {
+    getCurrent(phaseId: number): ChangeSetEntity | null;
+    updateChunkIndex(id: number, index: number, offset: number): unknown;
+  };
+  changeChunkRepository: { list(changeSetId: number): ChangeChunkEntity[] };
+  uow: {
+    requireTransaction(): void;
+    commit(): void;
+    rollback(): void;
+  };
+};
+
+export interface TuiKeyState {
+  loading: boolean;
+  screen: "status" | "diffs" | "refine";
+  cycleStatus?: string | null;
+  phaseStatus?: string | null;
+  chunksLength: number;
+  selectedChunk?: Pick<ChangeChunkEntity, "status"> | null;
+  refinePrompt: string;
+}
+
+export interface TuiKeyActions {
+  exit(): void;
+  startCycle(): void;
+  approve(): void;
+  reject(): void;
+  openRefine(): void;
+  refine(): void;
+  setRefinePrompt(updater: (previous: string) => string): void;
+  openDiffs(): void;
+  closeToStatus(): void;
+  moveChunk(updater: (previous: number) => number): void;
+  applyChunk(): void;
+  discardChunk(): void;
+  commit(): void;
+  rollback(): void;
+  refresh(): void;
+}
+
+export function handleTuiKey(
+  input: string,
+  key: { escape?: boolean; return?: boolean; backspace?: boolean; upArrow?: boolean; downArrow?: boolean; ctrl?: boolean; meta?: boolean },
+  state: TuiKeyState,
+  actions: TuiKeyActions,
+): void {
+  if (state.loading) return;
+
+  if (key.escape || input === "q") {
+    actions.exit();
+    return;
+  }
+
+  if (state.screen === "refine") {
+    if (key.return) {
+      actions.refine();
+    } else if (key.backspace) {
+      actions.setRefinePrompt((previous) => previous.slice(0, -1));
+    } else if (input && !key.ctrl && !key.meta) {
+      actions.setRefinePrompt((previous) => previous + input);
+    }
+    return;
+  }
+
+  if (state.screen === "diffs") {
+    if (key.upArrow) {
+      actions.moveChunk((index) => (index > 0 ? index - 1 : state.chunksLength - 1));
+    } else if (key.downArrow) {
+      actions.moveChunk((index) => (index < state.chunksLength - 1 ? index + 1 : 0));
+    } else if (input === "s" || key.return) {
+      actions.closeToStatus();
+    } else if (input === "a" && state.selectedChunk?.status === "AWAITING_APPROVAL") {
+      actions.applyChunk();
+    } else if (input === "d" && state.selectedChunk?.status === "AWAITING_APPROVAL") {
+      actions.discardChunk();
+    }
+    return;
+  }
+
+  const isInactiveCycle =
+    !state.cycleStatus || state.cycleStatus === "ROLLEDBACK" || state.cycleStatus === "COMMITTED";
+
+  if (input === "i" && isInactiveCycle) {
+    actions.startCycle();
+  } else if (input === "a" && state.phaseStatus === "AWAITING_APPROVAL") {
+    actions.approve();
+  } else if (input === "r" && state.phaseStatus === "AWAITING_APPROVAL") {
+    actions.reject();
+  } else if (input === "f" && state.phaseStatus === "AWAITING_APPROVAL") {
+    actions.openRefine();
+  } else if (input === "d" && state.chunksLength > 0) {
+    actions.openDiffs();
+  } else if (input === "c" && state.cycleStatus === "AWAITING_COMMIT") {
+    actions.commit();
+  } else if (
+    input === "b" &&
+    state.cycleStatus &&
+    state.cycleStatus !== "ROLLEDBACK" &&
+    state.cycleStatus !== "COMMITTED"
+  ) {
+    actions.rollback();
+  } else if (input === "s") {
+    actions.refresh();
+  }
+}
+
+export function Tui({
+  onExit,
+  container: injectedContainer,
+  initialScreen = "status",
+  initialRefinePrompt = "",
+}: TuiProps) {
+  const container = injectedContainer ?? (getContainer() as TuiContainer);
   const { exit } = useApp();
 
   // State
-  const [screen, setScreen] = useState<"status" | "diffs" | "refine">("status");
+  const [screen, setScreen] = useState<"status" | "diffs" | "refine">(initialScreen);
   const [project, setProject] = useState<ProjectEntity | null>(null);
   const [cycle, setCycle] = useState<CycleEntity | null>(null);
   const [phase, setPhase] = useState<PhaseEntity | null>(null);
@@ -37,7 +160,7 @@ function Tui({ onExit }: TuiProps) {
   const [messageType, setMessageType] = useState<"info" | "success" | "error">("info");
 
   // Refine input
-  const [refinePrompt, setRefinePrompt] = useState("");
+  const [refinePrompt, setRefinePrompt] = useState(initialRefinePrompt);
 
   // Load state from DB
   const refreshData = () => {
@@ -229,65 +352,48 @@ function Tui({ onExit }: TuiProps) {
 
   // Keyboard navigation
   useInput((input, key) => {
-    if (loading) return;
-
-    if (key.escape || input === "q") {
-      exit();
-      onExit();
-      return;
-    }
-
-    if (screen === "refine") {
-      if (key.return) {
-        handleRefine();
-      } else if (key.backspace) {
-        setRefinePrompt((p) => p.slice(0, -1));
-      } else if (input && !key.ctrl && !key.meta) {
-        setRefinePrompt((p) => p + input);
-      }
-      return;
-    }
-
-    if (screen === "diffs") {
-      if (key.upArrow) {
-        setSelectedChunkIdx((i) => (i > 0 ? i - 1 : chunks.length - 1));
-      } else if (key.downArrow) {
-        setSelectedChunkIdx((i) => (i < chunks.length - 1 ? i + 1 : 0));
-      } else if (input === "s" || key.return) {
-        setScreen("status");
-      } else if (input === "a") {
-        const chunk = chunks[selectedChunkIdx];
-        if (chunk && chunk.status === "AWAITING_APPROVAL") {
-          handleApplyChunk(chunk, selectedChunkIdx);
-        }
-      } else if (input === "d") {
-        const chunk = chunks[selectedChunkIdx];
-        if (chunk && chunk.status === "AWAITING_APPROVAL") {
-          handleDiscardChunk(chunk, selectedChunkIdx);
-        }
-      }
-      return;
-    }
-
-    // Default status screen keys
-    if (input === "i" && (!cycle || cycle.status === "ROLLEDBACK" || cycle.status === "COMMITTED")) {
-      handleStartCycle();
-    } else if (input === "a" && phase?.status === "AWAITING_APPROVAL") {
-      handleApprove();
-    } else if (input === "r" && phase?.status === "AWAITING_APPROVAL") {
-      handleReject();
-    } else if (input === "f" && phase?.status === "AWAITING_APPROVAL") {
-      setScreen("refine");
-    } else if (input === "d" && chunks.length > 0) {
-      setScreen("diffs");
-    } else if (input === "c" && cycle?.status === "AWAITING_COMMIT") {
-      handleCommit();
-    } else if (input === "b" && cycle && cycle.status !== "ROLLEDBACK" && cycle.status !== "COMMITTED") {
-      handleRollback();
-    } else if (input === "s") {
-      refreshData();
-      setMsg("Status atualizado.", "info");
-    }
+    handleTuiKey(
+      input,
+      key,
+      {
+        loading,
+        screen,
+        cycleStatus: cycle?.status ?? null,
+        phaseStatus: phase?.status ?? null,
+        chunksLength: chunks.length,
+        selectedChunk: chunks[selectedChunkIdx] ?? null,
+        refinePrompt,
+      },
+      {
+        exit: () => {
+          exit();
+          onExit();
+        },
+        startCycle: handleStartCycle,
+        approve: handleApprove,
+        reject: handleReject,
+        openRefine: () => setScreen("refine"),
+        refine: handleRefine,
+        setRefinePrompt,
+        openDiffs: () => setScreen("diffs"),
+        closeToStatus: () => setScreen("status"),
+        moveChunk: setSelectedChunkIdx,
+        applyChunk: () => {
+          const chunk = chunks[selectedChunkIdx];
+          if (chunk) handleApplyChunk(chunk, selectedChunkIdx);
+        },
+        discardChunk: () => {
+          const chunk = chunks[selectedChunkIdx];
+          if (chunk) handleDiscardChunk(chunk, selectedChunkIdx);
+        },
+        commit: handleCommit,
+        rollback: handleRollback,
+        refresh: () => {
+          refreshData();
+          setMsg("Status atualizado.", "info");
+        },
+      },
+    );
   });
 
   // Render helpers
@@ -494,18 +600,25 @@ function Tui({ onExit }: TuiProps) {
   );
 }
 
-export async function startTui(): Promise<void> {
-  const container = createContainer();
+type InkRender = typeof render;
+
+export async function startTui(
+  containerOverride?: TuiContainer,
+  renderApp: InkRender = render,
+): Promise<void> {
+  const container = containerOverride ?? (createContainer() as TuiContainer);
   setSharedContainer(container);
   try {
     await new Promise<void>((resolve) => {
-      const app = render(<Tui onExit={() => resolve()} />);
+      const app = renderApp(<Tui container={container} onExit={() => resolve()} />);
       app.waitUntilExit().then(() => {
         resolve();
       });
     });
   } finally {
     clearSharedContainer();
-    container.dispose();
+    if (!containerOverride) {
+      container.dispose();
+    }
   }
 }

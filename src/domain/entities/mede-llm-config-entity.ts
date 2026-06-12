@@ -30,12 +30,12 @@ export class MedeLlmConfigEntity {
   public credentialsHelper?: string;
   constructor() {
     this.provider = "openai-compatible";
-    this.model = "gpt-4.1-mini";
+    this.model = "gpt-4.1";
     this.endpoint = "https://api.openai.com/v1";
     this.apiKeyEnv = "OPENAI_API_KEY";
     this.auth = "apiKey";
     this.temperature = 0.1;
-    this.maxTokens = 4000;
-    this.timeoutMs = 60000;
+    this.maxTokens = 12000;
+    this.timeoutMs = 180000;
   }
 }

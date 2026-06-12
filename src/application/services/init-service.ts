@@ -95,9 +95,6 @@ export class InitService implements IInitService {
       this.combinePath(config.docsRoot, config.fileNames.readme),
     );
     this.fileSystemRepository.ensureFile(
-      this.combinePath(config.docsRoot, config.fileNames.currentState),
-    );
-    this.fileSystemRepository.ensureFile(
       this.combinePath(config.docsRoot, config.fileNames.scopeAndVision),
     );
     this.fileSystemRepository.ensureFile(

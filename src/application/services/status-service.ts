@@ -94,6 +94,7 @@ export class StatusService {
 
     for (const artifact of artifacts) {
       if (
+        artifact.canonicalType !== "info" &&
         notIsEmpty(artifact.backupContent) &&
         artifact.backupContent !== artifact.currentContent
       ) {
@@ -109,7 +110,11 @@ export class StatusService {
     const artifacts = this.cycleArtifactRepository.list(cycle.id);
 
     for (const artifact of artifacts) {
-      if (isEmpty(artifact.backupContent) && notIsEmpty(artifact.currentContent)) {
+      if (
+        artifact.canonicalType !== "info" &&
+        isEmpty(artifact.backupContent) &&
+        notIsEmpty(artifact.currentContent)
+      ) {
         total += 1;
       }
     }

@@ -89,10 +89,7 @@ describe("Slug e2e — shortDescriptionSlug.enabled = true", () => {
   });
 
   it("writes the ATA file with the slug appended to the filename", async () => {
-    // EXTRACT_BACKLOG with valid JSON creates a table diff → phase is REFINING.
-    // Apply the diff first, then approve to advance to the ATA phase.
-    await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG → REFINING
-    new ChangesHandler().executeApply(true);          // apply EXTRACT_BACKLOG chunks → AWAITING_APPROVAL
+    await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
     await new CycleHandler().executeApprove(false);  // approve phase 1, call 2: ATA → REFINING
     new ChangesHandler().executeApply(true);          // apply ATA chunks (call 3: slug)
 
@@ -106,7 +103,6 @@ describe("Slug e2e — shortDescriptionSlug.enabled = true", () => {
 
   it("does NOT write a provisional file without the slug", async () => {
     await new CycleHandler().executeCycle("", []);
-    new ChangesHandler().executeApply(true);
     await new CycleHandler().executeApprove(false);
     new ChangesHandler().executeApply(true);
 
@@ -120,7 +116,6 @@ describe("Slug e2e — shortDescriptionSlug.enabled = true", () => {
 
   it("makes exactly 3 LLM calls: one for EXTRACT_BACKLOG, one for ATA content, one for slug", async () => {
     await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
-    new ChangesHandler().executeApply(true);
 
     expect(generateText).toHaveBeenCalledTimes(1);
 
@@ -142,8 +137,7 @@ describe("Slug e2e — shortDescriptionSlug.enabled = false", () => {
   });
 
   it("writes the ATA file with the provisional filename (no slug)", async () => {
-    await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG → REFINING
-    new ChangesHandler().executeApply(true);          // apply EXTRACT_BACKLOG chunks → AWAITING_APPROVAL
+    await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
     await new CycleHandler().executeApprove(false);  // approve phase 1, call 2: ATA → REFINING
     new ChangesHandler().executeApply(true);          // apply ATA chunks (no slug)
 
@@ -158,7 +152,6 @@ describe("Slug e2e — shortDescriptionSlug.enabled = false", () => {
 
   it("makes exactly 2 LLM calls: one for EXTRACT_BACKLOG, one for ATA content", async () => {
     await new CycleHandler().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
-    new ChangesHandler().executeApply(true);
     await new CycleHandler().executeApprove(false);  // call 2: ATA content
 
     expect(generateText).toHaveBeenCalledTimes(2);

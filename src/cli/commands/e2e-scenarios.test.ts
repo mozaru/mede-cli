@@ -261,7 +261,6 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     expect(cycle!.currentPhaseIndex).toBe(1);
 
     // 3. Process the initialization cycle to the end (approve-all)
-    new ChangesHandler().executeApply(true);
     await new CycleHandler().executeApprove(true);
 
     const awaitingCommit = currentCycle();
@@ -312,8 +311,8 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
       `docs/${config.fileNames.scopeAndVision}`
     ]);
 
-    // Check that missing required files were created
-    expect(fs.existsSync(path.join(docsRoot, config.fileNames.currentState))).toBe(true);
+    // Init does not generate situacao-atual.md; it is produced by the causal cycle.
+    expect(fs.existsSync(path.join(docsRoot, config.fileNames.currentState))).toBe(false);
     expect(fs.existsSync(path.join(docsRoot, config.fileNames.initialUnderstanding))).toBe(true);
 
     // Assert that the database registered the correct project name from the pre-existing readme.md
@@ -325,7 +324,6 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     uow[Symbol.dispose]();
 
     // 3. Run and commit the init cycle
-    new ChangesHandler().executeApply(true);
     await new CycleHandler().executeApprove(true);
     new CycleHandler().executeCommit();
 
@@ -363,7 +361,6 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
 
     // 2. Setup init and commit
     await new InitHandler().execute("init", []);
-    new ChangesHandler().executeApply(true);
     await new CycleHandler().executeApprove(true);
     new CycleHandler().executeCommit();
 
@@ -375,9 +372,7 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     expect(cycle).not.toBeNull();
     expect(cycle!.status).toBe("OPEN");
 
-    // EXTRACT_BACKLOG produces a table diff → phase is REFINING.
-    // Apply its chunks, approve to advance to phase 2 (ATA).
-    new ChangesHandler().executeApply(true);
+    // EXTRACT_BACKLOG only syncs SQLite; approve to advance to phase 2 (ATA).
     await new CycleHandler().executeApprove(false);
 
     // Apply the pending ATA chunks to transition to AWAITING_APPROVAL

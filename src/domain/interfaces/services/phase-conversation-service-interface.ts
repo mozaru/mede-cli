@@ -18,6 +18,7 @@ export interface IPhaseConversationService {
     config: MedeConfigModelEntity,
     phase: PhaseEntity,
   ): Promise<ChangeSetEntity | null>;
+  applyExtractBacklog(phase: PhaseEntity): void;
   applyAll(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity;
   apply(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity | null;
   discardAll(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity;

@@ -29,7 +29,7 @@ import { IPhaseConversationService } from "../../domain/interfaces/services/phas
 import { PromptPlaceholderBuilder } from "../../shared/prompt-place-holder-builder.js";
 import { IBacklogRepository } from "../../domain/interfaces/repositories/backlog-repository-interface.js";
 import { ProjectEntity } from "../../domain/entities/project-entity.js";
-import { compressDocument, extractPlaceholderBlocks } from "../../shared/placeholder-block-extractor.js";
+import { compressDocument } from "../../shared/placeholder-block-extractor.js";
 import {
   ExtractBacklogResponseSchema,
   BacklogSyncService,
@@ -545,7 +545,7 @@ export class PhaseConversationService implements IPhaseConversationService {
       return null;
     }
 
-    // Store raw JSON + metadata for later SQLite application in applyAll
+    // Store raw JSON + metadata for later SQLite application on phase approval.
     this.cycleArtifactRepository.insert({
       id: 0,
       cycleId: phase.cycleId,
@@ -558,67 +558,47 @@ export class PhaseConversationService implements IPhaseConversationService {
       updatedAt: this.getCurrentDateTime(),
     });
 
-    // Get current cycleArtifact for situacao-atual.md
-    let cycleArtifact = this.cycleArtifactRepository.getFromPath(phase.cycleId, phase.outputFile);
-    if (cycleArtifact === null) {
-      const backupContent = this.fileSystemRepository.exists(phase.outputFile)
-        ? this.fileSystemRepository.readFile(phase.outputFile)
-        : "";
-      cycleArtifact = this.cycleArtifactRepository.insert({
-        id: 0,
-        cycleId: phase.cycleId,
-        backupContent,
-        currentContent: backupContent,
-        canonicalName: "currentState",
-        canonicalType: "LIVE",
-        artifactPath: phase.outputFile,
-        startedAt: this.getCurrentDateTime(),
-        updatedAt: this.getCurrentDateTime(),
-      });
+    return null;
+  }
+
+  public applyExtractBacklog(phase: PhaseEntity): void {
+    if (phase.promptName !== "extractBacklog" || !this.backlogSyncService) {
+      return;
     }
 
-    // Find the TABELA_SITUACAO_ATUAL block and generate a diff preview
-    const docContent = cycleArtifact.currentContent;
-    const blocks = extractPlaceholderBlocks(docContent);
-    const tableBlock = blocks.find((b) => b.name === "TABELA_SITUACAO_ATUAL");
-    const oldTableContent = tableBlock?.innerContent ?? "";
-    const newTableContent = this.promptPlaceholderBuilder.buildCurrentStateTableFromProject(project.id);
-    const diffChunks = Diff.generateDiff(oldTableContent, newTableContent).map((chunk) => ({
-      ...chunk,
-      location: this.offsetHunkLocation(chunk.location, (tableBlock?.startLine ?? -1) + 1),
-    }));
-
-    if (diffChunks.length === 0) {
-      return null;
+    const rawArtifact = this.cycleArtifactRepository
+      .list(phase.cycleId)
+      .find((a) => a.canonicalName === "extractBacklogRaw");
+    if (!rawArtifact) {
+      return;
     }
 
-    const changeSet = new ChangeSetEntity();
-    changeSet.id = 0;
-    changeSet.phaseId = phase.id;
-    changeSet.cycleArtifactId = cycleArtifact.id;
-    changeSet.fileName = cycleArtifact.artifactPath;
-    changeSet.completed = false;
-    changeSet.currentChangeChunkIndex = 1;
-    changeSet.changeChunkCount = diffChunks.length;
-    changeSet.startedAt = this.getCurrentDateTime();
-    changeSet.updatedAt = this.getCurrentDateTime();
-    const insertedChangeSet = this.changeSetRepository.insert(changeSet);
+    try {
+      const meta = JSON.parse(rawArtifact.currentContent) as {
+        projectId: number;
+        cycleNumber: number;
+        referenceDate: string;
+        applied?: boolean;
+        response: unknown;
+      };
+      if (meta.applied) {
+        return;
+      }
 
-    for (const chunk of diffChunks) {
-      const changeChunk = new ChangeChunkEntity();
-      changeChunk.id = 0;
-      changeChunk.phaseId = phase.id;
-      changeChunk.changeSetId = insertedChangeSet.id;
-      changeChunk.index = chunk.index;
-      changeChunk.status = "AWAITING_APPROVAL";
-      changeChunk.blockLocation = chunk.location;
-      changeChunk.changeContent = chunk.content;
-      changeChunk.startedAt = this.getCurrentDateTime();
-      changeChunk.updatedAt = this.getCurrentDateTime();
-      this.changeChunkRepository.insert(changeChunk);
+      const parsed = ExtractBacklogResponseSchema.parse(meta.response);
+      this.backlogSyncService.applyExtraction(
+        meta.projectId,
+        meta.cycleNumber,
+        meta.referenceDate,
+        parsed,
+      );
+      this.cycleArtifactRepository.updateContent(
+        rawArtifact.id,
+        JSON.stringify({ ...meta, applied: true }),
+      );
+    } catch {
+      logger.warn("[PhaseConversationService] Falha ao aplicar extração de backlog no SQLite.");
     }
-
-    return this.changeSetRepository.getById(insertedChangeSet.id) ?? insertedChangeSet;
   }
 
   public applyAll(phase: PhaseEntity, changeSet: ChangeSetEntity): ChangeSetEntity {
@@ -664,33 +644,6 @@ export class PhaseConversationService implements IPhaseConversationService {
     );
     this.changeSetRepository.updateComplete(changeSet.id);
     this.phaseRepository.awaitingApproval(phase.id);
-
-    // For EXTRACT_BACKLOG: apply the extracted JSON to SQLite after writing the file.
-    // The raw artifact stores {projectId, cycleNumber, referenceDate, response} as JSON.
-    if (phase.promptName === "extractBacklog" && this.backlogSyncService) {
-      const rawArtifact = this.cycleArtifactRepository
-        .list(phase.cycleId)
-        .find((a) => a.canonicalName === "extractBacklogRaw");
-      if (rawArtifact) {
-        try {
-          const meta = JSON.parse(rawArtifact.currentContent) as {
-            projectId: number;
-            cycleNumber: number;
-            referenceDate: string;
-            response: unknown;
-          };
-          const parsed = ExtractBacklogResponseSchema.parse(meta.response);
-          this.backlogSyncService.applyExtraction(
-            meta.projectId,
-            meta.cycleNumber,
-            meta.referenceDate,
-            parsed,
-          );
-        } catch {
-          logger.warn("[PhaseConversationService] Falha ao aplicar extração de backlog no SQLite.");
-        }
-      }
-    }
 
     this.syncBacklogFromAppliedEsm(phase, newContent);
 
@@ -863,16 +816,6 @@ export class PhaseConversationService implements IPhaseConversationService {
     }
 
     return content;
-  }
-
-  private offsetHunkLocation(location: string, offsetLine: number): string {
-    const match = /@@ -(\d+)((?:,\d+)?) \+(\d+)((?:,\d+)?) @@/.exec(location);
-    if (!match) return location;
-    const oldStart = Number(match[1]) + offsetLine;
-    const oldCount = match[2];
-    const newStart = Number(match[3]) + offsetLine;
-    const newCount = match[4];
-    return `@@ -${oldStart}${oldCount} +${newStart}${newCount} @@`;
   }
 
   private normalizeSlug(raw: string): string {

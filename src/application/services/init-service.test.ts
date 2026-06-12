@@ -108,7 +108,7 @@ describe("InitService unit tests", () => {
     // Base files creation
     expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/entendimento-inicial.md");
     expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/readme.md");
-    expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/situacao-atual.md");
+    expect(fileSystemRepository.ensureFile).not.toHaveBeenCalledWith("docs/situacao-atual.md");
     expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/visao-e-escopo.md");
     expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/requisitos-funcionais.md");
     expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/requisitos-nao-funcionais.md");
