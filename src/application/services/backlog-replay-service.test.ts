@@ -161,6 +161,19 @@ describe("BacklogReplayService.replayFromContent", () => {
     expect(state.get("SAT-20260611-002-NF-BLI-0001")).toBe("Pendente");
   });
 
+  it("allows a new item created in the cycle to be delivered in the same cycle", () => {
+    const initial = makeInitial([{ id: "SAT-20260611-001-RF-BLI-0001" }]);
+    const leg = makeLeg({
+      deliveredIds: ["SAT-20260611-002-RF-BLI-0001"],
+      newItems: [{ id: "SAT-20260611-002-RF-BLI-0001", status: "Concluído" }],
+    });
+
+    const { state, legResults } = service.replayFromContent(initial, [{ name: "leg-001.md", content: leg }]);
+
+    expect(state.get("SAT-20260611-002-RF-BLI-0001")).toBe("Concluído");
+    expect(legResults[0].causalIssues).toHaveLength(0);
+  });
+
   it("returns empty state when TABELA_BACKLOG_INICIAL block is missing", () => {
     const { state } = service.replayFromContent("# Entendimento\n\nSem bloco.", []);
     expect(state.size).toBe(0);

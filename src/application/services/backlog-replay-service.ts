@@ -53,19 +53,7 @@ export class BacklogReplayService {
     for (const { name, content } of legContents) {
       const causalIssues: string[] = [];
       const knownBeforeLeg = new Set(state.keys());
-
-      const deliveredIds = this.parseTableFirstColumn(content, "TABELA_ENTREGUES");
-      causalIssues.push(...this.findDuplicateIssues(deliveredIds, name));
-      for (const id of deliveredIds) {
-        if (!knownBeforeLeg.has(id)) {
-          causalIssues.push(`${name}: item entregue ${id} nao existia antes da LEG.`);
-          continue;
-        }
-        if (normalizeStatus(state.get(id) ?? "") === normalizeStatus(BacklogStatus.CONCLUIDO)) {
-          causalIssues.push(`${name}: item ${id} foi entregue novamente.`);
-        }
-        state.set(id, BacklogStatus.CONCLUIDO);
-      }
+      const stateBeforeLeg = new Map(state);
 
       const newItems = this.parseTableIdAndStatus(content, "TABELA_NOVOS_CICLO");
       causalIssues.push(...this.findDuplicateIssues(newItems.map((item) => item.id), name));
@@ -76,6 +64,19 @@ export class BacklogReplayService {
           continue;
         }
         state.set(id, status);
+      }
+
+      const deliveredIds = this.parseTableFirstColumn(content, "TABELA_ENTREGUES");
+      causalIssues.push(...this.findDuplicateIssues(deliveredIds, name));
+      for (const id of deliveredIds) {
+        if (!state.has(id)) {
+          causalIssues.push(`${name}: item entregue ${id} nao existia antes da LEG.`);
+          continue;
+        }
+        if (knownBeforeLeg.has(id) && normalizeStatus(stateBeforeLeg.get(id) ?? "") === normalizeStatus(BacklogStatus.CONCLUIDO)) {
+          causalIssues.push(`${name}: item ${id} foi entregue novamente.`);
+        }
+        state.set(id, BacklogStatus.CONCLUIDO);
       }
 
       const statIssues = this.validateLegStats(content, state, deliveredIds.length, newItems.length);
