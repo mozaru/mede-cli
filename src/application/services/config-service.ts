@@ -101,6 +101,10 @@ export class ConfigService {
         deliveryLog: "leg",
       },
       llm: {
+        provider: "gemini",
+        model: "gemini-1.5-flash",
+        endpoint: "",
+        apiKeyEnv: "GEMINI_API_KEY",
         auth: "apiKey",
         temperature: 0.1,
         maxTokens: 12000,

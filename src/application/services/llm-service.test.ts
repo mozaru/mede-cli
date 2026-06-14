@@ -61,7 +61,7 @@ describe("LlmService.providers", () => {
   });
 
   it("marks compatible non-OpenAI providers as active", () => {
-    const cases = [
+    const cases: Array<[string, string, RegExp]> = [
       ["anthropic", "claude", /anthropic\s+- Status: Configured \(claude\)/],
       ["azure", "deploy", /azure\(openai\)\s+- Status: Configured \(deploy\)/],
       ["gemini", "gemini-2", /gemini\s+- Status: Configured \(gemini-2\)/],
