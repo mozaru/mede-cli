@@ -261,7 +261,9 @@ export class OpenAiLlmProvider implements ILlmProvider {
     return /^o\d|^o[1-9]-|^gpt-5|^gpt-4\.1/.test(model);
   }
 
-  private buildRequestBody(requestMessages: OpenAiChatCompletionMessage[]): Record<string, unknown> {
+  private buildRequestBody(
+    requestMessages: OpenAiChatCompletionMessage[],
+  ): Record<string, unknown> {
     const model = this.config.llm.model;
     const body: Record<string, unknown> = {
       model,

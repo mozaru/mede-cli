@@ -160,9 +160,7 @@ export class BacklogSyncService {
     }
   }
 
-  private parseEsmInterventionRows(
-    content: string,
-  ): Array<{
+  private parseEsmInterventionRows(content: string): Array<{
     id: string;
     nature: string;
     interventionType: string;

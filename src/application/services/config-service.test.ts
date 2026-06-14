@@ -45,7 +45,7 @@ describe("ConfigService unit tests with real filesystem", () => {
       projectRepository,
       projectConfigRepository,
       cycleRepository,
-      fileSystemRepository
+      fileSystemRepository,
     );
   });
 
@@ -158,7 +158,6 @@ describe("ConfigService unit tests with real filesystem", () => {
       projectEntity.updatedAt = now;
       const project = projectRepository.insert(projectEntity);
 
-
       const projectConfigEntity = new ProjectConfigEntity();
       projectConfigEntity.projectId = project.id;
       projectConfigEntity.medeConfigPath = "mede.config.json";
@@ -220,7 +219,9 @@ describe("ConfigService unit tests with real filesystem", () => {
 
       // Base file should be renamed and moved
       expect(fs.existsSync(path.join(newDocsRoot, "project-readme.md"))).toBe(true);
-      expect(fs.readFileSync(path.join(newDocsRoot, "project-readme.md"), "utf-8")).toBe("# Old Readme");
+      expect(fs.readFileSync(path.join(newDocsRoot, "project-readme.md"), "utf-8")).toBe(
+        "# Old Readme",
+      );
 
       // Unchanged base file name should still be moved to new docsRoot
       expect(fs.existsSync(path.join(newDocsRoot, "situacao-atual.md"))).toBe(true);

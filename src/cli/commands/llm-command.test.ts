@@ -190,7 +190,8 @@ describe("LlmCommand", () => {
     handler.executeLogout();
 
     expect(mockLlmService.logout).toHaveBeenCalled();
-    expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ ok: true, output: "MOCK_LOGOUT_SUCCESS" }));
+    expect(logSpy).toHaveBeenCalledWith(
+      JSON.stringify({ ok: true, output: "MOCK_LOGOUT_SUCCESS" }),
+    );
   });
 });
-

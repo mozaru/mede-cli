@@ -177,9 +177,9 @@ describe("CLI cycle flow (end-to-end through CycleCommand)", () => {
     // backlog changes, produces no ChangeSet (status is already AWAITING_APPROVAL).
     // Approve it directly to advance to phase 2 (GENERATE_MEETING), which produces
     // a diff-based ChangeSet that can be applied and approved.
-    await new CycleCommand().executeApprove(false);  // phase 1 → APPROVED, triggers phase 2
-    new ChangesCommand().executeApply(true);          // apply phase 2 chunks
-    await new CycleCommand().executeApprove(false);  // phase 2 → APPROVED, triggers phase 3
+    await new CycleCommand().executeApprove(false); // phase 1 → APPROVED, triggers phase 2
+    new ChangesCommand().executeApply(true); // apply phase 2 chunks
+    await new CycleCommand().executeApprove(false); // phase 2 → APPROVED, triggers phase 3
 
     const cycle = currentCycle();
     expect(cycle!.status).toBe("OPEN");

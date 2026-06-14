@@ -75,8 +75,7 @@ const DOC_WITH_BLOCK = [
 
 // In compressed space "Total: 5 itens" is at line 9 (1-indexed).
 // After coordinate transform (shrinkage=2): line 9+2 = 11.
-const LLM_DIFF_IN_COMPRESSED_SPACE =
-  "@@ -9,1 +9,1 @@\n-Total: 5 itens\n+Total: 10 itens\n";
+const LLM_DIFF_IN_COMPRESSED_SPACE = "@@ -9,1 +9,1 @@\n-Total: 5 itens\n+Total: 10 itens\n";
 
 // A plain document with no BEGIN-END blocks (backward-compat case).
 const DOC_WITHOUT_BLOCKS = "# Entrega 002\n\nConteúdo simples sem blocos.\n";
@@ -191,7 +190,9 @@ describe("PhaseConversationService — BEGIN-END placeholder pipeline (T07)", ()
     expect(chunks).toHaveLength(1);
     expect(chunks[0].status).toBe("AWAITING_APPROVAL");
     expect(chunks[0].changeContent).toContain("+Total: 10 itens");
-    expect(chunks[0].changeContent).toContain("| ID | Tipo | Nome | Origem | Ciclo de Entrega | Observa");
+    expect(chunks[0].changeContent).toContain(
+      "| ID | Tipo | Nome | Origem | Ciclo de Entrega | Observa",
+    );
     expect(chunks[0].changeContent).not.toContain("+| OLD-001 | Old Item |");
 
     service.applyAll(phase, changeSet!);
@@ -234,7 +235,9 @@ describe("PhaseConversationService — BEGIN-END placeholder pipeline (T07)", ()
     const chunks = changeChunkRepo.list(changeSet!.id);
     expect(chunks).toHaveLength(1);
     expect(chunks[0].status).toBe("AWAITING_APPROVAL");
-    expect(chunks[0].changeContent).toContain("| ID | Tipo | Nome | Origem | Ciclo de Entrega | Observa");
+    expect(chunks[0].changeContent).toContain(
+      "| ID | Tipo | Nome | Origem | Ciclo de Entrega | Observa",
+    );
     expect(chunks[0].changeContent).not.toContain("+| OLD-001 | Old Item |");
   });
 });

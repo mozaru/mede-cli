@@ -27,7 +27,10 @@ interface TuiProps {
   initialRefinePrompt?: string;
 }
 
-type TuiRuntimeContainer = Pick<Container, "changesService" | "cycleService" | "tuiViewModelService"> & {
+type TuiRuntimeContainer = Pick<
+  Container,
+  "changesService" | "cycleService" | "tuiViewModelService"
+> & {
   tuiViewModelService: {
     getViewModel(): TuiViewModel;
     selectChunk(changeSetId: number, chunkIndex: number, currentOffset: number): void;
@@ -64,7 +67,15 @@ export interface TuiKeyActions {
 
 export function handleTuiKey(
   input: string,
-  key: { escape?: boolean; return?: boolean; backspace?: boolean; upArrow?: boolean; downArrow?: boolean; ctrl?: boolean; meta?: boolean },
+  key: {
+    escape?: boolean;
+    return?: boolean;
+    backspace?: boolean;
+    upArrow?: boolean;
+    downArrow?: boolean;
+    ctrl?: boolean;
+    meta?: boolean;
+  },
   state: TuiKeyState,
   actions: TuiKeyActions,
 ): void {
@@ -394,9 +405,19 @@ export function Tui({
             {isCycleActive && phase ? (
               <>
                 <Text>Status da Fase: {phase.status}</Text>
-                <Text>Resultado: {phase.proposalState === "EMPTY" ? "Vazio" : phase.proposalState === "NON_EMPTY" ? "Alterações pendentes" : "Não gerado"}</Text>
+                <Text>
+                  Resultado:{" "}
+                  {phase.proposalState === "EMPTY"
+                    ? "Vazio"
+                    : phase.proposalState === "NON_EMPTY"
+                      ? "Alterações pendentes"
+                      : "Não gerado"}
+                </Text>
                 <Text>Arquivo Alvo: {changeSet?.fileName || "-"}</Text>
-                <Text>Trechos Diffs: {chunks.length} total ({chunks.filter(c => c.status === "AWAITING_APPROVAL").length} pendentes)</Text>
+                <Text>
+                  Trechos Diffs: {chunks.length} total (
+                  {chunks.filter((c) => c.status === "AWAITING_APPROVAL").length} pendentes)
+                </Text>
               </>
             ) : (
               <Text dimColor>Nenhuma fase activa no momento</Text>
@@ -415,11 +436,16 @@ export function Tui({
             </>
           )}
           {phase?.status === "REFINING" && chunks.length > 0 && (
-            <Text color="cyan">[d] Navegar e Aplicar/Descartar Trechos Diffs ({chunks.filter(c => c.status === "AWAITING_APPROVAL").length} pendentes)</Text>
+            <Text color="cyan">
+              [d] Navegar e Aplicar/Descartar Trechos Diffs (
+              {chunks.filter((c) => c.status === "AWAITING_APPROVAL").length} pendentes)
+            </Text>
           )}
-          {cycle?.status === "AWAITING_COMMIT" && <Text color="green">[c] Confirmar Alterações (Commit)</Text>}
+          {cycle?.status === "AWAITING_COMMIT" && (
+            <Text color="green">[c] Confirmar Alterações (Commit)</Text>
+          )}
           {isCycleActive && <Text color="red">[b] Cancelar Ciclo (Rollback)</Text>}
-          <Text dimColor>[s] Atualizar Status  |  [q / Esc] Sair da TUI</Text>
+          <Text dimColor>[s] Atualizar Status | [q / Esc] Sair da TUI</Text>
         </Box>
       </Box>
     );
@@ -431,7 +457,9 @@ export function Tui({
         <Text bold color="yellow">
           Refinamento da Fase: {phase?.name}
         </Text>
-        <Text dimColor>Digite o seu feedback/instruções para que o LLM regenere a documentação:</Text>
+        <Text dimColor>
+          Digite o seu feedback/instruções para que o LLM regenere a documentação:
+        </Text>
         <Box borderStyle="single" borderColor="yellow" marginY={1} paddingX={1}>
           <Text>{refinePrompt}</Text>
           <Text>_</Text>
@@ -456,7 +484,8 @@ export function Tui({
     return (
       <Box flexDirection="column" marginY={1} height={14}>
         <Text bold color="cyan">
-          Navegação de Diff — Arquivo: {changeSet?.fileName} (Trecho {selectedChunkIdx + 1} de {chunks.length})
+          Navegação de Diff — Arquivo: {changeSet?.fileName} (Trecho {selectedChunkIdx + 1} de{" "}
+          {chunks.length})
         </Text>
         <Box flexDirection="row" flexGrow={1} borderStyle="single" borderColor="cyan" minHeight={8}>
           {/* Left panel: List of chunks */}
@@ -486,19 +515,24 @@ export function Tui({
 
           {/* Right panel: Diff preview */}
           <Box flexDirection="column" width="70%" paddingX={1}>
-            <Text bold underline>Localização: {chunk?.blockLocation}</Text>
+            <Text bold underline>
+              Localização: {chunk?.blockLocation}
+            </Text>
             <Box flexDirection="column" marginY={1}>
-              {diffContent.split("\n").slice(0, 8).map((line: string, i: number) => {
-                let color = "white";
-                if (line.startsWith("+")) color = "green";
-                else if (line.startsWith("-")) color = "red";
-                else if (line.startsWith("@")) color = "cyan";
-                return (
-                  <Text key={i} color={color}>
-                    {line}
-                  </Text>
-                );
-              })}
+              {diffContent
+                .split("\n")
+                .slice(0, 8)
+                .map((line: string, i: number) => {
+                  let color = "white";
+                  if (line.startsWith("+")) color = "green";
+                  else if (line.startsWith("-")) color = "red";
+                  else if (line.startsWith("@")) color = "cyan";
+                  return (
+                    <Text key={i} color={color}>
+                      {line}
+                    </Text>
+                  );
+                })}
               {diffContent.split("\n").length > 8 && (
                 <Text dimColor>... ({diffContent.split("\n").length - 8} linhas omitidas)</Text>
               )}
@@ -507,11 +541,11 @@ export function Tui({
         </Box>
 
         <Box flexDirection="row" justifyContent="space-between">
-          <Text dimColor>↑↓: Navegar  |  [Esc / s]: Voltar  |  [q]: Sair</Text>
+          <Text dimColor>↑↓: Navegar | [Esc / s]: Voltar | [q]: Sair</Text>
           {chunk?.status === "AWAITING_APPROVAL" ? (
             <Box>
               <Text color="green">[a] Aplicar Trecho</Text>
-              <Text>   </Text>
+              <Text> </Text>
               <Text color="red">[d] Descartar Trecho</Text>
             </Box>
           ) : (
@@ -534,9 +568,7 @@ export function Tui({
             ⏳ Carregando... Por favor, aguarde.
           </Text>
         ) : (
-          <Text color={msgColor}>
-            {message || "Pronto. Use as teclas indicadas para operar."}
-          </Text>
+          <Text color={msgColor}>{message || "Pronto. Use as teclas indicadas para operar."}</Text>
         )}
       </Box>
     );

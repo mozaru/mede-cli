@@ -84,8 +84,11 @@ export class ConsistencyCheckerService {
   private checkIndicators(currentState: Map<string, string>, content: string): string[] {
     const statuses = [...currentState.values()].map((status) => normalizeStatus(status));
     const expected = {
-      concluded: statuses.filter((status) => status === normalizeStatus(BacklogStatus.CONCLUIDO)).length,
-      inProgress: statuses.filter((status) => status === normalizeStatus(BacklogStatus.EM_ANDAMENTO)).length,
+      concluded: statuses.filter((status) => status === normalizeStatus(BacklogStatus.CONCLUIDO))
+        .length,
+      inProgress: statuses.filter(
+        (status) => status === normalizeStatus(BacklogStatus.EM_ANDAMENTO),
+      ).length,
       pending: statuses.filter((status) =>
         [
           normalizeStatus(BacklogStatus.PENDENTE),
@@ -96,9 +99,21 @@ export class ConsistencyCheckerService {
     };
 
     const checks = [
-      { label: "Itens concluidos", value: this.parseIndicator(content, "Itens conclu"), expected: expected.concluded },
-      { label: "Itens em andamento", value: this.parseIndicator(content, "Itens em andamento"), expected: expected.inProgress },
-      { label: "Itens pendentes", value: this.parseIndicator(content, "Itens pendentes"), expected: expected.pending },
+      {
+        label: "Itens concluidos",
+        value: this.parseIndicator(content, "Itens conclu"),
+        expected: expected.concluded,
+      },
+      {
+        label: "Itens em andamento",
+        value: this.parseIndicator(content, "Itens em andamento"),
+        expected: expected.inProgress,
+      },
+      {
+        label: "Itens pendentes",
+        value: this.parseIndicator(content, "Itens pendentes"),
+        expected: expected.pending,
+      },
     ];
 
     return checks

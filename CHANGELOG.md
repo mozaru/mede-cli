@@ -7,6 +7,11 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.2.0] - 2026-06-14
+
+### Adicionado
+- Novo comando `update` (`mede-cli update`) para verificar e realizar a auto-atualização do pacote global via npm registry, mostrando a versão de origem e a versão de destino.
+
 ## [1.1.1] - 2026-06-14
 
 ### Corrigido

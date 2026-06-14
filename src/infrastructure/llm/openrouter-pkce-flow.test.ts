@@ -71,16 +71,14 @@ describe("OpenRouterPkceFlow.login", () => {
     process.env.MEDE_OPENROUTER_PORT = "12345";
     let seenAuthUrl = "";
     const fetchStub = vi.fn(async () => jsonResponse(200, { key: "sk-or-123" }));
-    const flow = new OpenRouterPkceFlow(
-      {
-        fetch: fetchStub as unknown as typeof fetch,
-        createVerifier: () => "fixed-verifier",
-        authorize: async (authUrl) => {
-          seenAuthUrl = authUrl;
-          return "auth-code-1";
-        },
-      }
-    );
+    const flow = new OpenRouterPkceFlow({
+      fetch: fetchStub as unknown as typeof fetch,
+      createVerifier: () => "fixed-verifier",
+      authorize: async (authUrl) => {
+        seenAuthUrl = authUrl;
+        return "auth-code-1";
+      },
+    });
 
     try {
       await flow.login();

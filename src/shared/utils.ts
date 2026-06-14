@@ -10,11 +10,7 @@ function isEmptyCell(value: string | null | undefined): boolean {
   if (value === null || value === undefined) return true;
   const trimmed = value.trim();
   return (
-    trimmed === "" ||
-    trimmed === "-" ||
-    trimmed === "—" ||
-    trimmed === "–" ||
-    trimmed === "â€”"
+    trimmed === "" || trimmed === "-" || trimmed === "—" || trimmed === "–" || trimmed === "â€”"
   );
 }
 

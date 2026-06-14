@@ -562,6 +562,16 @@ mede-cli cat readme.md -b
 
 ---
 
+### `mede-cli update`
+
+Verifica se há atualizações para o `mede-cli` no registro npm e realiza a atualização caso haja uma nova versão.
+
+```bash
+mede-cli update
+```
+
+---
+
 ### `mede-cli llm`
 
 Inspeciona a configuração e exibe o status de modelos/provedores LLM ativos.

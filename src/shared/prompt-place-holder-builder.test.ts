@@ -20,11 +20,12 @@ const PREVIOUS_SITUACAO_ATUAL = `# Situação Atual
 describe("PromptPlaceholderBuilder", () => {
   it("builds the statistics correctly", () => {
     const mockBacklogRepo = {
-      list: () => [
-        { status: "Concluído" },
-        { status: "Pendente" },
-        { status: "Cancelado" },
-      ] as BacklogEntity[],
+      list: () =>
+        [
+          { status: "Concluído" },
+          { status: "Pendente" },
+          { status: "Cancelado" },
+        ] as BacklogEntity[],
     } as unknown as IBacklogRepository;
 
     const builder = new PromptPlaceholderBuilder(mockBacklogRepo);
@@ -37,28 +38,29 @@ describe("PromptPlaceholderBuilder", () => {
 
   it("builds the intervention table for ESM document types only", () => {
     const mockBacklogRepo = {
-      list: () => [
-        {
-          immutableId: "ESM-20260101-RF-BLI-0001",
-          documentType: "ESM",
-          nature: "RF",
-          interventionType: "BLI",
-          description: "Criar endpoint",
-          source: "ata-1",
-          deliver: "doc-1",
-          status: "Pendente",
-        },
-        {
-          immutableId: "DEI-20260101-RF-BLI-0002",
-          documentType: "DEI",
-          nature: "RF",
-          interventionType: "BLI",
-          description: "Ignorar este no ESM",
-          source: "ata-1",
-          deliver: "doc-1",
-          status: "Pendente",
-        },
-      ] as BacklogEntity[],
+      list: () =>
+        [
+          {
+            immutableId: "ESM-20260101-RF-BLI-0001",
+            documentType: "ESM",
+            nature: "RF",
+            interventionType: "BLI",
+            description: "Criar endpoint",
+            source: "ata-1",
+            deliver: "doc-1",
+            status: "Pendente",
+          },
+          {
+            immutableId: "DEI-20260101-RF-BLI-0002",
+            documentType: "DEI",
+            nature: "RF",
+            interventionType: "BLI",
+            description: "Ignorar este no ESM",
+            source: "ata-1",
+            deliver: "doc-1",
+            status: "Pendente",
+          },
+        ] as BacklogEntity[],
     } as unknown as IBacklogRepository;
 
     const builder = new PromptPlaceholderBuilder(mockBacklogRepo);
@@ -167,7 +169,11 @@ describe("PromptPlaceholderBuilder", () => {
 
     it("fills project metadata scalars from context", () => {
       const context: PlaceholderContext = {
-        config: { projectName: "Sistema X", clientName: "Cliente Y", supplierName: "11Tech" } as MedeConfigModelEntity,
+        config: {
+          projectName: "Sistema X",
+          clientName: "Cliente Y",
+          supplierName: "11Tech",
+        } as MedeConfigModelEntity,
         cycleNumber: 3,
         referenceDate: "2026-06-11",
       };
@@ -200,12 +206,13 @@ describe("PromptPlaceholderBuilder", () => {
 
     it("computes TOTAL_ENTREGUES, TOTAL_PENDENTES and PERCENTUAL_ENTREGA from items", () => {
       const repo = {
-        list: () => [
-          { status: "Concluído" },
-          { status: "Pendente" },
-          { status: "Aguardando" },
-          { status: "Cancelado" },
-        ] as BacklogEntity[],
+        list: () =>
+          [
+            { status: "Concluído" },
+            { status: "Pendente" },
+            { status: "Aguardando" },
+            { status: "Cancelado" },
+          ] as BacklogEntity[],
       } as unknown as IBacklogRepository;
       const builder = new PromptPlaceholderBuilder(repo, makeParser());
       const map = builder.buildAll(1, "situacao-atual.md");
@@ -220,30 +227,31 @@ describe("PromptPlaceholderBuilder", () => {
       const previousContent = `# Situação Atual\n**Data de referência:** 2026-01-01\n\n| ID | Descrição | Tags | Ata | Origem | Entrega | Status |\n| --- | --- | --- | --- | --- | --- | --- |\n| DEI-20260101-000-RF-BLI-0001 | Item Um | | ata-1 | origem-1 | | Pendente |\n`;
 
       const repo = {
-        list: () => [
-          // Previously Pendente, now Concluído → wasDeliveredInPeriod
-          {
-            immutableId: "DEI-20260101-000-RF-BLI-0001",
-            documentType: "DEI",
-            nature: "RF",
-            interventionType: "BLI",
-            referenceDate: "20260101",
-            sequence: 1,
-            status: "Concluído",
-            updatedAt: "2026-06-01T00:00:00Z",
-          },
-          // Not in previous → isNewInPeriod
-          {
-            immutableId: "DEI-20260601-000-RF-EVO-0001",
-            documentType: "DEI",
-            nature: "RF",
-            interventionType: "EVO",
-            referenceDate: "20260601",
-            sequence: 1,
-            status: "Pendente",
-            updatedAt: "2026-06-01T00:00:00Z",
-          },
-        ] as BacklogEntity[],
+        list: () =>
+          [
+            // Previously Pendente, now Concluído → wasDeliveredInPeriod
+            {
+              immutableId: "DEI-20260101-000-RF-BLI-0001",
+              documentType: "DEI",
+              nature: "RF",
+              interventionType: "BLI",
+              referenceDate: "20260101",
+              sequence: 1,
+              status: "Concluído",
+              updatedAt: "2026-06-01T00:00:00Z",
+            },
+            // Not in previous → isNewInPeriod
+            {
+              immutableId: "DEI-20260601-000-RF-EVO-0001",
+              documentType: "DEI",
+              nature: "RF",
+              interventionType: "EVO",
+              referenceDate: "20260601",
+              sequence: 1,
+              status: "Pendente",
+              updatedAt: "2026-06-01T00:00:00Z",
+            },
+          ] as BacklogEntity[],
       } as unknown as IBacklogRepository;
 
       const builder = new PromptPlaceholderBuilder(repo, makeParser(previousContent));

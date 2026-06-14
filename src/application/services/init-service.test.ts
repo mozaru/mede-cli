@@ -90,7 +90,7 @@ describe("InitService unit tests", () => {
       projectConfigRepository as any,
       phaseRepository,
       cycleArtifactRepository,
-      fileSystemRepository
+      fileSystemRepository,
     );
 
     // 3. Act
@@ -101,8 +101,12 @@ describe("InitService unit tests", () => {
 
     // Directory creation
     expect(fileSystemRepository.ensureDirectory).toHaveBeenCalledWith("docs/atas-de-reuniao");
-    expect(fileSystemRepository.ensureDirectory).toHaveBeenCalledWith("docs/decisoes-arquiteturais");
-    expect(fileSystemRepository.ensureDirectory).toHaveBeenCalledWith("docs/especificacao-manutencao-sistema");
+    expect(fileSystemRepository.ensureDirectory).toHaveBeenCalledWith(
+      "docs/decisoes-arquiteturais",
+    );
+    expect(fileSystemRepository.ensureDirectory).toHaveBeenCalledWith(
+      "docs/especificacao-manutencao-sistema",
+    );
     expect(fileSystemRepository.ensureDirectory).toHaveBeenCalledWith("docs/log-entregas");
 
     // Base files creation
@@ -111,7 +115,9 @@ describe("InitService unit tests", () => {
     expect(fileSystemRepository.ensureFile).not.toHaveBeenCalledWith("docs/situacao-atual.md");
     expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/visao-e-escopo.md");
     expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/requisitos-funcionais.md");
-    expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/requisitos-nao-funcionais.md");
+    expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith(
+      "docs/requisitos-nao-funcionais.md",
+    );
     expect(fileSystemRepository.ensureFile).toHaveBeenCalledWith("docs/modelo-de-dados.md");
 
     // Prompt info insertion
@@ -121,7 +127,7 @@ describe("InitService unit tests", () => {
         canonicalType: "info",
         currentContent: "Custom Prompt Text",
         cycleId: mockCycle.id,
-      })
+      }),
     );
 
     // Phase conversation sendMessage call
@@ -130,7 +136,7 @@ describe("InitService unit tests", () => {
       mockConfig,
       mockPhase,
       "",
-      ["file1.txt", "file2.txt"]
+      ["file1.txt", "file2.txt"],
     );
 
     // Empty/NonEmpty transitions
@@ -142,7 +148,7 @@ describe("InitService unit tests", () => {
       mockProject,
       mockCycle,
       expect.objectContaining({ id: mockPhase.id, status: "APPROVED" }),
-      mockChangeSet
+      mockChangeSet,
     );
   });
 
@@ -173,8 +179,12 @@ describe("InitService unit tests", () => {
     const mockPhase = { id: 789 };
 
     const docsRepository = { reconstruct: vi.fn().mockReturnValue({ project: mockProject }) };
-    const projectConfigRepository = { getCurrent: vi.fn().mockReturnValue({ content: JSON.stringify(mockConfig) }) };
-    const cycleService = { beginInitialization: vi.fn().mockReturnValue({ cycle: mockCycle, phase: mockPhase }) };
+    const projectConfigRepository = {
+      getCurrent: vi.fn().mockReturnValue({ content: JSON.stringify(mockConfig) }),
+    };
+    const cycleService = {
+      beginInitialization: vi.fn().mockReturnValue({ cycle: mockCycle, phase: mockPhase }),
+    };
     const phaseConversationService = { sendMessage: vi.fn().mockResolvedValue(null) };
     const statusService = { generate: vi.fn().mockReturnValue("empty_report") };
     const phaseRepository = { empty: vi.fn(), nonEmpty: vi.fn(), getById: vi.fn() };
@@ -189,7 +199,7 @@ describe("InitService unit tests", () => {
       projectConfigRepository as any,
       phaseRepository as any,
       cycleArtifactRepository as any,
-      fileSystemRepository as any
+      fileSystemRepository as any,
     );
 
     const result = await initService.init("", []);

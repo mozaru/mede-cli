@@ -32,35 +32,31 @@ function makeService(overrides: Record<string, any> = {}) {
     ...overrides.statusService,
   };
   const projectRepository = overrides.projectRepository ?? { getCurrent: vi.fn(() => project) };
-  const projectConfigRepository =
-    overrides.projectConfigRepository ?? { get: vi.fn(() => config), getCurrent: vi.fn(() => config) };
+  const projectConfigRepository = overrides.projectConfigRepository ?? {
+    get: vi.fn(() => config),
+    getCurrent: vi.fn(() => config),
+  };
   const cycleRepository = overrides.cycleRepository ?? { getCurrent: vi.fn(() => cycle) };
-  const phaseRepository =
-    overrides.phaseRepository ??
-    {
-      getByIndex: vi.fn(() => phase),
-      getById: vi.fn(() => ({ ...phase, status: "AWAITING_APPROVAL" })),
-    };
-  const changeSetRepository =
-    overrides.changeSetRepository ??
-    {
-      getCurrent: vi.fn(() => changeSet),
-      getById: vi.fn(() => ({ ...changeSet, completed: true })),
-    };
-  const changeChunkRepository =
-    overrides.changeChunkRepository ??
-    {
-      list: vi.fn(() => [
-        { index: 1, status: "AWAITING_APPROVAL", blockLocation: "@@ -1 +1 @@", changeContent: "+a" },
-        { index: 2, status: "REJECTED", blockLocation: "@@ -2 +2 @@", changeContent: "+b" },
-      ]),
-      getByIndex: vi.fn(() => ({
-        index: 2,
-        status: "AWAITING_APPROVAL",
-        blockLocation: "@@ -2 +2 @@",
-        changeContent: "+b",
-      })),
-    };
+  const phaseRepository = overrides.phaseRepository ?? {
+    getByIndex: vi.fn(() => phase),
+    getById: vi.fn(() => ({ ...phase, status: "AWAITING_APPROVAL" })),
+  };
+  const changeSetRepository = overrides.changeSetRepository ?? {
+    getCurrent: vi.fn(() => changeSet),
+    getById: vi.fn(() => ({ ...changeSet, completed: true })),
+  };
+  const changeChunkRepository = overrides.changeChunkRepository ?? {
+    list: vi.fn(() => [
+      { index: 1, status: "AWAITING_APPROVAL", blockLocation: "@@ -1 +1 @@", changeContent: "+a" },
+      { index: 2, status: "REJECTED", blockLocation: "@@ -2 +2 @@", changeContent: "+b" },
+    ]),
+    getByIndex: vi.fn(() => ({
+      index: 2,
+      status: "AWAITING_APPROVAL",
+      blockLocation: "@@ -2 +2 @@",
+      changeContent: "+b",
+    })),
+  };
 
   return {
     service: new ChangesService(
@@ -128,7 +124,9 @@ describe("ChangesService", () => {
 
   it("validates phase and change-set preconditions", () => {
     expect(() =>
-      makeService({ phaseRepository: { getByIndex: () => ({ ...phase, status: "APPROVED" }) } }).service.pending(true),
+      makeService({
+        phaseRepository: { getByIndex: () => ({ ...phase, status: "APPROVED" }) },
+      }).service.pending(true),
     ).toThrow(/refinamento/);
 
     expect(() =>
@@ -147,14 +145,21 @@ describe("ChangesService", () => {
 
   it("falls back to list/getCurrent repositories and rejects missing project state", () => {
     const fallback = makeService({
-      projectRepository: { list: () => [{ ...project, id: 1 }, { ...project, id: 9 }] },
+      projectRepository: {
+        list: () => [
+          { ...project, id: 1 },
+          { ...project, id: 9 },
+        ],
+      },
       projectConfigRepository: { getCurrent: vi.fn(() => config) },
       cycleRepository: { getCurrent: vi.fn(() => cycle) },
     });
     expect(fallback.service.pending(false)).toContain("Project : Demo");
 
     expect(() =>
-      makeService({ projectRepository: { getCurrent: () => null, list: () => [] } }).service.pending(false),
+      makeService({
+        projectRepository: { getCurrent: () => null, list: () => [] },
+      }).service.pending(false),
     ).toThrow(/Projeto/);
   });
 });

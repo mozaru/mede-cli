@@ -109,12 +109,9 @@ describe("compressDocument", () => {
   });
 
   it("compresses a single block to a placeholder line", () => {
-    const content = [
-      "<!-- BEGIN-TABELA_A -->",
-      "linha1",
-      "linha2",
-      "<!-- END-TABELA_A -->",
-    ].join("\n");
+    const content = ["<!-- BEGIN-TABELA_A -->", "linha1", "linha2", "<!-- END-TABELA_A -->"].join(
+      "\n",
+    );
 
     const { compressedContent } = compressDocument(content);
 
@@ -177,13 +174,9 @@ describe("compressDocument", () => {
   });
 
   it("returns original PlaceholderBlock positions (in original document)", () => {
-    const content = [
-      "Linha 0",
-      "<!-- BEGIN-A -->",
-      "inner A",
-      "<!-- END-A -->",
-      "Linha 4",
-    ].join("\n");
+    const content = ["Linha 0", "<!-- BEGIN-A -->", "inner A", "<!-- END-A -->", "Linha 4"].join(
+      "\n",
+    );
 
     const { blocks } = compressDocument(content);
     expect(blocks[0].startLine).toBe(1);

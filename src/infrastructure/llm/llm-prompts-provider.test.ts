@@ -66,7 +66,9 @@ describe("llm prompt assets loader", () => {
   });
 
   it("injects the shared diff rules into every system prompt (except JSON-only phases)", () => {
-    const diffBasedPrompts = systemPrompts.filter((p) => p !== Prompts.SYSTEM_PROMPT_EXTRACT_BACKLOG);
+    const diffBasedPrompts = systemPrompts.filter(
+      (p) => p !== Prompts.SYSTEM_PROMPT_EXTRACT_BACKLOG,
+    );
     for (const prompt of diffBasedPrompts) {
       expect(prompt.toLowerCase()).toContain("diff");
     }

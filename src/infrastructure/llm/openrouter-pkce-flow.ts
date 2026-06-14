@@ -46,7 +46,9 @@ export class OpenRouterPkceFlow {
     const verifier = this.deps.createVerifier?.() ?? base64url(crypto.randomBytes(32));
     const challenge = base64url(crypto.createHash("sha256").update(verifier).digest());
 
-    const envPort = process.env.MEDE_OPENROUTER_PORT ? parseInt(process.env.MEDE_OPENROUTER_PORT, 10) : undefined;
+    const envPort = process.env.MEDE_OPENROUTER_PORT
+      ? parseInt(process.env.MEDE_OPENROUTER_PORT, 10)
+      : undefined;
     const port = envPort ?? this.config.callbackPort ?? DEFAULT_PORT;
     const callbackUrl = `http://localhost:${port}/callback`;
     const authBase = this.config.authBaseUrl ?? DEFAULT_AUTH_BASE;
@@ -83,8 +85,12 @@ export function createBrowserAuthorize(options?: {
   open?: (url: string) => void;
   notify?: (message: string) => void;
 }): (authUrl: string, callbackUrl: string) => Promise<string> {
-  const envPort = process.env.MEDE_OPENROUTER_PORT ? parseInt(process.env.MEDE_OPENROUTER_PORT, 10) : undefined;
-  const envTimeout = process.env.MEDE_OPENROUTER_TIMEOUT ? parseInt(process.env.MEDE_OPENROUTER_TIMEOUT, 10) : undefined;
+  const envPort = process.env.MEDE_OPENROUTER_PORT
+    ? parseInt(process.env.MEDE_OPENROUTER_PORT, 10)
+    : undefined;
+  const envTimeout = process.env.MEDE_OPENROUTER_TIMEOUT
+    ? parseInt(process.env.MEDE_OPENROUTER_TIMEOUT, 10)
+    : undefined;
 
   const port = envPort ?? options?.port ?? DEFAULT_PORT;
   const timeoutMs = envTimeout ?? options?.timeoutMs ?? 5 * 60 * 1000;

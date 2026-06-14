@@ -89,9 +89,9 @@ describe("Slug e2e — shortDescriptionSlug.enabled = true", () => {
   });
 
   it("writes the ATA file with the slug appended to the filename", async () => {
-    await new CycleCommand().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
-    await new CycleCommand().executeApprove(false);  // approve phase 1, call 2: ATA → REFINING
-    new ChangesCommand().executeApply(true);          // apply ATA chunks (call 3: slug)
+    await new CycleCommand().executeCycle("", []); // call 1: EXTRACT_BACKLOG
+    await new CycleCommand().executeApprove(false); // approve phase 1, call 2: ATA → REFINING
+    new ChangesCommand().executeApply(true); // apply ATA chunks (call 3: slug)
 
     const files = listAtaFiles();
     expect(files.length).toBeGreaterThan(0);
@@ -108,19 +108,17 @@ describe("Slug e2e — shortDescriptionSlug.enabled = true", () => {
 
     const files = listAtaFiles();
     // All ATA files must contain the slug — no bare provisional name
-    const provisionalFiles = files.filter((f) =>
-      /^ata-\d{8}-\d{3}\.md$/.test(f),
-    );
+    const provisionalFiles = files.filter((f) => /^ata-\d{8}-\d{3}\.md$/.test(f));
     expect(provisionalFiles).toHaveLength(0);
   });
 
   it("makes exactly 3 LLM calls: one for EXTRACT_BACKLOG, one for ATA content, one for slug", async () => {
-    await new CycleCommand().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
+    await new CycleCommand().executeCycle("", []); // call 1: EXTRACT_BACKLOG
 
     expect(generateText).toHaveBeenCalledTimes(1);
 
-    await new CycleCommand().executeApprove(false);  // call 2: ATA content
-    new ChangesCommand().executeApply(true);          // call 3: slug generation
+    await new CycleCommand().executeApprove(false); // call 2: ATA content
+    new ChangesCommand().executeApply(true); // call 3: slug generation
 
     expect(generateText).toHaveBeenCalledTimes(3);
   });
@@ -137,9 +135,9 @@ describe("Slug e2e — shortDescriptionSlug.enabled = false", () => {
   });
 
   it("writes the ATA file with the provisional filename (no slug)", async () => {
-    await new CycleCommand().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
-    await new CycleCommand().executeApprove(false);  // approve phase 1, call 2: ATA → REFINING
-    new ChangesCommand().executeApply(true);          // apply ATA chunks (no slug)
+    await new CycleCommand().executeCycle("", []); // call 1: EXTRACT_BACKLOG
+    await new CycleCommand().executeApprove(false); // approve phase 1, call 2: ATA → REFINING
+    new ChangesCommand().executeApply(true); // apply ATA chunks (no slug)
 
     const files = listAtaFiles();
     expect(files.length).toBeGreaterThan(0);
@@ -151,8 +149,8 @@ describe("Slug e2e — shortDescriptionSlug.enabled = false", () => {
   });
 
   it("makes exactly 2 LLM calls: one for EXTRACT_BACKLOG, one for ATA content", async () => {
-    await new CycleCommand().executeCycle("", []);   // call 1: EXTRACT_BACKLOG
-    await new CycleCommand().executeApprove(false);  // call 2: ATA content
+    await new CycleCommand().executeCycle("", []); // call 1: EXTRACT_BACKLOG
+    await new CycleCommand().executeApprove(false); // call 2: ATA content
 
     expect(generateText).toHaveBeenCalledTimes(2);
   });

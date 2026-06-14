@@ -32,10 +32,7 @@ import { PromptPlaceholderBuilder } from "../../shared/prompt-place-holder-build
 import { IBacklogRepository } from "../../domain/interfaces/repositories/backlog-repository-interface.js";
 import { ProjectEntity } from "../../domain/entities/project-entity.js";
 import { compressDocument } from "../../shared/placeholder-block-extractor.js";
-import {
-  ExtractBacklogResponseSchema,
-  BacklogSyncService,
-} from "./backlog-sync-service.js";
+import { ExtractBacklogResponseSchema, BacklogSyncService } from "./backlog-sync-service.js";
 import {
   buildCompressionMap,
   transformDiffCoordinates,
@@ -205,7 +202,10 @@ export class PhaseConversationService implements IPhaseConversationService {
         );
 
       case "dataModel":
-        return this.getConfigOrDefault(config.prompts?.dataModel, LlmPrompts.USER_PROMPT_DATA_MODEL);
+        return this.getConfigOrDefault(
+          config.prompts?.dataModel,
+          LlmPrompts.USER_PROMPT_DATA_MODEL,
+        );
 
       case "timeline":
         return this.getConfigOrDefault(config.prompts?.timeline, LlmPrompts.USER_PROMPT_TIMELINE);
@@ -336,11 +336,7 @@ export class PhaseConversationService implements IPhaseConversationService {
     const { compressedContent, blocks } = compressDocument(originalContent);
     const compressionMap = buildCompressionMap(blocks);
 
-    llm.addOutputDoc(
-      cycleArtifactOutput.id,
-      cycleArtifactOutput.artifactPath,
-      compressedContent,
-    );
+    llm.addOutputDoc(cycleArtifactOutput.id, cycleArtifactOutput.artifactPath, compressedContent);
 
     llm.setUserPrompt(prompt);
 
@@ -546,7 +542,9 @@ export class PhaseConversationService implements IPhaseConversationService {
     try {
       parsed = ExtractBacklogResponseSchema.parse(JSON.parse(rawText));
     } catch (e) {
-      logger.warn(`[EXTRACT_BACKLOG] JSON inválido do LLM: ${e instanceof Error ? e.message : String(e)}`);
+      logger.warn(
+        `[EXTRACT_BACKLOG] JSON inválido do LLM: ${e instanceof Error ? e.message : String(e)}`,
+      );
       return null;
     }
 
@@ -558,7 +556,12 @@ export class PhaseConversationService implements IPhaseConversationService {
       canonicalType: "info",
       artifactPath: "",
       backupContent: "",
-      currentContent: JSON.stringify({ projectId: project.id, cycleNumber, referenceDate, response: parsed }),
+      currentContent: JSON.stringify({
+        projectId: project.id,
+        cycleNumber,
+        referenceDate,
+        response: parsed,
+      }),
       startedAt: this.getCurrentDateTime(),
       updatedAt: this.getCurrentDateTime(),
     });
@@ -636,8 +639,7 @@ export class PhaseConversationService implements IPhaseConversationService {
 
     // Don't create an empty HISTORICAL artifact on disk when the LLM produced no
     // changes (e.g. an ESM/ADR that genuinely has nothing to record this cycle).
-    const isNewHistorical =
-      doc.canonicalType === "HISTORICAL" && doc.backupContent.trim() === "";
+    const isNewHistorical = doc.canonicalType === "HISTORICAL" && doc.backupContent.trim() === "";
     if (newContent.trim() !== "" || !isNewHistorical) {
       this.fileSystemRepository.writeFile(changeSet.fileName, newContent);
     }
@@ -651,11 +653,16 @@ export class PhaseConversationService implements IPhaseConversationService {
     this.phaseRepository.awaitingApproval(phase.id);
 
     this.syncBacklogFromAppliedEsm(phase, newContent);
-    this.recordPhaseEvent(phase, "change.apply_all", `Todos os trechos aplicados em ${changeSet.fileName}`, {
-      changeSetId: changeSet.id,
-      fileName: changeSet.fileName,
-      changeChunkCount: changeSet.changeChunkCount,
-    });
+    this.recordPhaseEvent(
+      phase,
+      "change.apply_all",
+      `Todos os trechos aplicados em ${changeSet.fileName}`,
+      {
+        changeSetId: changeSet.id,
+        fileName: changeSet.fileName,
+        changeChunkCount: changeSet.changeChunkCount,
+      },
+    );
 
     const currentChangeSet = this.changeSetRepository.getById(changeSet.id);
     this.assertNotNull(currentChangeSet, "Change-set não encontrado após aplicar tudo");
@@ -704,11 +711,16 @@ export class PhaseConversationService implements IPhaseConversationService {
     }
 
     this.fileSystemRepository.writeFile(changeSet.fileName, result.newContent);
-    this.recordPhaseEvent(phase, "change.apply", `Trecho ${chunk.index} aplicado em ${changeSet.fileName}`, {
-      changeSetId: changeSet.id,
-      chunkIndex: chunk.index,
-      fileName: changeSet.fileName,
-    });
+    this.recordPhaseEvent(
+      phase,
+      "change.apply",
+      `Trecho ${chunk.index} aplicado em ${changeSet.fileName}`,
+      {
+        changeSetId: changeSet.id,
+        chunkIndex: chunk.index,
+        fileName: changeSet.fileName,
+      },
+    );
     return this.changeSetRepository.getCurrent(phase.id);
   }
 
@@ -730,11 +742,16 @@ export class PhaseConversationService implements IPhaseConversationService {
     );
     this.changeSetRepository.updateComplete(changeSet.id);
     this.phaseRepository.awaitingApproval(phase.id);
-    this.recordPhaseEvent(phase, "change.discard_all", `Todos os trechos descartados em ${changeSet.fileName}`, {
-      changeSetId: changeSet.id,
-      fileName: changeSet.fileName,
-      changeChunkCount: changeSet.changeChunkCount,
-    });
+    this.recordPhaseEvent(
+      phase,
+      "change.discard_all",
+      `Todos os trechos descartados em ${changeSet.fileName}`,
+      {
+        changeSetId: changeSet.id,
+        fileName: changeSet.fileName,
+        changeChunkCount: changeSet.changeChunkCount,
+      },
+    );
 
     const currentChangeSet = this.changeSetRepository.getById(changeSet.id);
     this.assertNotNull(currentChangeSet, "Change-set não encontrado após descartar tudo");
@@ -769,11 +786,16 @@ export class PhaseConversationService implements IPhaseConversationService {
       );
     }
 
-    this.recordPhaseEvent(phase, "change.discard", `Trecho ${chunk.index} descartado em ${changeSet.fileName}`, {
-      changeSetId: changeSet.id,
-      chunkIndex: chunk.index,
-      fileName: changeSet.fileName,
-    });
+    this.recordPhaseEvent(
+      phase,
+      "change.discard",
+      `Trecho ${chunk.index} descartado em ${changeSet.fileName}`,
+      {
+        changeSetId: changeSet.id,
+        chunkIndex: chunk.index,
+        fileName: changeSet.fileName,
+      },
+    );
     return this.changeSetRepository.getCurrent(phase.id);
   }
 

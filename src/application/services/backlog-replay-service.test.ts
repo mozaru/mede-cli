@@ -113,13 +113,12 @@ describe("BacklogReplayService.replayFromContent", () => {
     const initial = makeInitial([{ id: "SAT-20260611-001-RF-BLI-0001" }]);
     const leg = makeLeg({
       deliveredIds: ["SAT-UNKNOWN-ID"],
-      newItems: [
-        { id: "SAT-20260611-002-RF-BLI-0001" },
-        { id: "SAT-20260611-002-RF-BLI-0001" },
-      ],
+      newItems: [{ id: "SAT-20260611-002-RF-BLI-0001" }, { id: "SAT-20260611-002-RF-BLI-0001" }],
     });
 
-    const { legResults } = service.replayFromContent(initial, [{ name: "leg-001.md", content: leg }]);
+    const { legResults } = service.replayFromContent(initial, [
+      { name: "leg-001.md", content: leg },
+    ]);
 
     expect(legResults[0].causalIssues).toEqual(
       expect.arrayContaining([
@@ -168,7 +167,9 @@ describe("BacklogReplayService.replayFromContent", () => {
       newItems: [{ id: "SAT-20260611-002-RF-BLI-0001", status: "Concluído" }],
     });
 
-    const { state, legResults } = service.replayFromContent(initial, [{ name: "leg-001.md", content: leg }]);
+    const { state, legResults } = service.replayFromContent(initial, [
+      { name: "leg-001.md", content: leg },
+    ]);
 
     expect(state.get("SAT-20260611-002-RF-BLI-0001")).toBe("Concluído");
     expect(legResults[0].causalIssues).toHaveLength(0);

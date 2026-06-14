@@ -47,8 +47,13 @@ export class FileSecretVault implements ISecretVault {
   private readonly filePath: string;
 
   public constructor(options?: FileSecretVaultOptions) {
-    const envPath = process.env.MEDE_VAULT_PATH?.trim() || process.env.MEDE_CREDENTIALS_PATH?.trim();
-    this.filePath = options?.filePath ?? (envPath && envPath.length > 0 ? envPath : path.join(resolveUserDataDir(), "credentials.json"));
+    const envPath =
+      process.env.MEDE_VAULT_PATH?.trim() || process.env.MEDE_CREDENTIALS_PATH?.trim();
+    this.filePath =
+      options?.filePath ??
+      (envPath && envPath.length > 0
+        ? envPath
+        : path.join(resolveUserDataDir(), "credentials.json"));
   }
 
   public get(key: string): string | undefined {
@@ -161,7 +166,9 @@ export class SystemKeychainSecretVault implements ISecretVault {
       }
       this.cache.set(key, value);
     } catch (err) {
-      throw new Error(`Falha ao gravar no chaveiro do sistema: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `Falha ao gravar no chaveiro do sistema: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
@@ -231,7 +238,9 @@ export class DockerCredentialHelperSecretVault implements ISecretVault {
       });
       this.cache.set(key, value);
     } catch (err) {
-      throw new Error(`Falha ao gravar via helper ${this.helperBin}: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `Falha ao gravar via helper ${this.helperBin}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 

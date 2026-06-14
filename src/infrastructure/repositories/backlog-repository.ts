@@ -64,8 +64,7 @@ export class BacklogRepository implements IBacklogRepository {
 
   public updateStatus(id: number, newStatus: string): boolean {
     this._uow.ensureTransactionForWrite();
-    const sql =
-      "update backlog set status = @status, updatedAt = @updatedAt where id = @id";
+    const sql = "update backlog set status = @status, updatedAt = @updatedAt where id = @id";
     const result = this._uow.connection.prepare(sql).run({
       id,
       status: newStatus,

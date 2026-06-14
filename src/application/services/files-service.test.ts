@@ -12,32 +12,28 @@ const project = {
 const config = { id: 20, projectId: project.id, content: "{}" };
 const cycle = { id: 30, projectId: project.id, status: "OPEN" };
 
-function makeService(overrides: {
-  projects?: unknown;
-  projectConfigs?: unknown;
-  cycles?: unknown;
-  artifacts?: unknown[];
-  diffFunction?: FilesService extends never ? never : any;
-} = {}): FilesService {
-  const projectRepository =
-    overrides.projects ??
-    {
-      getCurrent: vi.fn(() => project),
-      list: vi.fn(() => [project]),
-    };
+function makeService(
+  overrides: {
+    projects?: unknown;
+    projectConfigs?: unknown;
+    cycles?: unknown;
+    artifacts?: unknown[];
+    diffFunction?: FilesService extends never ? never : any;
+  } = {},
+): FilesService {
+  const projectRepository = overrides.projects ?? {
+    getCurrent: vi.fn(() => project),
+    list: vi.fn(() => [project]),
+  };
 
-  const projectConfigRepository =
-    overrides.projectConfigs ??
-    {
-      get: vi.fn(() => config),
-      getCurrent: vi.fn(() => config),
-    };
+  const projectConfigRepository = overrides.projectConfigs ?? {
+    get: vi.fn(() => config),
+    getCurrent: vi.fn(() => config),
+  };
 
-  const cycleRepository =
-    overrides.cycles ??
-    {
-      getCurrent: vi.fn(() => cycle),
-    };
+  const cycleRepository = overrides.cycles ?? {
+    getCurrent: vi.fn(() => cycle),
+  };
 
   const cycleArtifactRepository = {
     list: vi.fn(() => overrides.artifacts ?? []),
@@ -107,8 +103,9 @@ describe("FilesService", () => {
   });
 
   it("throws when project, config, cycle, or file are missing", () => {
-    expect(() => makeService({ projects: { getCurrent: () => null, list: () => [] } }).files(false))
-      .toThrow(/Projeto/);
+    expect(() =>
+      makeService({ projects: { getCurrent: () => null, list: () => [] } }).files(false),
+    ).toThrow(/Projeto/);
 
     expect(() =>
       makeService({ projectConfigs: { get: () => null, getCurrent: () => null } }).files(false),
@@ -125,7 +122,12 @@ describe("FilesService", () => {
 
   it("falls back to list/getCurrent repositories when getCurrent/get are not implemented", () => {
     const service = makeService({
-      projects: { list: () => [{ ...project, id: 1 }, { ...project, id: 2 }] },
+      projects: {
+        list: () => [
+          { ...project, id: 1 },
+          { ...project, id: 2 },
+        ],
+      },
       projectConfigs: { getCurrent: vi.fn(() => config) },
       cycles: { getCurrent: vi.fn(() => ({ ...cycle, id: 99 })) },
       artifacts: [{ artifactPath: "docs/a.md", backupContent: "old", currentContent: "new" }],

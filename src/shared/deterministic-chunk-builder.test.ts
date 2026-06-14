@@ -18,7 +18,9 @@ function makeBuilder(
 ): PromptPlaceholderBuilder {
   return {
     buildEntreguesTableFromProject: vi.fn(() => "| ID | Nome |\n| --- | --- |\n| 001 | Item |"),
-    buildPendentesTableFromProject: vi.fn(() => "| ID | Status |\n| --- | --- |\n| 002 | Pendente |"),
+    buildPendentesTableFromProject: vi.fn(
+      () => "| ID | Status |\n| --- | --- |\n| 002 | Pendente |",
+    ),
     buildNovosCicloTableFromProject: vi.fn(() => "| ID | Nome |\n| --- | --- |"),
     buildCurrentStateTableFromProject: vi.fn(() => "| ID | Desc |\n| --- | --- |"),
     buildInitialBacklogTableFromProject: vi.fn(() => "| ID | Inicial |\n| --- | --- |"),
@@ -92,18 +94,10 @@ describe("buildDeterministicChunks", () => {
   });
 
   it("resolves CICLO_CORRENTE from options without calling the builder", () => {
-    const doc = [
-      "<!-- BEGIN-CICLO_CORRENTE -->",
-      "000",
-      "<!-- END-CICLO_CORRENTE -->",
-    ].join("\n");
+    const doc = ["<!-- BEGIN-CICLO_CORRENTE -->", "000", "<!-- END-CICLO_CORRENTE -->"].join("\n");
 
     const builder = makeBuilder();
-    const result = buildDeterministicChunks(
-      doc,
-      { ...DEFAULT_OPTS, cycleNumber: 7 },
-      builder,
-    );
+    const result = buildDeterministicChunks(doc, { ...DEFAULT_OPTS, cycleNumber: 7 }, builder);
 
     // "000" → "007": should generate a diff chunk
     expect(result.length).toBeGreaterThan(0);
@@ -111,11 +105,7 @@ describe("buildDeterministicChunks", () => {
   });
 
   it("resolves NOME_PROJETO, CLIENTE, FORNECEDOR from config", () => {
-    const doc = [
-      "<!-- BEGIN-NOME_PROJETO -->",
-      "old name",
-      "<!-- END-NOME_PROJETO -->",
-    ].join("\n");
+    const doc = ["<!-- BEGIN-NOME_PROJETO -->", "old name", "<!-- END-NOME_PROJETO -->"].join("\n");
 
     const opts = {
       ...DEFAULT_OPTS,
@@ -162,9 +152,7 @@ describe("buildDeterministicChunks", () => {
   });
 
   it("resolves inline blocks by replacing the entire line content instead of inserting lines", () => {
-    const doc = [
-      "Cliente: <!-- BEGIN-CLIENTE --><!-- END-CLIENTE -->",
-    ].join("\n");
+    const doc = ["Cliente: <!-- BEGIN-CLIENTE --><!-- END-CLIENTE -->"].join("\n");
 
     const opts = {
       ...DEFAULT_OPTS,
@@ -174,7 +162,8 @@ describe("buildDeterministicChunks", () => {
     const result = buildDeterministicChunks(doc, opts, makeBuilder());
     expect(result).toHaveLength(1);
     expect(result[0].blockLocation).toBe("@@ -1,1 +1,1 @@");
-    expect(result[0].changeContent).toContain("Cliente: <!-- BEGIN-CLIENTE -->11Tech<!-- END-CLIENTE -->");
+    expect(result[0].changeContent).toContain(
+      "Cliente: <!-- BEGIN-CLIENTE -->11Tech<!-- END-CLIENTE -->",
+    );
   });
 });
-

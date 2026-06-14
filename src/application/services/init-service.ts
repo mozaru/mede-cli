@@ -11,7 +11,6 @@ import { FileSystemRepository } from "../../infrastructure/repositories/file-sys
 import { ICycleArtifactRepository } from "../../domain/interfaces/repositories/cycle-artifact-repository-interface.js";
 import { I18n } from "../../shared/i18n.js";
 
-
 export class InitService implements IInitService {
   private readonly docsRepository: IProjectReconstructionService;
   private readonly projectConfigRepository: IProjectConfigRepository;

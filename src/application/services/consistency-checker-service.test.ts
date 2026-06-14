@@ -99,7 +99,10 @@ describe("ConsistencyCheckerService.check", () => {
       { id: "SAT-20260611-001-RF-BLI-0001", status: "Pendente" },
     ]);
 
-    const result = service.check(new Map([["SAT-20260611-001-RF-BLI-0001", "Pendente"]]), currentContent);
+    const result = service.check(
+      new Map([["SAT-20260611-001-RF-BLI-0001", "Pendente"]]),
+      currentContent,
+    );
 
     expect(result.ok).toBe(false);
     expect(result.issues).toEqual(
@@ -113,11 +116,7 @@ describe("ConsistencyCheckerService.check", () => {
         { id: "SAT-20260611-001-RF-BLI-0001", status: "Concluido" },
         { id: "SAT-20260611-001-RF-BLI-0002", status: "Pendente" },
       ],
-      [
-        "**Itens concluidos:** 9",
-        "**Itens em andamento:** 0",
-        "**Itens pendentes:** 1",
-      ].join("\n"),
+      ["**Itens concluidos:** 9", "**Itens em andamento:** 0", "**Itens pendentes:** 1"].join("\n"),
     );
 
     const result = service.check(
@@ -130,7 +129,9 @@ describe("ConsistencyCheckerService.check", () => {
 
     expect(result.ok).toBe(false);
     expect(result.issues).toEqual(
-      expect.arrayContaining([expect.stringContaining("Itens concluidos: esperado 1, encontrado 9")]),
+      expect.arrayContaining([
+        expect.stringContaining("Itens concluidos: esperado 1, encontrado 9"),
+      ]),
     );
   });
 });

@@ -123,16 +123,17 @@ export class I18n {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public static t(key: string, ...args: any[]): string {
     const lang = this._currentLanguage.toLowerCase();
-    const dict = translations[lang] ||
-                 translations[lang.slice(0, 2)] ||
-                 translations["pt-br"] ||
-                 translations["pt"] ||
-                 translations["en-us"] ||
-                 translations["en"] ||
-                 {};
-                 
+    const dict =
+      translations[lang] ||
+      translations[lang.slice(0, 2)] ||
+      translations["pt-br"] ||
+      translations["pt"] ||
+      translations["en-us"] ||
+      translations["en"] ||
+      {};
+
     let translation = dict[key];
-    
+
     if (!translation) {
       // Try fallback dictionaries in order
       const fallbacks = ["en", "en-us", "pt", "pt-br"];
@@ -143,7 +144,7 @@ export class I18n {
         }
       }
     }
-    
+
     translation = translation || key;
 
     for (let i = 0; i < args.length; i++) {

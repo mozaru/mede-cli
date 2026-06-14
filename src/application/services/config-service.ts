@@ -114,19 +114,19 @@ export class ConfigService {
           "openai-perfil": {
             provider: "openai",
             model: "gpt-4o-mini",
-            apiKeyEnv: "OPENAI_API_KEY"
+            apiKeyEnv: "OPENAI_API_KEY",
           },
           "claude-perfil": {
             provider: "anthropic",
             model: "claude-3-5-sonnet-latest",
-            apiKeyEnv: "ANTHROPIC_API_KEY"
+            apiKeyEnv: "ANTHROPIC_API_KEY",
           },
           "gemini-perfil": {
             provider: "gemini",
             model: "gemini-1.5-flash",
-            apiKeyEnv: "GEMINI_API_KEY"
-          }
-        }
+            apiKeyEnv: "GEMINI_API_KEY",
+          },
+        },
       },
       systemPrompts: {
         readme: "",

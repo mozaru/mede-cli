@@ -3,7 +3,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execSync } from "node:child_process";
-import { FileSecretVault, SystemKeychainSecretVault, DockerCredentialHelperSecretVault, createSecretVault } from "./secret-vault.js";
+import {
+  FileSecretVault,
+  SystemKeychainSecretVault,
+  DockerCredentialHelperSecretVault,
+  createSecretVault,
+} from "./secret-vault.js";
 
 vi.mock("node:child_process", () => ({
   execSync: vi.fn(),

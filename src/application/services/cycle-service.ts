@@ -619,10 +619,17 @@ export class CycleService implements ICycleService {
         onProgress?.(`[Aprova] Aprovando fase ${phase.name}...`);
         this.phaseConversationService.applyExtractBacklog(phase);
         this.phaseRepository.approve(phase.id);
-        this.recordEvent(project.id, cycle.id, phase.id, "phase.approve", `Fase ${phase.name} aprovada`, {
-          all: true,
-          phaseName: phase.name,
-        });
+        this.recordEvent(
+          project.id,
+          cycle.id,
+          phase.id,
+          "phase.approve",
+          `Fase ${phase.name} aprovada`,
+          {
+            all: true,
+            phaseName: phase.name,
+          },
+        );
 
         const nextResult = this.next(cycle);
         cycle = nextResult.cycle;
@@ -654,10 +661,17 @@ export class CycleService implements ICycleService {
     onProgress?.(`[Aprova] Aprovando fase ${phase.name}...`);
     this.phaseConversationService.applyExtractBacklog(phase);
     this.phaseRepository.approve(phase.id);
-    this.recordEvent(project.id, cycle.id, phase.id, "phase.approve", `Fase ${phase.name} aprovada`, {
-      all: false,
-      phaseName: phase.name,
-    });
+    this.recordEvent(
+      project.id,
+      cycle.id,
+      phase.id,
+      "phase.approve",
+      `Fase ${phase.name} aprovada`,
+      {
+        all: false,
+        phaseName: phase.name,
+      },
+    );
 
     const nextResult = this.next(cycle);
     cycle = nextResult.cycle;
@@ -707,10 +721,17 @@ export class CycleService implements ICycleService {
         }
 
         this.phaseRepository.reject(phase.id);
-        this.recordEvent(project.id, cycle.id, phase.id, "phase.reject", `Fase ${phase.name} rejeitada`, {
-          all: true,
-          phaseName: phase.name,
-        });
+        this.recordEvent(
+          project.id,
+          cycle.id,
+          phase.id,
+          "phase.reject",
+          `Fase ${phase.name} rejeitada`,
+          {
+            all: true,
+            phaseName: phase.name,
+          },
+        );
 
         const nextResult = this.next(cycle);
         cycle = nextResult.cycle;
@@ -738,10 +759,17 @@ export class CycleService implements ICycleService {
     this.assert(phase.status === "AWAITING_APPROVAL", "A fase não está aguardando aprovação");
 
     this.phaseRepository.reject(phase.id);
-    this.recordEvent(project.id, cycle.id, phase.id, "phase.reject", `Fase ${phase.name} rejeitada`, {
-      all: false,
-      phaseName: phase.name,
-    });
+    this.recordEvent(
+      project.id,
+      cycle.id,
+      phase.id,
+      "phase.reject",
+      `Fase ${phase.name} rejeitada`,
+      {
+        all: false,
+        phaseName: phase.name,
+      },
+    );
 
     const nextResult = this.next(cycle);
     cycle = nextResult.cycle;

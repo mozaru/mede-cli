@@ -24,14 +24,12 @@ function makeConfig(provider = "openai-compatible", model = "gpt-4.1"): MedeConf
 }
 
 function makeService(config: MedeConfigModelEntity, overrides: Record<string, unknown> = {}) {
-  const projectRepository =
-    overrides.projectRepository ?? {
-      getCurrent: vi.fn(() => ({ id: 1 })),
-    };
-  const projectConfigRepository =
-    overrides.projectConfigRepository ?? {
-      getCurrent: vi.fn(() => ({ content: JSON.stringify(config) })),
-    };
+  const projectRepository = overrides.projectRepository ?? {
+    getCurrent: vi.fn(() => ({ id: 1 })),
+  };
+  const projectConfigRepository = overrides.projectConfigRepository ?? {
+    getCurrent: vi.fn(() => ({ content: JSON.stringify(config) })),
+  };
 
   return new LlmService(projectRepository as any, projectConfigRepository as any);
 }

@@ -93,10 +93,15 @@ export function createLlmAuthStrategy(
       return new ApiKeyAuthStrategy(config, providerLabel, buildApiKeyHeader, deps?.env);
 
     case "oauth":
-      return new OAuthAuthStrategy(config, providerLabel, deps?.vault ?? createSecretVault(config.llm.credentialsHelper), {
-        fetch: deps?.fetch ?? fetch,
-        now: deps?.now ?? Date.now,
-      });
+      return new OAuthAuthStrategy(
+        config,
+        providerLabel,
+        deps?.vault ?? createSecretVault(config.llm.credentialsHelper),
+        {
+          fetch: deps?.fetch ?? fetch,
+          now: deps?.now ?? Date.now,
+        },
+      );
 
     case "adc":
       return new AdcAuthStrategy(providerLabel, {

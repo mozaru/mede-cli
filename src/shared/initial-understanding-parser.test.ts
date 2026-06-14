@@ -30,7 +30,9 @@ describe("InitialUnderstandingParser.parse", () => {
 
     expect(result.metadata.systemName).toBe("MeuSistema");
     expect(result.metadata.objective).toBe("Facilitar testes automatizados da metodologia.");
-    expect(result.metadata.summary).toBe("Este projeto serve para garantir a qualidade de parsing do entendimento inicial.");
+    expect(result.metadata.summary).toBe(
+      "Este projeto serve para garantir a qualidade de parsing do entendimento inicial.",
+    );
     expect(result.metadata.totalParsedItems).toBe(2);
   });
 

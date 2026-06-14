@@ -75,7 +75,11 @@ describe("TuiViewModelService", () => {
       {} as any,
       {} as any,
       {} as any,
-      { updateChunkIndex: vi.fn(() => { throw error; }) } as any,
+      {
+        updateChunkIndex: vi.fn(() => {
+          throw error;
+        }),
+      } as any,
       {} as any,
     );
 

@@ -320,9 +320,7 @@ describe("other LLM providers", () => {
   });
 
   it("handles Ollama request failures, empty responses, and aborts", async () => {
-    await expect(new OllamaLlmProvider(makeConfig()).generateText()).rejects.toThrow(
-      /No messages/,
-    );
+    await expect(new OllamaLlmProvider(makeConfig()).generateText()).rejects.toThrow(/No messages/);
 
     fetchMock.mockResolvedValueOnce(response(false, "down", 503));
     const httpProvider = new OllamaLlmProvider(makeConfig());
@@ -370,7 +368,9 @@ describe("other LLM providers", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:11434/api/chat");
     const body = lastRequestBody(fetchMock);
     expect(body.options).toEqual({});
-    expect(body.messages.some((message: any) => message.content.includes("docs/out.md"))).toBe(true);
+    expect(body.messages.some((message: any) => message.content.includes("docs/out.md"))).toBe(
+      true,
+    );
   });
 
   it("sends Azure OpenAI requests and preserves endpoints that already have api-version", async () => {
@@ -380,7 +380,9 @@ describe("other LLM providers", () => {
         object: "chat.completion",
         created: 1,
         model: "azure-test",
-        choices: [{ index: 0, finish_reason: "stop", message: { role: "assistant", content: " ok " } }],
+        choices: [
+          { index: 0, finish_reason: "stop", message: { role: "assistant", content: " ok " } },
+        ],
         usage: { prompt_tokens: 4, completion_tokens: 2 },
       }),
     );
@@ -458,7 +460,9 @@ describe("other LLM providers", () => {
   it("uses Azure nullable response metadata and ignores blank messages", async () => {
     fetchMock.mockResolvedValueOnce(
       response(true, {
-        choices: [{ index: 0, finish_reason: null, message: { role: "assistant", content: " ok " } }],
+        choices: [
+          { index: 0, finish_reason: null, message: { role: "assistant", content: " ok " } },
+        ],
       }),
     );
     const provider = new AzureOpenAiLlmProvider(

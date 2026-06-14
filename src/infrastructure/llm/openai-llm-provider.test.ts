@@ -39,7 +39,9 @@ describe("OpenAiLlmProvider", () => {
     fetchMock.mockResolvedValueOnce(
       response(true, {
         model: "gpt-4.1",
-        choices: [{ index: 0, finish_reason: "stop", message: { role: "assistant", content: " ok " } }],
+        choices: [
+          { index: 0, finish_reason: "stop", message: { role: "assistant", content: " ok " } },
+        ],
         usage: { prompt_tokens: 10, completion_tokens: 3 },
       }),
     );
@@ -115,7 +117,6 @@ describe("OpenAiLlmProvider", () => {
     expect(body.temperature).toBeUndefined();
   });
 
-
   it("throws on missing messages, HTTP failures, empty content, and aborts", async () => {
     await expect(new OpenAiLlmProvider(makeConfig(), { env }).generateText()).rejects.toThrow(
       /No messages/,
@@ -126,7 +127,9 @@ describe("OpenAiLlmProvider", () => {
     httpProvider.setUserPrompt("x");
     await expect(httpProvider.generateText()).rejects.toThrow(/status 400: bad request/);
 
-    fetchMock.mockResolvedValueOnce(response(true, { model: "m", choices: [{ message: { content: " " } }] }));
+    fetchMock.mockResolvedValueOnce(
+      response(true, { model: "m", choices: [{ message: { content: " " } }] }),
+    );
     const emptyProvider = new OpenAiLlmProvider(makeConfig(), { env });
     emptyProvider.setUserPrompt("x");
     await expect(emptyProvider.generateText()).rejects.toThrow(/did not contain text/);

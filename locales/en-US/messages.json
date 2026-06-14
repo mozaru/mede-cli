@@ -69,5 +69,12 @@
   "OK: Estado final reconstruido = situacao-atual.md": "OK: Reconstructed final state matches situacao-atual.md",
   "ERRO: Divergencia entre replay e situacao-atual.md:": "ERROR: Divergence between replay and situacao-atual.md:",
   "Validacao de consistencia causal falhou (--strict).": "Causal consistency validation failed (--strict).",
-  "MEDE-CLI: Prompt padrão não encontrado para {0}": "MEDE-CLI: Default prompt not found for {0}"
+  "MEDE-CLI: Prompt padrão não encontrado para {0}": "MEDE-CLI: Default prompt not found for {0}",
+  "Verificando se existem atualizações para o mede-cli...": "Checking for updates for mede-cli...",
+  "Você já está na versão mais recente ({0}).": "You are already on the latest version ({0}).",
+  "Nova versão disponível: {0} (versão atual: {1}).": "New version available: {0} (current version: {1}).",
+  "Atualizando o mede-cli para a versão {0}...": "Updating mede-cli to version {0}...",
+  "Atualização concluída com sucesso! Versão anterior: {0}, Versão atual: {1}": "Update completed successfully! Previous version: {0}, Current version: {1}",
+  "Erro ao verificar ou aplicar a atualização: {0}": "Error checking or applying the update: {0}",
+  "Por favor, tente executar manualmente: npm install -g mede-cli": "Please try executing manually: npm install -g mede-cli"
 }

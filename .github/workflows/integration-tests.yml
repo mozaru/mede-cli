@@ -3,7 +3,7 @@ name: Real LLM Integration Tests
 on:
   schedule:
     # Executa todas as noites às 03:00 UTC
-    - cron: '0 3 * * *'
+    - cron: "0 3 * * *"
   workflow_dispatch:
 
 jobs:

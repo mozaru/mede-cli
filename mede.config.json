@@ -32,7 +32,7 @@
     "temperature": 0.1,
     "maxTokens": 12000,
     "timeoutMs": 180000,
-    "activeProfile": "gemini-perfil", 
+    "activeProfile": "gemini-perfil",
     "profiles": {
       "openai-perfil": {
         "provider": "openai",
@@ -50,8 +50,7 @@
         "apiKeyEnv": "GEMINI_API_KEY"
       }
     }
-  }
-  ,
+  },
   "systemPrompts": {
     "readme": "",
     "initialUnderstanding": "",

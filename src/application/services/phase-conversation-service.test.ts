@@ -14,7 +14,7 @@ describe("PhaseConversationService - prompt priority resolution unit tests", () 
     {} as any,
     {} as any,
     null,
-    null
+    null,
   );
 
   describe("getSystemPrompt", () => {
@@ -27,7 +27,9 @@ describe("PhaseConversationService - prompt priority resolution unit tests", () 
       } as unknown as MedeConfigModelEntity;
 
       expect(service.getSystemPrompt(config, "meeting")).toBe("Custom meeting system prompt");
-      expect(service.getSystemPrompt(config, "architecturalDecisions")).toBe("Custom ADR system prompt");
+      expect(service.getSystemPrompt(config, "architecturalDecisions")).toBe(
+        "Custom ADR system prompt",
+      );
     });
 
     it("falls back to LlmPrompts system default when systemPrompts is missing, undefined, or empty", () => {
@@ -39,10 +41,14 @@ describe("PhaseConversationService - prompt priority resolution unit tests", () 
       } as unknown as MedeConfigModelEntity;
 
       expect(service.getSystemPrompt(config, "meeting")).toBe(LlmPrompts.SYSTEM_PROMPT_MEETING);
-      expect(service.getSystemPrompt(config, "architecturalDecisions")).toBe(LlmPrompts.SYSTEM_PROMPT_ADR);
+      expect(service.getSystemPrompt(config, "architecturalDecisions")).toBe(
+        LlmPrompts.SYSTEM_PROMPT_ADR,
+      );
 
       const emptyConfig = {} as MedeConfigModelEntity;
-      expect(service.getSystemPrompt(emptyConfig, "meeting")).toBe(LlmPrompts.SYSTEM_PROMPT_MEETING);
+      expect(service.getSystemPrompt(emptyConfig, "meeting")).toBe(
+        LlmPrompts.SYSTEM_PROMPT_MEETING,
+      );
     });
 
     it("returns empty string for an unknown system prompt name", () => {

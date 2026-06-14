@@ -53,4 +53,3 @@ describe("StatusCommand", () => {
     expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ ok: true, output: "MOCK_STATUS_REPORT" }));
   });
 });
-

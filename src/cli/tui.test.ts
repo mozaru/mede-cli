@@ -72,12 +72,12 @@ async function renderTui(
   const instance = render(
     React.createElement(Tui, { container: container as any, onExit, ...options }),
     {
-    stdin: stdin as any,
-    stdout: stdout as any,
-    stderr: stderr as any,
-    exitOnCtrlC: false,
-    patchConsole: false,
-    interactive: true,
+      stdin: stdin as any,
+      stdout: stdout as any,
+      stderr: stderr as any,
+      exitOnCtrlC: false,
+      patchConsole: false,
+      interactive: true,
     },
   );
   await instance.waitUntilRenderFlush();
@@ -112,33 +112,33 @@ describe("Tui render", () => {
         selectChunk: vi.fn(),
         getViewModel: vi.fn(() => ({
           project: {
-          id: 1,
-          name: "Projeto Teste",
-          documentationLanguage: "pt-BR",
-          docsRootPath: "docs",
+            id: 1,
+            name: "Projeto Teste",
+            documentationLanguage: "pt-BR",
+            docsRootPath: "docs",
           },
           cycle: {
-          id: 2,
-          status: "OPEN",
-          currentPhaseIndex: 0,
-          phaseCount: 2,
+            id: 2,
+            status: "OPEN",
+            currentPhaseIndex: 0,
+            phaseCount: 2,
           },
           phase: {
-          id: 3,
-          cycleId: 2,
-          name: "EXTRACT_BACKLOG",
-          status: "AWAITING_APPROVAL",
-          proposalState: "NON_EMPTY",
+            id: 3,
+            cycleId: 2,
+            name: "EXTRACT_BACKLOG",
+            status: "AWAITING_APPROVAL",
+            proposalState: "NON_EMPTY",
           },
           changeSet: { id: 4, fileName: "docs/a.md", currentOffset: 0 },
           chunks: [
-          {
-            id: 5,
-            index: 1,
-            status: "AWAITING_APPROVAL",
-            changeContent: "+ nova linha",
-            blockLocation: "linha 1",
-          },
+            {
+              id: 5,
+              index: 1,
+              status: "AWAITING_APPROVAL",
+              changeContent: "+ nova linha",
+              blockLocation: "linha 1",
+            },
           ],
         })),
       },
@@ -176,41 +176,41 @@ describe("Tui render", () => {
         getViewModel: vi.fn(() => ({
           project: { id: 1, name: "P" },
           cycle: {
-          id: 2,
-          status: "OPEN",
-          currentPhaseIndex: 0,
-          phaseCount: 1,
+            id: 2,
+            status: "OPEN",
+            currentPhaseIndex: 0,
+            phaseCount: 1,
           },
           phase: {
-          id: 3,
-          cycleId: 2,
-          name: "PHASE",
-          status: "REFINING",
-          proposalState: "NON_EMPTY",
+            id: 3,
+            cycleId: 2,
+            name: "PHASE",
+            status: "REFINING",
+            proposalState: "NON_EMPTY",
           },
           changeSet: { id: 4, fileName: "docs/a.md", currentOffset: 0 },
           chunks: [
-          {
-            id: 5,
-            index: 1,
-            status: "AWAITING_APPROVAL",
-            changeContent: ["@@ -1 +1", "- antiga", "+ nova", " contexto"].join("\n"),
-            blockLocation: "linha 1",
-          },
-          {
-            id: 6,
-            index: 2,
-            status: "APPLIED",
-            changeContent: "+ aplicada",
-            blockLocation: "linha 2",
-          },
-          {
-            id: 7,
-            index: 3,
-            status: "DISCARDED",
-            changeContent: "- descartada",
-            blockLocation: "linha 3",
-          },
+            {
+              id: 5,
+              index: 1,
+              status: "AWAITING_APPROVAL",
+              changeContent: ["@@ -1 +1", "- antiga", "+ nova", " contexto"].join("\n"),
+              blockLocation: "linha 1",
+            },
+            {
+              id: 6,
+              index: 2,
+              status: "APPLIED",
+              changeContent: "+ aplicada",
+              blockLocation: "linha 2",
+            },
+            {
+              id: 7,
+              index: 3,
+              status: "DISCARDED",
+              changeContent: "- descartada",
+              blockLocation: "linha 3",
+            },
           ],
         })),
       },
@@ -234,17 +234,17 @@ describe("Tui render", () => {
         getViewModel: vi.fn(() => ({
           project: { id: 1, name: "P" },
           cycle: {
-          id: 2,
-          status: "AWAITING_COMMIT",
-          currentPhaseIndex: 0,
-          phaseCount: 1,
+            id: 2,
+            status: "AWAITING_COMMIT",
+            currentPhaseIndex: 0,
+            phaseCount: 1,
           },
           phase: {
-          id: 3,
-          cycleId: 2,
-          name: "",
-          status: "REFINING",
-          proposalState: "EMPTY",
+            id: 3,
+            cycleId: 2,
+            name: "",
+            status: "REFINING",
+            proposalState: "EMPTY",
           },
           changeSet: null,
           chunks: [],
@@ -346,33 +346,48 @@ describe("Tui keyboard interaction", () => {
   it("edits refine prompt and dispatches diff-screen actions", () => {
     const actions = makeActions();
 
-    handleTuiKey("x", {}, {
-      loading: false,
-      screen: "refine",
-      cycleStatus: "OPEN",
-      phaseStatus: "AWAITING_APPROVAL",
-      chunksLength: 0,
-      selectedChunk: null,
-      refinePrompt: "",
-    }, actions);
-    handleTuiKey("", { backspace: true }, {
-      loading: false,
-      screen: "refine",
-      cycleStatus: "OPEN",
-      phaseStatus: "AWAITING_APPROVAL",
-      chunksLength: 0,
-      selectedChunk: null,
-      refinePrompt: "x",
-    }, actions);
-    handleTuiKey("", { return: true }, {
-      loading: false,
-      screen: "refine",
-      cycleStatus: "OPEN",
-      phaseStatus: "AWAITING_APPROVAL",
-      chunksLength: 0,
-      selectedChunk: null,
-      refinePrompt: "x",
-    }, actions);
+    handleTuiKey(
+      "x",
+      {},
+      {
+        loading: false,
+        screen: "refine",
+        cycleStatus: "OPEN",
+        phaseStatus: "AWAITING_APPROVAL",
+        chunksLength: 0,
+        selectedChunk: null,
+        refinePrompt: "",
+      },
+      actions,
+    );
+    handleTuiKey(
+      "",
+      { backspace: true },
+      {
+        loading: false,
+        screen: "refine",
+        cycleStatus: "OPEN",
+        phaseStatus: "AWAITING_APPROVAL",
+        chunksLength: 0,
+        selectedChunk: null,
+        refinePrompt: "x",
+      },
+      actions,
+    );
+    handleTuiKey(
+      "",
+      { return: true },
+      {
+        loading: false,
+        screen: "refine",
+        cycleStatus: "OPEN",
+        phaseStatus: "AWAITING_APPROVAL",
+        chunksLength: 0,
+        selectedChunk: null,
+        refinePrompt: "x",
+      },
+      actions,
+    );
 
     const diffState = {
       loading: false,
@@ -402,33 +417,48 @@ describe("Tui keyboard interaction", () => {
   it("ignores keys while loading and ignores unavailable actions", () => {
     const actions = makeActions();
 
-    handleTuiKey("i", {}, {
-      loading: true,
-      screen: "status",
-      cycleStatus: null,
-      phaseStatus: null,
-      chunksLength: 0,
-      selectedChunk: null,
-      refinePrompt: "",
-    }, actions);
-    handleTuiKey("x", { meta: true }, {
-      loading: false,
-      screen: "refine",
-      cycleStatus: "OPEN",
-      phaseStatus: "AWAITING_APPROVAL",
-      chunksLength: 0,
-      selectedChunk: null,
-      refinePrompt: "",
-    }, actions);
-    handleTuiKey("a", {}, {
-      loading: false,
-      screen: "diffs",
-      cycleStatus: "OPEN",
-      phaseStatus: "REFINING",
-      chunksLength: 1,
-      selectedChunk: { status: "APPLIED" },
-      refinePrompt: "",
-    }, actions);
+    handleTuiKey(
+      "i",
+      {},
+      {
+        loading: true,
+        screen: "status",
+        cycleStatus: null,
+        phaseStatus: null,
+        chunksLength: 0,
+        selectedChunk: null,
+        refinePrompt: "",
+      },
+      actions,
+    );
+    handleTuiKey(
+      "x",
+      { meta: true },
+      {
+        loading: false,
+        screen: "refine",
+        cycleStatus: "OPEN",
+        phaseStatus: "AWAITING_APPROVAL",
+        chunksLength: 0,
+        selectedChunk: null,
+        refinePrompt: "",
+      },
+      actions,
+    );
+    handleTuiKey(
+      "a",
+      {},
+      {
+        loading: false,
+        screen: "diffs",
+        cycleStatus: "OPEN",
+        phaseStatus: "REFINING",
+        chunksLength: 1,
+        selectedChunk: { status: "APPLIED" },
+        refinePrompt: "",
+      },
+      actions,
+    );
 
     expect(actions.startCycle).not.toHaveBeenCalled();
     expect(actions.setRefinePrompt).not.toHaveBeenCalled();
@@ -446,7 +476,7 @@ describe("startTui", () => {
     await startTui(container as any, renderApp as any);
 
     expect(renderApp).toHaveBeenCalled();
-    expect((container.dispose as ReturnType<typeof vi.fn>)).not.toHaveBeenCalled();
+    expect(container.dispose as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
     expect(getContainer()).not.toBe(container);
   });
 });

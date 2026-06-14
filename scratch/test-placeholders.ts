@@ -22,6 +22,9 @@ const previousStatePath = path.join(projectRoot, "docs", "situacao-atual.md");
 
 console.log("TOTAL_ENTREGUES:", builder.buildTotalEntreguesFromProject(projectId));
 console.log("TOTAL_PENDENTES:", builder.buildTotalPendentesFromProject(projectId));
-console.log("TOTAL_ENTREGUES_CICLO:", builder.buildTotalEntreguesCicloFromProject(projectId, previousStatePath));
+console.log(
+  "TOTAL_ENTREGUES_CICLO:",
+  builder.buildTotalEntreguesCicloFromProject(projectId, previousStatePath),
+);
 console.log("NOVOS_CICLO:", builder.buildNovosCicloCountFromProject(projectId, previousStatePath));
 console.log("PERCENTUAL_ENTREGA:", builder.buildPercentualEntregaFromProject(projectId));

@@ -78,12 +78,7 @@ function parseDiff(value: string): Array<ChunkModel> {
     let inContent = false;
 
     for (const line of lines) {
-      if (
-        line === "---" ||
-        line.startsWith("--- ") ||
-        line === "+++" ||
-        line.startsWith("+++ ")
-      ) {
+      if (line === "---" || line.startsWith("--- ") || line === "+++" || line.startsWith("+++ ")) {
         inContent = true;
         continue;
       }

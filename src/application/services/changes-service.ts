@@ -197,15 +197,15 @@ export class ChangesService {
     }
 
     if (configEntity) {
-       try {
-         const parsed = JSON.parse(configEntity.content);
-         if (parsed.language) {
-           I18n.setLanguage(parsed.language);
-         }
-       } catch {
-         // Ignore json parse error
-       }
-     }
+      try {
+        const parsed = JSON.parse(configEntity.content);
+        if (parsed.language) {
+          I18n.setLanguage(parsed.language);
+        }
+      } catch {
+        // Ignore json parse error
+      }
+    }
 
     return configEntity;
   }

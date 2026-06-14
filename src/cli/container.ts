@@ -64,7 +64,9 @@ export interface Container {
 }
 
 export function createContainer(options?: BetterSqliteConnectionFactoryOptions): Container {
-  const inMemory = options?.inMemory ?? (process.argv.includes("--in-memory") || process.env.MEDE_IN_MEMORY === "true");
+  const inMemory =
+    options?.inMemory ??
+    (process.argv.includes("--in-memory") || process.env.MEDE_IN_MEMORY === "true");
   const projectRootPath = options?.projectRootPath ?? process.cwd();
   const uow = new UnitOfWork(new BetterSqliteConnectionFactory({ ...options, inMemory }));
   const fileSystemRepository = new FileSystemRepository([projectRootPath]);

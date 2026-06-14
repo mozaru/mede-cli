@@ -122,14 +122,15 @@ describe("ProjectReconstructionService", () => {
   it("reconstructs and overrides backlog from current state when found", () => {
     // Setup fakes & mocks
     const mockProjectRepo = {
-      list: () => [{ id: 10, name: "Antigo", rootProjectPath: "D:/project-root" }] as ProjectEntity[],
+      list: () =>
+        [{ id: 10, name: "Antigo", rootProjectPath: "D:/project-root" }] as ProjectEntity[],
       update: (p: ProjectEntity) => p,
     } as unknown as IProjectRepository;
 
     const mockConfigRepo = {
       getCurrent: () => ({ id: 5, projectId: 10, content: "{}" }) as ProjectConfigEntity,
       updateContent: vi.fn(),
-      getById: (id: number) => ({ id, projectId: 10 } as ProjectConfigEntity),
+      getById: (id: number) => ({ id, projectId: 10 }) as ProjectConfigEntity,
     } as unknown as IProjectConfigRepository;
 
     const insertedBacklog: BacklogEntity[] = [];

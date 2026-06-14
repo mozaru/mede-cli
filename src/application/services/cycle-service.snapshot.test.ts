@@ -213,7 +213,7 @@ describe("CycleService.retry", () => {
     conversations.insert({ id: 0, phaseId: phase.id, createdAt: "", actor: "user", content: "hi" });
 
     const changeSetRepo = uow.connection.prepare(
-      "insert into changeSet (phaseId,cycleArtifactId,fileName,completed,currentChangeChunkIndex,changeChunkCount,currentOffset,startedAt,updatedAt) values (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "insert into changeSet (phaseId,cycleArtifactId,fileName,completed,currentChangeChunkIndex,changeChunkCount,currentOffset,startedAt,updatedAt) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
     const insertResult = changeSetRepo.run(phase.id, 1, "test.md", 0, 1, 1, 0, "", "");
     const changeSetId = Number(insertResult.lastInsertRowid);
@@ -227,7 +227,7 @@ describe("CycleService.retry", () => {
       blockLocation: "@@ -1 +1 @@",
       changeContent: "+test",
       startedAt: "",
-      updatedAt: ""
+      updatedAt: "",
     });
 
     expect(conversations.list(phase.id)).toHaveLength(1);
@@ -237,7 +237,13 @@ describe("CycleService.retry", () => {
     await service.retry();
 
     expect(conversations.list(phase.id)).toHaveLength(0);
-    expect((uow.connection.prepare("select count(*) as count from changeSet where phaseId = ?").get(phase.id) as { count: number }).count).toBe(0);
+    expect(
+      (
+        uow.connection
+          .prepare("select count(*) as count from changeSet where phaseId = ?")
+          .get(phase.id) as { count: number }
+      ).count,
+    ).toBe(0);
     expect(changeChunks.list(changeSetId)).toHaveLength(0);
   });
 });

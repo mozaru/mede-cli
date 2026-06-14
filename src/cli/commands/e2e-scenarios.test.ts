@@ -7,7 +7,7 @@ import path from "node:path";
 // Registers the last output document being generated to return realistic diff content based on templates.
 const { generateText, lastDocState } = vi.hoisted(() => ({
   generateText: vi.fn(),
-  lastDocState: { path: "" }
+  lastDocState: { path: "" },
 }));
 
 vi.mock("../../infrastructure/llm/llm-provider-factory.js", () => ({
@@ -58,7 +58,10 @@ function currentCycle(): CycleEntity | null {
 }
 
 // Evaluation algorithm to score generated markdown files against structural templates
-function evaluateMarkdownQuality(templateContent: string, generatedContent: string): {
+function evaluateMarkdownQuality(
+  templateContent: string,
+  generatedContent: string,
+): {
   score: number;
   totalModel: number;
   present: number;
@@ -95,7 +98,7 @@ function evaluateMarkdownQuality(templateContent: string, generatedContent: stri
 
   for (const gen of normalizedGenerated) {
     const expectedMatch = normalizedExpected.find(
-      (exp) => exp === gen || gen.includes(exp) || exp.includes(gen)
+      (exp) => exp === gen || gen.includes(exp) || exp.includes(gen),
     );
 
     if (expectedMatch) {
@@ -111,9 +114,10 @@ function evaluateMarkdownQuality(templateContent: string, generatedContent: stri
   const missingCount = expectedHeaders.length - presentCount;
   const totalModel = expectedHeaders.length;
 
-  const score = totalModel > 0
-    ? Math.max(0, Math.min(100, (presentCount / (totalModel + extraCount)) * 100))
-    : 100;
+  const score =
+    totalModel > 0
+      ? Math.max(0, Math.min(100, (presentCount / (totalModel + extraCount)) * 100))
+      : 100;
 
   return {
     score,
@@ -125,7 +129,14 @@ function evaluateMarkdownQuality(templateContent: string, generatedContent: stri
 }
 
 function assertDocumentQuality(generatedFilename: string, templateFilename: string): void {
-  const templatePath = path.join(previousCwd, "locales", "pt-BR", "prompts", "templates", templateFilename);
+  const templatePath = path.join(
+    previousCwd,
+    "locales",
+    "pt-BR",
+    "prompts",
+    "templates",
+    templateFilename,
+  );
   const generatedPath = path.join(root, "docs", generatedFilename);
 
   expect(fs.existsSync(templatePath)).toBe(true);
@@ -140,7 +151,9 @@ function assertDocumentQuality(generatedFilename: string, templateFilename: stri
 
   if (result.score < minQuality) {
     console.error(`[QUALIDADE FALHOU] ${generatedFilename} vs ${templateFilename}`);
-    console.error(`[QUALIDADE FALHOU] Score obtido: ${result.score.toFixed(1)}% (Mínimo: ${minQuality}%)`);
+    console.error(
+      `[QUALIDADE FALHOU] Score obtido: ${result.score.toFixed(1)}% (Mínimo: ${minQuality}%)`,
+    );
     console.error(`[QUALIDADE FALHOU] Conteúdo gerado:\n"${generatedContent}"`);
   }
 
@@ -199,14 +212,18 @@ beforeEach(() => {
     }
 
     if (templateName) {
-      const templatePath = path.join(previousCwd, "locales", "pt-BR", "prompts", "templates", templateName);
+      const templatePath = path.join(
+        previousCwd,
+        "locales",
+        "pt-BR",
+        "prompts",
+        "templates",
+        templateName,
+      );
       if (fs.existsSync(templatePath)) {
         const templateContent = fs.readFileSync(templatePath, "utf-8");
         const lines = templateContent.split(/\r?\n/);
-        const diffLines = [
-          `@@ -0,0 +1,${lines.length} @@`,
-          ...lines.map((line) => `+${line}`),
-        ];
+        const diffLines = [`@@ -0,0 +1,${lines.length} @@`, ...lines.map((line) => `+${line}`)];
         return { rawText: diffLines.join("\n") };
       }
     }
@@ -282,7 +299,10 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     assertDocumentQuality(config.fileNames.scopeAndVision, "scope-and-vision.md");
     assertDocumentQuality(config.fileNames.currentState, "current-state.md");
     assertDocumentQuality(config.fileNames.functionalRequirements, "functional-requirements.md");
-    assertDocumentQuality(config.fileNames.nonFunctionalRequirements, "non-functional-requirements.md");
+    assertDocumentQuality(
+      config.fileNames.nonFunctionalRequirements,
+      "non-functional-requirements.md",
+    );
     assertDocumentQuality(config.fileNames.dataModel, "data-model.md");
   });
 
@@ -301,14 +321,14 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     // Create pre-existing files with specific content
     const readmeContent = "# Meu Sistema Existente\nReadme prévio.";
     const scopeContent = "# Visão e Escopo\nEscopo prévio.";
-    
+
     fs.writeFileSync(path.join(docsRoot, config.fileNames.readme), readmeContent, "utf-8");
     fs.writeFileSync(path.join(docsRoot, config.fileNames.scopeAndVision), scopeContent, "utf-8");
 
     // 2. Run initialization passing the files as context
     await new InitCommand().execute("iniciar", [
       `docs/${config.fileNames.readme}`,
-      `docs/${config.fileNames.scopeAndVision}`
+      `docs/${config.fileNames.scopeAndVision}`,
     ]);
 
     // Init does not generate situacao-atual.md; it is produced by the causal cycle.
@@ -341,7 +361,10 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     assertDocumentQuality(config.fileNames.scopeAndVision, "scope-and-vision.md");
     assertDocumentQuality(config.fileNames.currentState, "current-state.md");
     assertDocumentQuality(config.fileNames.functionalRequirements, "functional-requirements.md");
-    assertDocumentQuality(config.fileNames.nonFunctionalRequirements, "non-functional-requirements.md");
+    assertDocumentQuality(
+      config.fileNames.nonFunctionalRequirements,
+      "non-functional-requirements.md",
+    );
     assertDocumentQuality(config.fileNames.dataModel, "data-model.md");
   });
 
@@ -357,7 +380,11 @@ describe("MEDE-CLI Complete E2E Scenarios", () => {
     const docsRoot = path.join(root, config.docsRoot);
     fs.mkdirSync(docsRoot, { recursive: true });
     fs.writeFileSync(path.join(docsRoot, config.fileNames.readme), "# Sistema MEDE\n", "utf-8");
-    fs.writeFileSync(path.join(docsRoot, config.fileNames.currentState), "# Situação Atual\n", "utf-8");
+    fs.writeFileSync(
+      path.join(docsRoot, config.fileNames.currentState),
+      "# Situação Atual\n",
+      "utf-8",
+    );
 
     // 2. Setup init and commit
     await new InitCommand().execute("init", []);

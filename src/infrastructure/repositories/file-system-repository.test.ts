@@ -40,7 +40,10 @@ describe("FileSystemRepository without allowedRoots (default)", () => {
     options.recursive = true;
     options.extensions = ["md"];
 
-    const files = repo.listFiles(root, options).map((file) => path.basename(file)).sort();
+    const files = repo
+      .listFiles(root, options)
+      .map((file) => path.basename(file))
+      .sort();
 
     expect(files).toEqual(["a.md", "c.md"]);
     expect(repo.listFiles(path.join(root, "missing"), options)).toEqual([]);
@@ -97,8 +100,16 @@ describe("FileSystemRepository without allowedRoots (default)", () => {
 
     repo.insertText(target, { createAnchorText: "", textToInsert: "START ", position: "start" });
     repo.insertText(target, { createAnchorText: "", textToInsert: " END", position: "end" });
-    repo.insertText(target, { createAnchorText: "omega", textToInsert: "PRE ", position: "before" });
-    repo.insertText(target, { createAnchorText: "omega", textToInsert: " POST", position: "after" });
+    repo.insertText(target, {
+      createAnchorText: "omega",
+      textToInsert: "PRE ",
+      position: "before",
+    });
+    repo.insertText(target, {
+      createAnchorText: "omega",
+      textToInsert: " POST",
+      position: "after",
+    });
     expect(repo.readFile(target)).toBe("START alpha B B PRE omega POST END");
 
     repo.removeText(target, { startMarker: "PRE ", endMarker: " POST", includeMarkers: false });
@@ -121,7 +132,11 @@ describe("FileSystemRepository without allowedRoots (default)", () => {
     expect(() => repo.renameFile(path.join(root, "missing.md"), "x.md")).toThrow(/File not found/);
     expect(() => repo.renameDirectory(target, "x")).toThrow(/not a directory/);
     expect(() =>
-      repo.insertText(target, { createAnchorText: "missing", textToInsert: "x", position: "after" }),
+      repo.insertText(target, {
+        createAnchorText: "missing",
+        textToInsert: "x",
+        position: "after",
+      }),
     ).toThrow(/Anchor text/);
     expect(() =>
       repo.removeText(target, { startMarker: "missing", endMarker: "body", includeMarkers: true }),

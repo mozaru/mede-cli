@@ -204,9 +204,7 @@ describe("PhaseConversationService.sendMessage — LLM format error retry", () =
     const originalEnv = process.env.MEDE_LLM_RETRIES;
     process.env.MEDE_LLM_RETRIES = "3";
     try {
-      await expect(
-        service.sendMessage(project, config, phase, "ok", []),
-      ).rejects.toThrow(/401/);
+      await expect(service.sendMessage(project, config, phase, "ok", [])).rejects.toThrow(/401/);
     } finally {
       if (originalEnv === undefined) {
         delete process.env.MEDE_LLM_RETRIES;

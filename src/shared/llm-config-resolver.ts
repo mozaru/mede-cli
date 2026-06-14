@@ -4,7 +4,14 @@ import type { MedeLlmProfileConfig } from "../domain/entities/mede-llm-config-en
 export const DEFAULT_LLM_PROFILE: Required<
   Pick<
     MedeLlmProfileConfig,
-    "provider" | "model" | "endpoint" | "apiKeyEnv" | "auth" | "temperature" | "maxTokens" | "timeoutMs"
+    | "provider"
+    | "model"
+    | "endpoint"
+    | "apiKeyEnv"
+    | "auth"
+    | "temperature"
+    | "maxTokens"
+    | "timeoutMs"
   >
 > = {
   provider: "openai",
@@ -27,7 +34,9 @@ export function resolveLlmConfig(
   const llm = mergeDefined(DEFAULT_LLM_PROFILE, config.llm, profile);
 
   const provider = (llm.provider ?? "").trim().toLowerCase();
-  const isOpenAiCompatible = ["openai", "openai-compatible", "chatgpt", "openrouter"].includes(provider);
+  const isOpenAiCompatible = ["openai", "openai-compatible", "chatgpt", "openrouter"].includes(
+    provider,
+  );
 
   if (!isOpenAiCompatible && llm.endpoint === "https://api.openai.com/v1") {
     delete (llm as any).endpoint;

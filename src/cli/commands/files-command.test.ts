@@ -137,4 +137,3 @@ describe("FilesCommand", () => {
     expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ ok: true, output: "MOCK_DIFF_RESULT" }));
   });
 });
-

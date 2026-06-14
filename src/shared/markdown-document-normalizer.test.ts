@@ -55,15 +55,9 @@ describe("collapseDuplicateRootDocumentAppend", () => {
   });
 
   it("preserves the final newline when collapsing a duplicated root document", () => {
-    const oldDoc = [
-      "# Relatorio",
-      "",
-      "## 1. Antigo",
-      "Texto",
-      "",
-      "## 2. Antigo",
-      "Texto",
-    ].join("\n");
+    const oldDoc = ["# Relatorio", "", "## 1. Antigo", "Texto", "", "## 2. Antigo", "Texto"].join(
+      "\n",
+    );
     const newDoc = [
       "# Relatorio",
       "",

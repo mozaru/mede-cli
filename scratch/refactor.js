@@ -1,14 +1,14 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const projectRoot = 'D:/projetos/11Tech - Projetos/Engernharia de software/mede-cli';
-const srcDir = path.join(projectRoot, 'src');
+const projectRoot = "D:/projetos/11Tech - Projetos/Engernharia de software/mede-cli";
+const srcDir = path.join(projectRoot, "src");
 
 // Find all files in src recursively
 function getFiles(dir) {
   let results = [];
   const list = fs.readdirSync(dir);
-  list.forEach(file => {
+  list.forEach((file) => {
     const fullPath = path.join(dir, file);
     const stat = fs.statSync(fullPath);
     if (stat && stat.isDirectory()) {
@@ -25,44 +25,44 @@ const allFiles = getFiles(srcDir);
 // Build map of old absolute paths to new absolute paths
 const moves = {};
 
-allFiles.forEach(file => {
+allFiles.forEach((file) => {
   const relativeToSrc = path.relative(srcDir, file);
   const parts = relativeToSrc.split(path.sep);
   const firstDir = parts[0];
 
   let newRelative = relativeToSrc;
 
-  if (firstDir === 'commands') {
+  if (firstDir === "commands") {
     // src/commands -> src/cli/commands
-    newRelative = path.join('cli', 'commands', ...parts.slice(1));
-  } else if (firstDir === 'entities') {
+    newRelative = path.join("cli", "commands", ...parts.slice(1));
+  } else if (firstDir === "entities") {
     // src/entities -> src/domain/entities
-    newRelative = path.join('domain', 'entities', ...parts.slice(1));
-  } else if (firstDir === 'models') {
+    newRelative = path.join("domain", "entities", ...parts.slice(1));
+  } else if (firstDir === "models") {
     // src/models -> src/domain/models
-    newRelative = path.join('domain', 'models', ...parts.slice(1));
-  } else if (firstDir === 'services') {
-    if (parts[1] === 'interfaces') {
+    newRelative = path.join("domain", "models", ...parts.slice(1));
+  } else if (firstDir === "services") {
+    if (parts[1] === "interfaces") {
       // src/services/interfaces -> src/domain/interfaces/services
-      newRelative = path.join('domain', 'interfaces', 'services', ...parts.slice(2));
+      newRelative = path.join("domain", "interfaces", "services", ...parts.slice(2));
     } else {
       // src/services -> src/application/services
-      newRelative = path.join('application', 'services', ...parts.slice(1));
+      newRelative = path.join("application", "services", ...parts.slice(1));
     }
-  } else if (firstDir === 'repositories') {
-    if (parts[1] === 'interfaces') {
+  } else if (firstDir === "repositories") {
+    if (parts[1] === "interfaces") {
       // src/repositories/interfaces -> src/domain/interfaces/repositories
-      newRelative = path.join('domain', 'interfaces', 'repositories', ...parts.slice(2));
+      newRelative = path.join("domain", "interfaces", "repositories", ...parts.slice(2));
     } else {
       // src/repositories -> src/infrastructure/repositories
-      newRelative = path.join('infrastructure', 'repositories', ...parts.slice(1));
+      newRelative = path.join("infrastructure", "repositories", ...parts.slice(1));
     }
-  } else if (firstDir === 'db') {
+  } else if (firstDir === "db") {
     // src/db -> src/infrastructure/db
-    newRelative = path.join('infrastructure', 'db', ...parts.slice(1));
-  } else if (firstDir === 'shared' && parts[1] === 'llm') {
+    newRelative = path.join("infrastructure", "db", ...parts.slice(1));
+  } else if (firstDir === "shared" && parts[1] === "llm") {
     // src/shared/llm -> src/infrastructure/llm
-    newRelative = path.join('infrastructure', 'llm', ...parts.slice(2));
+    newRelative = path.join("infrastructure", "llm", ...parts.slice(2));
   }
 
   const oldAbs = path.resolve(file);
@@ -73,10 +73,10 @@ allFiles.forEach(file => {
 // A map of normalized/resolved target old path to target new path
 const resolvedMoves = {};
 Object.entries(moves).forEach(([oldAbs, newAbs]) => {
-  const normOld = oldAbs.replace(/\\/g, '/');
-  const normNew = newAbs.replace(/\\/g, '/');
+  const normOld = oldAbs.replace(/\\/g, "/");
+  const normNew = newAbs.replace(/\\/g, "/");
   resolvedMoves[normOld] = normNew;
-  
+
   // also add versions without extension
   const ext = path.extname(normOld);
   if (ext) {
@@ -87,15 +87,15 @@ Object.entries(moves).forEach(([oldAbs, newAbs]) => {
 });
 
 function resolveImportTarget(fileOldDir, importPath) {
-  const absoluteResolved = path.resolve(fileOldDir, importPath).replace(/\\/g, '/');
-  
+  const absoluteResolved = path.resolve(fileOldDir, importPath).replace(/\\/g, "/");
+
   if (resolvedMoves[absoluteResolved]) {
     return resolvedMoves[absoluteResolved];
   }
-  
+
   // Try extensions if original import ended with .js
   const ext = path.extname(absoluteResolved);
-  if (ext === '.js' || ext === '.jsx' || ext === '.ts' || ext === '.tsx') {
+  if (ext === ".js" || ext === ".jsx" || ext === ".ts" || ext === ".tsx") {
     const base = absoluteResolved.slice(0, -ext.length);
     if (resolvedMoves[base]) {
       // Return with original extension (which is typically .js for node module resolution)
@@ -110,7 +110,7 @@ function resolveImportTarget(fileOldDir, importPath) {
 
 // Perform refactoring (reading, rewriting imports, and writing to new location)
 Object.entries(moves).forEach(([oldAbs, newAbs]) => {
-  let content = fs.readFileSync(oldAbs, 'utf8');
+  let content = fs.readFileSync(oldAbs, "utf8");
   const fileOldDir = path.dirname(oldAbs);
   const fileNewDir = path.dirname(newAbs);
 
@@ -121,12 +121,12 @@ Object.entries(moves).forEach(([oldAbs, newAbs]) => {
         const targetNewAbs = resolveImportTarget(fileOldDir, p3);
         if (targetNewAbs) {
           let newRelPath = path.relative(fileNewDir, targetNewAbs);
-          if (!newRelPath.startsWith('.')) newRelPath = './' + newRelPath;
-          newRelPath = newRelPath.replace(/\\/g, '/');
+          if (!newRelPath.startsWith(".")) newRelPath = "./" + newRelPath;
+          newRelPath = newRelPath.replace(/\\/g, "/");
           return `${p1}${p2}${newRelPath}${p4}`;
         }
         return match;
-      }
+      },
     },
     {
       regex: /(import\s*\(\s*['"])(\.\.?\/[^'"]+)(['"]\s*\))/g,
@@ -134,12 +134,12 @@ Object.entries(moves).forEach(([oldAbs, newAbs]) => {
         const targetNewAbs = resolveImportTarget(fileOldDir, p2);
         if (targetNewAbs) {
           let newRelPath = path.relative(fileNewDir, targetNewAbs);
-          if (!newRelPath.startsWith('.')) newRelPath = './' + newRelPath;
-          newRelPath = newRelPath.replace(/\\/g, '/');
+          if (!newRelPath.startsWith(".")) newRelPath = "./" + newRelPath;
+          newRelPath = newRelPath.replace(/\\/g, "/");
           return `${p1}${newRelPath}${p3}`;
         }
         return match;
-      }
+      },
     },
     {
       regex: /(import\s+['"])(\.\.?\/[^'"]+)(['"])/g,
@@ -147,21 +147,21 @@ Object.entries(moves).forEach(([oldAbs, newAbs]) => {
         const targetNewAbs = resolveImportTarget(fileOldDir, p2);
         if (targetNewAbs) {
           let newRelPath = path.relative(fileNewDir, targetNewAbs);
-          if (!newRelPath.startsWith('.')) newRelPath = './' + newRelPath;
-          newRelPath = newRelPath.replace(/\\/g, '/');
+          if (!newRelPath.startsWith(".")) newRelPath = "./" + newRelPath;
+          newRelPath = newRelPath.replace(/\\/g, "/");
           return `${p1}${newRelPath}${p3}`;
         }
         return match;
-      }
-    }
+      },
+    },
   ];
 
-  patterns.forEach(p => {
+  patterns.forEach((p) => {
     content = content.replace(p.regex, p.replace);
   });
 
   fs.mkdirSync(fileNewDir, { recursive: true });
-  fs.writeFileSync(newAbs, content, 'utf8');
+  fs.writeFileSync(newAbs, content, "utf8");
 });
 
 // Delete old files that actually moved
@@ -175,7 +175,7 @@ Object.entries(moves).forEach(([oldAbs, newAbs]) => {
 function removeEmptyDirs(dir) {
   if (!fs.existsSync(dir)) return;
   const list = fs.readdirSync(dir);
-  list.forEach(file => {
+  list.forEach((file) => {
     const fullPath = path.join(dir, file);
     if (fs.statSync(fullPath).isDirectory()) {
       removeEmptyDirs(fullPath);

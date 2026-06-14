@@ -47,9 +47,11 @@ const prefixesSchema = z.object({
   deliveryLog: z.string(),
 });
 
-const providerSchema = z.string().refine((value) => SUPPORTED_PROVIDERS.includes(value.trim().toLowerCase()), {
-  message: `provider nao suportado (use um de: ${SUPPORTED_PROVIDERS.join(", ")})`,
-});
+const providerSchema = z
+  .string()
+  .refine((value) => SUPPORTED_PROVIDERS.includes(value.trim().toLowerCase()), {
+    message: `provider nao suportado (use um de: ${SUPPORTED_PROVIDERS.join(", ")})`,
+  });
 
 const llmProfileSchema = z.object({
   provider: providerSchema.optional(),

@@ -96,7 +96,11 @@ I18n.onLanguageChange((lang) => {
   SYSTEM_PROMPT_ESM = loadSystemPrompt("esm", true, lang);
   SYSTEM_PROMPT_DELIVERY_LOG = loadSystemPrompt("delivery-log", true, lang);
   SYSTEM_PROMPT_FUNCTIONAL_REQUIREMENTS = loadSystemPrompt("functional-requirements", true, lang);
-  SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS = loadSystemPrompt("non-functional-requirements", true, lang);
+  SYSTEM_PROMPT_NON_FUNCTIONAL_REQUIREMENTS = loadSystemPrompt(
+    "non-functional-requirements",
+    true,
+    lang,
+  );
   SYSTEM_PROMPT_DATA_MODEL = loadSystemPrompt("data-model", true, lang);
   SYSTEM_PROMPT_TIMELINE = loadSystemPrompt("timeline", true, lang);
   SYSTEM_PROMPT_SCOPE_AND_VISION = loadSystemPrompt("scope-and-vision", true, lang);

@@ -174,6 +174,8 @@ Status: `Pendente`, `Cancelado`, `Concluído`, `Esclarecido`, `Aguardando`
 | `mede-cli config apply` | Aplica alterações manuais na configuração |
 | `mede-cli llm` | Inspeciona configuração de LLM |
 | `mede-cli llm test [-p prompt]` | Executa prompt de teste isolado |
+| `mede-cli update` | Atualiza o mede-cli para a versão mais recente |
+| `mede-cli llm login` | Autentica na LLM via OAuth (device-code) |
 
 ---
 

@@ -32,9 +32,9 @@ export class PhaseRepository implements IPhaseRepository {
     this._uow.ensureConnection();
     const sql =
       "select tp.id,tp.name,tp.`index`,tp.inputFiles,tp.outputFile,tp.docTypeOutput,tp.promptName,tp.status,tp.proposalState,tp.startedAt,tp.finishedAt,Cycle6.id as cycleId from phase tp left join Cycle Cycle6 on (tp.cycleId = Cycle6.id)  where tp.cycleId = @cycleId";
-    return (
-      this._uow.connection.prepare(sql).all({ cycleId: cycleId }) as PhaseEntity[]
-    ).map((r) => this.deserializeInputFiles(r));
+    return (this._uow.connection.prepare(sql).all({ cycleId: cycleId }) as PhaseEntity[]).map((r) =>
+      this.deserializeInputFiles(r),
+    );
   }
   public getById(id: number): PhaseEntity | null {
     this._uow.ensureConnection();

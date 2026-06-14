@@ -1,6 +1,10 @@
 import type { IFileSystemRepository } from "../../domain/interfaces/repositories/file-system-repository-interface.js";
 import { FileSystemRepository } from "../../infrastructure/repositories/file-system-repository.js";
-import { BacklogStatus, normalizeStatus, isKnownStatus } from "../../domain/enums/backlog-status.js";
+import {
+  BacklogStatus,
+  normalizeStatus,
+  isKnownStatus,
+} from "../../domain/enums/backlog-status.js";
 import { isEmptyCell } from "../../shared/utils.js";
 
 export interface LegStatIssue {
@@ -44,7 +48,10 @@ export class BacklogReplayService {
   ): ReplayResult {
     const initialItems = this.parseTableIdAndStatus(initialContent, "TABELA_BACKLOG_INICIAL");
     const initialIssues = [
-      ...this.findDuplicateIssues(initialItems.map((item) => item.id), "entendimento-inicial.md"),
+      ...this.findDuplicateIssues(
+        initialItems.map((item) => item.id),
+        "entendimento-inicial.md",
+      ),
       ...this.findInvalidStatusIssues(initialItems, "entendimento-inicial.md"),
     ];
     const state = this.buildState(initialItems);
@@ -56,7 +63,12 @@ export class BacklogReplayService {
       const stateBeforeLeg = new Map(state);
 
       const newItems = this.parseTableIdAndStatus(content, "TABELA_NOVOS_CICLO");
-      causalIssues.push(...this.findDuplicateIssues(newItems.map((item) => item.id), name));
+      causalIssues.push(
+        ...this.findDuplicateIssues(
+          newItems.map((item) => item.id),
+          name,
+        ),
+      );
       causalIssues.push(...this.findInvalidStatusIssues(newItems, name));
       for (const { id, status } of newItems) {
         if (knownBeforeLeg.has(id)) {
@@ -73,13 +85,21 @@ export class BacklogReplayService {
           causalIssues.push(`${name}: item entregue ${id} nao existia antes da LEG.`);
           continue;
         }
-        if (knownBeforeLeg.has(id) && normalizeStatus(stateBeforeLeg.get(id) ?? "") === normalizeStatus(BacklogStatus.CONCLUIDO)) {
+        if (
+          knownBeforeLeg.has(id) &&
+          normalizeStatus(stateBeforeLeg.get(id) ?? "") === normalizeStatus(BacklogStatus.CONCLUIDO)
+        ) {
           causalIssues.push(`${name}: item ${id} foi entregue novamente.`);
         }
         state.set(id, BacklogStatus.CONCLUIDO);
       }
 
-      const statIssues = this.validateLegStats(content, state, deliveredIds.length, newItems.length);
+      const statIssues = this.validateLegStats(
+        content,
+        state,
+        deliveredIds.length,
+        newItems.length,
+      );
       legResults.push({ legFile: name, statIssues, causalIssues });
     }
 
@@ -95,7 +115,9 @@ export class BacklogReplayService {
     const issues: LegStatIssue[] = [];
     const statuses = [...stateAtLeg.values()];
 
-    const totalDelivered = statuses.filter((s) => normalizeStatus(s) === normalizeStatus(BacklogStatus.CONCLUIDO)).length;
+    const totalDelivered = statuses.filter(
+      (s) => normalizeStatus(s) === normalizeStatus(BacklogStatus.CONCLUIDO),
+    ).length;
     const totalPending = statuses.filter((s) =>
       [
         normalizeStatus(BacklogStatus.PENDENTE),
@@ -129,8 +151,11 @@ export class BacklogReplayService {
     if (rawPercent !== null && rawPercent !== "") {
       const cleanPercent = rawPercent.replace("%", "").replace(",", ".").trim();
       const foundPercent = parseFloat(cleanPercent);
-      const totalNonCancelled = statuses.filter((s) => normalizeStatus(s) !== normalizeStatus(BacklogStatus.CANCELADO)).length;
-      const deliveryPercent = totalNonCancelled === 0 ? 0 : (totalDelivered / totalNonCancelled) * 100;
+      const totalNonCancelled = statuses.filter(
+        (s) => normalizeStatus(s) !== normalizeStatus(BacklogStatus.CANCELADO),
+      ).length;
+      const deliveryPercent =
+        totalNonCancelled === 0 ? 0 : (totalDelivered / totalNonCancelled) * 100;
       const expectedPercent = parseFloat(deliveryPercent.toFixed(1));
       if (Number.isNaN(foundPercent) || Math.abs(foundPercent - expectedPercent) > 0.05) {
         issues.push({
@@ -156,9 +181,7 @@ export class BacklogReplayService {
     const block = this.extractBlock(content, blockName);
     if (!block) return [];
     const rows = this.parseMarkdownTable(block);
-    return rows
-      .map((r) => r[0]?.trim() ?? "")
-      .filter((id) => !isEmptyCell(id));
+    return rows.map((r) => r[0]?.trim() ?? "").filter((id) => !isEmptyCell(id));
   }
 
   private parseTableIdAndStatus(

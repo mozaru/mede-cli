@@ -102,7 +102,8 @@ export class ValidateCommand {
       }
     }
 
-    const valid = structuralIssues.length === 0 && initialIssues.length === 0 && !hasLegIssues && ok;
+    const valid =
+      structuralIssues.length === 0 && initialIssues.length === 0 && !hasLegIssues && ok;
     if (!valid && strict) {
       throw new Error(I18n.t("Validacao de consistencia causal falhou (--strict)."));
     }

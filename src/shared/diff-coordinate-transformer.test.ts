@@ -1,15 +1,22 @@
 import { describe, it, expect } from "vitest";
-import {
-  buildCompressionMap,
-  transformDiffCoordinates,
-} from "./diff-coordinate-transformer.js";
+import { buildCompressionMap, transformDiffCoordinates } from "./diff-coordinate-transformer.js";
 import type { PlaceholderBlock } from "./placeholder-block-extractor.js";
 
-function chunk(location: string): { index: number; offset: number; location: string; content: string } {
+function chunk(location: string): {
+  index: number;
+  offset: number;
+  location: string;
+  content: string;
+} {
   return { index: 1, offset: 0, location, content: "+new line" };
 }
 
-function block(name: string, startLine: number, endLine: number, innerLineCount: number): PlaceholderBlock {
+function block(
+  name: string,
+  startLine: number,
+  endLine: number,
+  innerLineCount: number,
+): PlaceholderBlock {
   const lines = Array.from({ length: innerLineCount }, (_, i) => `inner${i + 1}`);
   return { name, startLine, endLine, innerContent: lines.join("\n"), innerLineCount };
 }

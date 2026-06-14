@@ -181,7 +181,9 @@ export class PromptPlaceholderBuilder {
     const previousState = this.currentStateParser.parse(previousCurrentStateFilePath);
     const comparisons = this.compareAllWithPrevious(currentItems, previousState);
     const pendingItems = currentItems.filter((item) =>
-      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(normalizeStatus(item.status)),
+      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(
+        normalizeStatus(item.status),
+      ),
     );
 
     const countPendingType = (type: string): number =>
@@ -304,9 +306,7 @@ export class PromptPlaceholderBuilder {
     );
   }
 
-  private buildRecentBacklogTableFromComparisons(
-    comparisons: CurrentVsPreviousItem[],
-  ): string {
+  private buildRecentBacklogTableFromComparisons(comparisons: CurrentVsPreviousItem[]): string {
     const filtered = comparisons
       .filter(
         (item) =>
@@ -403,21 +403,29 @@ export class PromptPlaceholderBuilder {
   }
 
   private countDelivered(items: BacklogEntity[]): number {
-    return items.filter((i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.CONCLUIDO)).length;
+    return items.filter(
+      (i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.CONCLUIDO),
+    ).length;
   }
 
   private countPending(items: BacklogEntity[]): number {
     return items.filter((i) =>
-      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(normalizeStatus(i.status)),
+      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(
+        normalizeStatus(i.status),
+      ),
     ).length;
   }
 
   private countInProgress(items: BacklogEntity[]): number {
-    return items.filter((i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.EM_ANDAMENTO)).length;
+    return items.filter(
+      (i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.EM_ANDAMENTO),
+    ).length;
   }
 
   private countCancelled(items: BacklogEntity[]): number {
-    return items.filter((i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.CANCELADO)).length;
+    return items.filter(
+      (i) => normalizeStatus(i.status) === normalizeStatus(BacklogStatus.CANCELADO),
+    ).length;
   }
 
   private buildDeliveryStatistics(items: BacklogEntity[]): string {
@@ -426,7 +434,9 @@ export class PromptPlaceholderBuilder {
     ).length;
 
     const totalPending = items.filter((item) =>
-      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(normalizeStatus(item.status)),
+      [normalizeStatus(BacklogStatus.PENDENTE), normalizeStatus(BacklogStatus.AGUARDANDO)].includes(
+        normalizeStatus(item.status),
+      ),
     ).length;
 
     const totalRelevant = items.filter(

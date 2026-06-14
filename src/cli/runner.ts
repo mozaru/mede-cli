@@ -10,12 +10,13 @@ import { FilesCommand } from "./commands/files-command.js";
 import { InitCommand } from "./commands/init-command.js";
 import { LlmCommand } from "./commands/llm-command.js";
 import { StatusCommand } from "./commands/status-command.js";
+import { UpdateCommand } from "./commands/update-command.js";
 import { ValidateCommand } from "./commands/validate-command.js";
 
 // Single source of truth for the version: read package.json at runtime. Using a
 // URL relative to this module keeps it working both in dev (tsx) and in the
 // bundled dist artifact, and avoids importing JSON across the tsconfig rootDir.
-function resolveVersion(): string {
+export function resolveVersion(): string {
   try {
     const pkg = JSON.parse(
       readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
@@ -250,9 +251,7 @@ export function buildProgram(): Command {
 
   program //mede-cli validate
     .command("validate")
-    .description(
-      "Verifica consistência causal do backlog (replay de LEGs vs situacao-atual.md)",
-    )
+    .description("Verifica consistência causal do backlog (replay de LEGs vs situacao-atual.md)")
     .option("--strict", "Falha com erro se houver inconsistência")
     .action((options: { strict?: boolean }) => {
       const handler = new ValidateCommand();
@@ -290,6 +289,14 @@ export function buildProgram(): Command {
     .action(() => {
       const handler = new LlmCommand();
       handler.executeLogout();
+    });
+
+  program //mede-cli update
+    .command("update")
+    .description("Atualiza o mede-cli para a versão mais recente")
+    .action(async () => {
+      const handler = new UpdateCommand();
+      await handler.execute();
     });
 
   return program;

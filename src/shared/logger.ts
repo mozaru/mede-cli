@@ -29,11 +29,13 @@ function currentThreshold(): number {
 function emit(level: LogLevel, args: unknown[]): void {
   if (LEVEL_ORDER[level] <= currentThreshold()) {
     if ((process.env.MEDE_LOG_FORMAT ?? "").toLowerCase() === "json") {
-      console.error(JSON.stringify({
-        level,
-        timestamp: new Date().toISOString(),
-        message: args.map(formatArg).join(" "),
-      }));
+      console.error(
+        JSON.stringify({
+          level,
+          timestamp: new Date().toISOString(),
+          message: args.map(formatArg).join(" "),
+        }),
+      );
       return;
     }
 

@@ -30,7 +30,8 @@ const PLACEHOLDER_REGISTRY: Record<string, PlaceholderResolver> = {
   TOTAL_PENDENTES: (b, o) => b.buildTotalPendentesFromProject(o.projectId),
   TOTAL_ENTREGUES_CICLO: (b, o) =>
     b.buildTotalEntreguesCicloFromProject(o.projectId, o.previousCurrentStateFilePath),
-  NOVOS_CICLO: (b, o) => b.buildNovosCicloCountFromProject(o.projectId, o.previousCurrentStateFilePath),
+  NOVOS_CICLO: (b, o) =>
+    b.buildNovosCicloCountFromProject(o.projectId, o.previousCurrentStateFilePath),
   PERCENTUAL_ENTREGA: (b, o) => b.buildPercentualEntregaFromProject(o.projectId),
   CICLO_CORRENTE: (_, o) => String(o.cycleNumber).padStart(3, "0"),
   DATA_REFERENCIA: (_, o) => o.referenceDate,

@@ -13,7 +13,10 @@ import {
   oauthVaultKey,
   serializeTokens,
 } from "../../infrastructure/llm/oauth-auth-strategy.js";
-import { OpenRouterPkceFlow, createBrowserAuthorize } from "../../infrastructure/llm/openrouter-pkce-flow.js";
+import {
+  OpenRouterPkceFlow,
+  createBrowserAuthorize,
+} from "../../infrastructure/llm/openrouter-pkce-flow.js";
 
 export interface LlmLoginDeps {
   vault?: ISecretVault;
@@ -90,7 +93,7 @@ export class LlmService {
 
       const isConfigured = model !== "";
       const configStr = isConfigured ? `Configured (${model})` : "Not Configured";
-      
+
       let keyStr = "N/A";
       if (fam.defaultKey) {
         const keyPresent = !!process.env[apiKeyEnv];
@@ -98,7 +101,9 @@ export class LlmService {
       }
 
       const label = `  ${fam.label}`;
-      providerStatusLines.push(`${label.padEnd(20)} - Status: ${configStr.padEnd(35)} | Key: ${keyStr}`);
+      providerStatusLines.push(
+        `${label.padEnd(20)} - Status: ${configStr.padEnd(35)} | Key: ${keyStr}`,
+      );
     }
 
     // 2. Profiles Status
@@ -129,7 +134,7 @@ export class LlmService {
     const parts = [
       providerStatusLines.join("\n"),
       profileLines.join("\n"),
-      routingLines.join("\n")
+      routingLines.join("\n"),
     ];
 
     return parts.join("\n") + "\n";

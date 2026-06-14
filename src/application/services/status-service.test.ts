@@ -58,7 +58,7 @@ describe("StatusService unit tests", () => {
         cycleRepository,
         changeSetRepository,
         cycleArtifactRepository,
-        phaseRepository
+        phaseRepository,
       );
 
       // 2. Test status labels mapping
@@ -125,7 +125,7 @@ describe("StatusService unit tests", () => {
         {} as any,
         { list: vi.fn().mockReturnValue([]) } as any,
         { list: vi.fn().mockReturnValue([]) } as any,
-        {} as any
+        {} as any,
       );
 
       const output = statusService.generate(project, cycle, phase, changeSet);
