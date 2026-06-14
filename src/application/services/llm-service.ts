@@ -20,8 +20,17 @@ export interface LlmLoginDeps {
   fetch?: typeof fetch;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
-  // OpenRouter PKCE: overrides the browser+callback step (tests).
   authorize?: (authUrl: string, callbackUrl: string) => Promise<string>;
+}
+
+function getFamily(providerName: string): string {
+  const p = providerName.trim().toLowerCase();
+  if (["openai", "openai-compatible", "chatgpt", "openrouter"].includes(p)) return "openai";
+  if (["anthropic", "claude"].includes(p)) return "anthropic";
+  if (["gemini", "google"].includes(p)) return "gemini";
+  if (["ollama"].includes(p)) return "ollama";
+  if (["azure", "azure-openai", "azure-openia"].includes(p)) return "azure";
+  return p;
 }
 
 export class LlmService {
@@ -45,30 +54,85 @@ export class LlmService {
 
     const config = resolveLlmConfig(this.parseConfig(configEntity.content));
 
-    const provider = config.llm.provider.trim().toLowerCase();
+    const activeProfileName = config.llm.activeProfile;
+    const profiles = config.llm.profiles ?? {};
+    const routing = config.llmRouting ?? {};
 
-    const anthropicModel = ["anthropic", "claude"].includes(provider) ? config.llm.model : "None";
+    // 1. Supported Providers Status
+    const families = [
+      { id: "openai", label: "openai", defaultKey: "OPENAI_API_KEY" },
+      { id: "anthropic", label: "anthropic", defaultKey: "ANTHROPIC_API_KEY" },
+      { id: "gemini", label: "gemini", defaultKey: "GEMINI_API_KEY" },
+      { id: "ollama", label: "ollama", defaultKey: "" },
+      { id: "azure", label: "azure(openai)", defaultKey: "AZURE_OPENAI_API_KEY" },
+    ];
 
-    const azureModel = ["azure", "azure-openai", "azure-openia"].includes(provider)
-      ? config.llm.model
-      : "None";
+    const providerStatusLines = ["", "  LLM - Supported Providers Status"];
+    for (const fam of families) {
+      let model = "";
+      let apiKeyEnv = fam.defaultKey;
 
-    const geminiModel = ["gemini", "google"].includes(provider) ? config.llm.model : "None";
+      const baseFamily = getFamily(config.llm.provider);
+      if (baseFamily === fam.id) {
+        model = config.llm.model;
+        if (config.llm.apiKeyEnv) {
+          apiKeyEnv = config.llm.apiKeyEnv;
+        }
+      }
 
-    const ollamaModel = provider === "ollama" ? config.llm.model : "None";
+      for (const prof of Object.values(profiles)) {
+        const profFamily = getFamily(prof.provider ?? config.llm.provider ?? "openai");
+        if (profFamily === fam.id) {
+          model = prof.model ?? model;
+          apiKeyEnv = prof.apiKeyEnv ?? apiKeyEnv;
+        }
+      }
 
-    const openaiModel = ["openai", "openai-compatible", "chatgpt", "openrouter"].includes(provider)
-      ? config.llm.model
-      : "None";
+      const isConfigured = model !== "";
+      const configStr = isConfigured ? `Configured (${model})` : "Not Configured";
+      
+      let keyStr = "N/A";
+      if (fam.defaultKey) {
+        const keyPresent = !!process.env[apiKeyEnv];
+        keyStr = keyPresent ? `Present (${apiKeyEnv})` : `Missing (${apiKeyEnv})`;
+      }
 
-    return `
-  LLM - Providers Status
-  anthropic       - ${anthropicModel}
-  azure(openai)   - ${azureModel}
-  gemini          - ${geminiModel}
-  ollama          - ${ollamaModel}
-  openai          - ${openaiModel}
-`;
+      const label = `  ${fam.label}`;
+      providerStatusLines.push(`${label.padEnd(20)} - Status: ${configStr.padEnd(35)} | Key: ${keyStr}`);
+    }
+
+    // 2. Profiles Status
+    const profileLines = ["", "  LLM - Profiles"];
+    if (Object.keys(profiles).length > 0) {
+      for (const [name, profile] of Object.entries(profiles)) {
+        const provider = profile.provider ?? config.llm.provider ?? "openai";
+        const model = profile.model ?? config.llm.model ?? "unknown";
+        const isActive = name === activeProfileName;
+        const activeLabel = isActive ? " [Ativo]" : "";
+        const label = `  ${name} (${provider})${activeLabel}`;
+        profileLines.push(`${label.padEnd(40)} - ${model}`);
+      }
+    } else {
+      profileLines.push("  Nenhum perfil configurado (usando configuração legada global)");
+    }
+
+    // 3. Routing Status
+    const routingLines = ["", "  LLM - Routing (llmRouting)"];
+    if (Object.keys(routing).length > 0) {
+      for (const [phase, profileName] of Object.entries(routing)) {
+        routingLines.push(`  ${phase.padEnd(35)} -> ${profileName}`);
+      }
+    } else {
+      routingLines.push("  Nenhum roteamento configurado (todas as fases usam o perfil ativo)");
+    }
+
+    const parts = [
+      providerStatusLines.join("\n"),
+      profileLines.join("\n"),
+      routingLines.join("\n")
+    ];
+
+    return parts.join("\n") + "\n";
   }
 
   public async test(prompt: string): Promise<string> {

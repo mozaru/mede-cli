@@ -3,6 +3,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
+    env: {
+      MEDE_LLM_RETRIES: "2",
+    },
     include: ["src/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts"],
     coverage: {

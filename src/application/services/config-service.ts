@@ -101,14 +101,28 @@ export class ConfigService {
         deliveryLog: "leg",
       },
       llm: {
-        provider: "openai",
-        model: "gpt-5.4",
-        endpoint: "https://api.openai.com/v1",
-        apiKeyEnv: "OPENAI_API_KEY",
         auth: "apiKey",
         temperature: 0.1,
         maxTokens: 12000,
         timeoutMs: 180000,
+        activeProfile: "gemini-perfil",
+        profiles: {
+          "openai-perfil": {
+            provider: "openai",
+            model: "gpt-4o-mini",
+            apiKeyEnv: "OPENAI_API_KEY"
+          },
+          "claude-perfil": {
+            provider: "anthropic",
+            model: "claude-3-5-sonnet-latest",
+            apiKeyEnv: "ANTHROPIC_API_KEY"
+          },
+          "gemini-perfil": {
+            provider: "gemini",
+            model: "gemini-1.5-flash",
+            apiKeyEnv: "GEMINI_API_KEY"
+          }
+        }
       },
       systemPrompts: {
         readme: "",

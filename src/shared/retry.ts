@@ -12,7 +12,7 @@ export interface RetryOptions {
 
 function defaultRetries(): number {
   const fromEnv = Number(process.env.MEDE_LLM_RETRIES);
-  return Number.isInteger(fromEnv) && fromEnv >= 0 ? fromEnv : 2;
+  return Number.isInteger(fromEnv) && fromEnv >= 0 ? fromEnv : 5;
 }
 
 // Does not retry failures that look permanent (auth/validation/not-found).

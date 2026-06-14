@@ -26,6 +26,13 @@ export function resolveLlmConfig(
   const profile = resolveProfile(config, profileName);
   const llm = mergeDefined(DEFAULT_LLM_PROFILE, config.llm, profile);
 
+  const provider = (llm.provider ?? "").trim().toLowerCase();
+  const isOpenAiCompatible = ["openai", "openai-compatible", "chatgpt", "openrouter"].includes(provider);
+
+  if (!isOpenAiCompatible && llm.endpoint === "https://api.openai.com/v1") {
+    delete (llm as any).endpoint;
+  }
+
   return {
     ...config,
     llm: {

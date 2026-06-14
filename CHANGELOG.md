@@ -7,6 +7,16 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.1.1] - 2026-06-14
+
+### Corrigido
+- Correção de vaziamento de endpoint: Impede que o endpoint padrão da OpenAI vaze para outros provedores de LLM como Gemini, Anthropic e Ollama em perfis secundários.
+- Correção de sintaxe no template padrão de configuração (`mede.config.json`).
+
+### Adicionado
+- Dashboard completo de LLM: O comando `llm` agora exibe o status de todos os provedores suportados, indicando se estão configurados e se as respectivas chaves de API estão presentes, além de listar todos os perfis e rotas de LLM ativas.
+- Aumento do limite padrão de retentativas da LLM para 5 (totalizando 6 tentativas) para dar maior estabilidade a modelos menores.
+
 ## [1.1.0] - 2026-06-12
 
 ### Adicionado

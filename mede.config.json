@@ -2,6 +2,9 @@
   "configVersion": 1,
   "language": "pt-BR",
   "docsRoot": "docs",
+  "projectName": "11Publish",
+  "clientName": "11Tech",
+  "supplierName": "11Tech",
   "directories": {
     "meetingMinutes": "atas-de-reuniao",
     "architecturalDecisions": "decisoes-arquiteturais",
@@ -25,15 +28,33 @@
     "deliveryLog": "leg"
   },
   "llm": {
-    "provider": "openai-compatible",
-    "model": "gpt-4.1",
-    "endpoint": "https://api.openai.com/v1",
-    "apiKeyEnv": "OPENAI_API_KEY",
+    "auth": "apiKey",
     "temperature": 0.1,
     "maxTokens": 12000,
-    "timeoutMs": 180000
-  },
+    "timeoutMs": 180000,
+    "activeProfile": "gemini-perfil", 
+    "profiles": {
+      "openai-perfil": {
+        "provider": "openai",
+        "model": "gpt-5.4-mini",
+        "apiKeyEnv": "OPENAI_API_KEY"
+      },
+      "claude-perfil": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "apiKeyEnv": "ANTHROPIC_API_KEY"
+      },
+      "gemini-perfil": {
+        "provider": "gemini",
+        "model": "gemini-3.1-flash-lite",
+        "apiKeyEnv": "GEMINI_API_KEY"
+      }
+    }
+  }
+  ,
   "systemPrompts": {
+    "readme": "",
+    "initialUnderstanding": "",
     "meeting": "",
     "architecturalDecisions": "",
     "systemMaintenanceSpecifications": "",
@@ -43,8 +64,24 @@
     "dataModel": "",
     "timeline": "",
     "scopeAndVision": "",
+    "currentState": ""
+  },
+  "prompts": {
     "readme": "",
-    "currentState": "",
-    "initialUnderstanding": ""
+    "initialUnderstanding": "",
+    "meeting": "",
+    "architecturalDecisions": "",
+    "systemMaintenanceSpecifications": "",
+    "deliveryLog": "",
+    "functionalRequirements": "",
+    "nonFunctionalRequirements": "",
+    "dataModel": "",
+    "timeline": "",
+    "scopeAndVision": "",
+    "currentState": ""
+  },
+  "shortDescriptionSlug": {
+    "enabled": true,
+    "prompt": ""
   }
 }

@@ -46,32 +46,32 @@ describe("LlmService.providers", () => {
   it("marks only the configured provider as active", () => {
     const output = makeService(makeConfig("openai-compatible", "gpt-4.1")).providers();
 
-    expect(output).toContain("openai          - gpt-4.1");
-    expect(output).toContain("anthropic       - None");
-    expect(output).toContain("azure(openai)   - None");
-    expect(output).toContain("gemini          - None");
-    expect(output).toContain("ollama          - None");
+    expect(output).toMatch(/openai\s+- Status: Configured \(gpt-4\.1\)/);
+    expect(output).toMatch(/anthropic\s+- Status: Not Configured/);
+    expect(output).toMatch(/azure\(openai\)\s+- Status: Not Configured/);
+    expect(output).toMatch(/gemini\s+- Status: Not Configured/);
+    expect(output).toMatch(/ollama\s+- Status: Not Configured/);
   });
 
   it("keeps OpenAI inactive when another provider is selected", () => {
     const output = makeService(makeConfig("azure", "deploy")).providers();
 
-    expect(output).toContain("azure(openai)   - deploy");
-    expect(output).toContain("openai          - None");
+    expect(output).toMatch(/azure\(openai\)\s+- Status: Configured \(deploy\)/);
+    expect(output).toMatch(/openai\s+- Status: Not Configured/);
   });
 
   it("marks compatible non-OpenAI providers as active", () => {
     const cases = [
-      ["anthropic", "claude", "anthropic       - claude"],
-      ["azure", "deploy", "azure(openai)   - deploy"],
-      ["gemini", "gemini-2", "gemini          - gemini-2"],
-      ["ollama", "llama", "ollama          - llama"],
+      ["anthropic", "claude", /anthropic\s+- Status: Configured \(claude\)/],
+      ["azure", "deploy", /azure\(openai\)\s+- Status: Configured \(deploy\)/],
+      ["gemini", "gemini-2", /gemini\s+- Status: Configured \(gemini-2\)/],
+      ["ollama", "llama", /ollama\s+- Status: Configured \(llama\)/],
     ];
 
-    for (const [provider, model, expectedLine] of cases) {
+    for (const [provider, model, expectedRegex] of cases) {
       const output = makeService(makeConfig(provider, model)).providers();
 
-      expect(output).toContain(expectedLine);
+      expect(output).toMatch(expectedRegex as RegExp);
     }
   });
 
@@ -85,6 +85,32 @@ describe("LlmService.providers", () => {
         projectConfigRepository: { getCurrent: () => null },
       }).providers(),
     ).toThrow(/Config not found/);
+  });
+
+  it("renders multiple profiles listing with active marker when profiles are configured", () => {
+    const config = makeConfig();
+    config.llm.activeProfile = "gemini-perfil";
+    config.llm.profiles = {
+      "openai-perfil": {
+        provider: "openai",
+        model: "gpt-4o-mini",
+      },
+      "gemini-perfil": {
+        provider: "gemini",
+        model: "gemini-1.5-flash",
+      },
+    };
+    config.llmRouting = {
+      meeting: "gemini-perfil",
+    };
+
+    const output = makeService(config).providers();
+
+    expect(output).toContain("openai-perfil (openai)");
+    expect(output).toContain("gemini-perfil (gemini) [Ativo]");
+    expect(output).toContain("- gpt-4o-mini");
+    expect(output).toContain("- gemini-1.5-flash");
+    expect(output).toContain("meeting                             -> gemini-perfil");
   });
 });
 

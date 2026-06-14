@@ -65,4 +65,19 @@ describe("resolveLlmConfig", () => {
 
     expect(() => resolveLlmConfig(config)).toThrow(/Perfil LLM "missing"/);
   });
+
+  it("does not leak OpenAI default endpoint to non-OpenAI providers", () => {
+    const config = new MedeConfigModelEntity();
+    config.llm.activeProfile = "gemini";
+    config.llm.profiles = {
+      gemini: {
+        provider: "gemini",
+        model: "gemini-1.5-flash",
+      },
+    };
+
+    const resolved = resolveLlmConfig(config);
+    expect(resolved.llm.provider).toBe("gemini");
+    expect(resolved.llm.endpoint).toBeUndefined();
+  });
 });
