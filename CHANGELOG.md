@@ -7,6 +7,12 @@ e o projeto adota [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.2.1] - 2026-06-14
+
+### Corrigido
+- Correção de 4 vulnerabilidades de segurança (1 moderada, 3 altas) através da atualização de dependências (`tsx`, `esbuild`, `brace-expansion` e `flatted`).
+- Remoção de dependência circular acidental de `mede-cli` em seu próprio `package.json`.
+
 ## [1.2.0] - 2026-06-14
 
 ### Adicionado
